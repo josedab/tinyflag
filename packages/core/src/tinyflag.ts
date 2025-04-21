@@ -8,6 +8,7 @@ import type {
 } from './types.js';
 import { EventEmitter } from './events.js';
 import { evaluateFlag, evaluateVariant, setEvaluationContext, detectCircularDependencies, evaluateWithPersona as coreEvaluateWithPersona, getEvaluationWarnings } from './evaluator.js';
+import type { EvaluationEnv, EvaluationWarning } from './evaluator.js';
 import {
   detectSourceType,
   loadFromFile,
@@ -44,6 +45,7 @@ export class TinyFlag {
   private lastModified?: string;
   private exposureCache = new Set<string>();
   private overrides = new Map<string, boolean | string>();
+  private evalEnv: EvaluationEnv = { allFlags: {}, segments: {} };
 
   /**
    * Create a new TinyFlag instance.
@@ -139,10 +141,11 @@ export class TinyFlag {
     if (typeof overrideValue === 'boolean') return overrideValue;
 
     const normalizedContext = normalizeContext(context);
-    const result = evaluateFlag(normalizedName, flag, normalizedContext);
+    const warnings: EvaluationWarning[] = [];
+    const result = evaluateFlag(normalizedName, flag, normalizedContext, this.evalEnv, warnings);
 
     // Emit lifecycle warnings (e.g., sunset)
-    for (const w of getEvaluationWarnings()) {
+    for (const w of warnings) {
       this.emitter.emit('error', { code: w.code, message: w.message, flagName: w.flagName });
     }
 
@@ -192,7 +195,7 @@ export class TinyFlag {
     if (overrideValue === false) return null;
 
     const normalizedContext = normalizeContext(context);
-    const { variant, enabled } = evaluateVariant(normalizedName, flag, normalizedContext);
+    const { variant, enabled } = evaluateVariant(normalizedName, flag, normalizedContext, this.evalEnv);
 
     debug(`getVariant("${normalizedName}") → ${variant}`, context ? { context } : undefined);
 
@@ -257,8 +260,8 @@ export class TinyFlag {
         continue;
       }
 
-      const enabled = evaluateFlag(flagName, flag, normalizedContext);
-      const { variant } = evaluateVariant(flagName, flag, normalizedContext);
+      const enabled = evaluateFlag(flagName, flag, normalizedContext, this.evalEnv);
+      const { variant } = evaluateVariant(flagName, flag, normalizedContext, this.evalEnv);
       result[flagName] = { enabled, variant };
     }
 
@@ -323,13 +326,27 @@ export class TinyFlag {
    */
   getConfig<T = Record<string, unknown>>(flagName: string, context?: UserContext): T | null {
     const normalizedName = flagName?.trim();
-    if (!normalizedName) return null;
+    if (!normalizedName) {
+      this.emitter.emit('error', {
+        code: 'INVALID_FLAG_NAME',
+        message: 'Flag name is empty',
+      });
+      return null;
+    }
 
     const flag = this.config.flags[normalizedName];
-    if (!flag || !flag.config) return null;
+    if (!flag) {
+      this.emitter.emit('error', {
+        code: 'FLAG_NOT_FOUND',
+        message: `Flag "${normalizedName}" not found`,
+        flagName: normalizedName,
+      });
+      return null;
+    }
+    if (!flag.config) return null;
 
     const normalizedContext = normalizeContext(context);
-    if (!evaluateFlag(normalizedName, flag, normalizedContext)) return null;
+    if (!evaluateFlag(normalizedName, flag, normalizedContext, this.evalEnv)) return null;
 
     return flag.config as T;
   }
@@ -370,6 +387,8 @@ export class TinyFlag {
             this.etag,
             this.lastModified,
             this.options.fetchTimeout,
+            this.options.retries,
+            this.options.retryDelay,
           );
           if (result.notModified) return;
           config = result.config;
@@ -390,6 +409,8 @@ export class TinyFlag {
             strict,
             this.options.headers,
             this.options.fetchTimeout,
+            this.options.retries,
+            this.options.retryDelay,
           );
           config = result.config;
           warnings = result.warnings;
@@ -411,6 +432,7 @@ export class TinyFlag {
       }
 
       this.config = config;
+      this.evalEnv = { allFlags: config.flags, segments: config.segments ?? {} };
       setEvaluationContext(config.flags, config.segments);
 
       // Detect circular dependencies

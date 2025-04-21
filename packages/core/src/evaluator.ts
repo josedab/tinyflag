@@ -1,9 +1,10 @@
 import type { FlagDefinition, FlagConfig, Rule, UserContext, RolloutStrategy, SegmentDefinition } from './types.js';
+import type { TinyFlagErrorCode } from './types.js';
 import { rolloutBucket, selectVariant, murmurhash3 } from './hash.js';
 import { isDebug } from './debug.js';
 
 /** Warnings collected during evaluation (e.g., sunset warnings). */
-export type EvaluationWarning = { code: string; message: string; flagName: string };
+export type EvaluationWarning = { code: TinyFlagErrorCode; message: string; flagName: string };
 let lastEvaluationWarnings: EvaluationWarning[] = [];
 
 /** Get and clear warnings from the last evaluation call. */
@@ -11,6 +12,15 @@ export function getEvaluationWarnings(): EvaluationWarning[] {
   const warnings = lastEvaluationWarnings;
   lastEvaluationWarnings = [];
   return warnings;
+}
+
+/**
+ * Instance-scoped evaluation environment.
+ * Avoids module-level mutable state when passed to internal helpers.
+ */
+export interface EvaluationEnv {
+  readonly allFlags: Record<string, FlagDefinition>;
+  readonly segments: Record<string, SegmentDefinition>;
 }
 
 /**
@@ -142,16 +152,22 @@ function globMatch(pattern: string, value: string): boolean {
 }
 
 /**
- * Evaluate whether all conditions in a rule match the context.
- * Uses AND logic — all conditions must match.
- * If the rule references a segment, resolves segment conditions first.
+ * Evaluate whether all conditions in a rule match the user context.
+ * Uses AND logic — all conditions must match for the rule to apply.
+ * If the rule references a named segment, resolves segment conditions first.
+ *
+ * @param rule - The targeting rule to evaluate.
+ * @param context - The user context to match against.
+ * @param segments - Optional named segment definitions for segment reference resolution. Falls back to module-level context if not provided.
+ * @returns `true` if all conditions in the rule match the context.
  */
-export function matchRule(rule: Rule, context: UserContext): boolean {
+export function matchRule(rule: Rule, context: UserContext, segments?: Record<string, SegmentDefinition>): boolean {
+  const resolvedSegments = segments ?? currentSegments;
   let conditions = rule.conditions;
 
   // Resolve segment reference
-  if (rule.segment && currentSegments[rule.segment]) {
-    const segConditions = resolveSegmentConditions(rule.segment, currentSegments);
+  if (rule.segment && resolvedSegments[rule.segment]) {
+    const segConditions = resolveSegmentConditions(rule.segment, resolvedSegments);
     conditions = { ...segConditions, ...conditions };
   }
 
@@ -201,6 +217,7 @@ function checkPrerequisites(
   context: UserContext | undefined,
   visiting: Set<string>,
   cache: Map<string, boolean>,
+  segments?: Record<string, SegmentDefinition>,
 ): boolean {
   if (cache.has(flagName)) return cache.get(flagName)!;
   if (visiting.has(flagName)) return false; // circular dependency
@@ -212,14 +229,14 @@ function checkPrerequisites(
 
   if (flag.requires && flag.requires.length > 0) {
     for (const reqName of flag.requires) {
-      if (!checkPrerequisites(reqName, allFlags, context, visiting, cache)) {
+      if (!checkPrerequisites(reqName, allFlags, context, visiting, cache, segments)) {
         visiting.delete(flagName);
         cache.set(flagName, false);
         return false;
       }
       // Check if the prerequisite itself evaluates as enabled
       const reqFlag = allFlags[reqName];
-      if (!reqFlag || !evaluateFlagCore(reqName, reqFlag, context)) {
+      if (!reqFlag || !evaluateFlagCore(reqName, reqFlag, context, segments)) {
         visiting.delete(flagName);
         cache.set(flagName, false);
         return false;
@@ -233,8 +250,19 @@ function checkPrerequisites(
 }
 
 /**
- * Detect circular dependencies in flag requirements using topological sort.
- * Returns an array of cycle paths (empty if no cycles).
+ * Detect circular dependencies in flag prerequisite chains using depth-first search.
+ * Returns an array of cycle paths. An empty array means no cycles exist.
+ *
+ * @param flags - Map of all flag definitions to check for circular `requires` references.
+ * @returns Array of cycle paths, where each path is an array of flag names forming the cycle (e.g., `['a', 'b', 'a']`).
+ *
+ * @example
+ * ```ts
+ * const cycles = detectCircularDependencies(ff.getFlags());
+ * if (cycles.length > 0) {
+ *   console.warn('Circular dependencies:', cycles);
+ * }
+ * ```
  */
 export function detectCircularDependencies(flags: Record<string, FlagDefinition>): string[][] {
   const cycles: string[][] = [];
@@ -273,7 +301,20 @@ export function detectCircularDependencies(flags: Record<string, FlagDefinition>
 }
 
 /**
- * Build an ASCII dependency tree for a flag.
+ * Build a human-readable ASCII dependency tree for a flag's prerequisite chain.
+ *
+ * @param flagName - The root flag to build the tree for.
+ * @param flags - Map of all flag definitions.
+ * @param indent - Internal: current indentation prefix. Defaults to `''`.
+ * @param visited - Internal: set of visited flag names for circular detection. Defaults to empty set.
+ * @returns Multi-line string showing the dependency tree with status icons (✅ enabled, ❌ disabled, ⚠️ missing).
+ *
+ * @example
+ * ```ts
+ * console.log(buildDependencyTree('checkout-v2', ff.getFlags()));
+ * // checkout-v2 ✅
+ * // └── payments-v2 ✅
+ * ```
  */
 export function buildDependencyTree(
   flagName: string,
@@ -311,14 +352,14 @@ export function buildDependencyTree(
 }
 
 /** Core evaluation logic without prerequisite checking (used internally). */
-function evaluateFlagCore(flagName: string, flag: FlagDefinition, context?: UserContext): boolean {
+function evaluateFlagCore(flagName: string, flag: FlagDefinition, context?: UserContext, segments?: Record<string, SegmentDefinition>): boolean {
   const scheduledEnabled = applySchedule(flag);
   if (!scheduledEnabled) return false;
   if (!flag.enabled) return false;
 
   if (flag.rules && flag.rules.length > 0 && context) {
     for (const rule of flag.rules) {
-      if (matchRule(rule, context)) {
+      if (matchRule(rule, context, segments)) {
         const ruleEnabled = rule.enabled !== undefined ? rule.enabled : true;
         if (ruleEnabled && rule.rollout !== undefined && context.userId) {
           const bucket = rolloutBucket(flagName, context.userId);
@@ -342,7 +383,14 @@ function evaluateFlagCore(flagName: string, flag: FlagDefinition, context?: User
 let currentFlags: Record<string, FlagDefinition> = {};
 let currentSegments: Record<string, SegmentDefinition> = {};
 
-/** Set the current flag context for prerequisite evaluation. */
+/**
+ * Set the module-level evaluation context for prerequisite and segment resolution.
+ * Called by TinyFlag.load() to update the global state. Prefer passing `EvaluationEnv`
+ * directly to evaluation functions for multi-instance safety.
+ *
+ * @param flags - Map of all flag definitions.
+ * @param segments - Optional map of named segment definitions.
+ */
 export function setEvaluationContext(flags: Record<string, FlagDefinition>, segments?: Record<string, SegmentDefinition>): void {
   currentFlags = flags;
   currentSegments = segments ?? {};
@@ -377,20 +425,35 @@ function resolveSegmentConditions(
 
 /**
  * Core flag evaluation: determines if a flag is enabled for a given context.
- * Never throws — returns false for any error case.
+ * Never throws — returns `false` for any error case.
+ *
+ * Evaluation order: lifecycle → prerequisites → schedule → enabled → rules → rollout → default.
+ *
+ * @param flagName - The name of the flag being evaluated.
+ * @param flag - The flag definition to evaluate.
+ * @param context - Optional user context for targeting rules and rollout bucketing.
+ * @param env - Optional instance-scoped evaluation environment. When provided, uses instance-scoped state instead of module globals for multi-instance safety.
+ * @param warnings - Optional array to collect evaluation warnings (e.g., sunset warnings). When provided, warnings are pushed here instead of the module-level array.
+ * @returns `true` if the flag is enabled for the given context, `false` otherwise.
  */
 export function evaluateFlag(
   flagName: string,
   flag: FlagDefinition,
   context?: UserContext,
+  env?: EvaluationEnv,
+  warnings?: EvaluationWarning[],
 ): boolean {
+  const allFlags = env?.allFlags ?? currentFlags;
+  const segments = env?.segments ?? currentSegments;
+  const warnSink = warnings ?? lastEvaluationWarnings;
+
   // Step 0: Check lifecycle state
   if (flag.lifecycle) {
     const state = flag.lifecycle.state;
     if (state === 'archived') return false;
     if (state === 'draft' && !isDebug()) return false;
     if (state === 'sunset') {
-      lastEvaluationWarnings.push({
+      warnSink.push({
         code: 'SUNSET_FLAG',
         message: `Flag "${flagName}" is in sunset state${flag.lifecycle.sunsetAt ? ` since ${flag.lifecycle.sunsetAt}` : ''}`,
         flagName,
@@ -401,7 +464,7 @@ export function evaluateFlag(
   // Step 1: Check prerequisites
   if (flag.requires && flag.requires.length > 0) {
     const cache = new Map<string, boolean>();
-    if (!checkPrerequisites(flagName, currentFlags, context, new Set(), cache)) {
+    if (!checkPrerequisites(flagName, allFlags, context, new Set(), cache, segments)) {
       return false;
     }
   }
@@ -416,7 +479,7 @@ export function evaluateFlag(
   // Step 3: Rules evaluation
   if (flag.rules && flag.rules.length > 0 && context) {
     for (const rule of flag.rules) {
-      if (matchRule(rule, context)) {
+      if (matchRule(rule, context, segments)) {
         // Rule matched — use the rule's enabled value (default: true)
         const ruleEnabled = rule.enabled !== undefined ? rule.enabled : true;
 
@@ -447,32 +510,44 @@ export function evaluateFlag(
 /**
  * Core variant evaluation: determines which variant a user is assigned to.
  * Also returns the flag's enabled state to avoid duplicate rule evaluation.
- * Never throws — returns null variant for any error case.
+ * Never throws — returns `null` variant for any error case.
+ *
+ * @param flagName - The name of the flag being evaluated.
+ * @param flag - The flag definition containing variant weights.
+ * @param context - Optional user context. `userId` is required for deterministic variant assignment.
+ * @param env - Optional instance-scoped evaluation environment for multi-instance safety.
+ * @param warnings - Optional array to collect evaluation warnings.
+ * @returns Object with `variant` (assigned variant name or `null`) and `enabled` (flag enabled state).
  */
 export function evaluateVariant(
   flagName: string,
   flag: FlagDefinition,
   context?: UserContext,
+  env?: EvaluationEnv,
+  warnings?: EvaluationWarning[],
 ): { variant: string | null; enabled: boolean } {
+  const allFlags = env?.allFlags ?? currentFlags;
+  const segments = env?.segments ?? currentSegments;
+
   if (!applySchedule(flag)) return { variant: null, enabled: false };
   if (!flag.enabled) return { variant: null, enabled: false };
 
   // Check prerequisites
   if (flag.requires && flag.requires.length > 0) {
     const cache = new Map<string, boolean>();
-    if (!checkPrerequisites(flagName, currentFlags, context, new Set(), cache)) {
+    if (!checkPrerequisites(flagName, allFlags, context, new Set(), cache, segments)) {
       return { variant: null, enabled: false };
     }
   }
 
   if (!flag.variants || flag.variants.length === 0) {
-    return { variant: null, enabled: evaluateFlag(flagName, flag, context) };
+    return { variant: null, enabled: evaluateFlag(flagName, flag, context, env, warnings) };
   }
 
   // Check rules for forced variant
   if (flag.rules && flag.rules.length > 0 && context) {
     for (const rule of flag.rules) {
-      if (matchRule(rule, context)) {
+      if (matchRule(rule, context, segments)) {
         if (rule.variant) {
           const ruleEnabled = rule.enabled !== undefined ? rule.enabled : true;
           return { variant: rule.variant, enabled: ruleEnabled };
@@ -483,15 +558,21 @@ export function evaluateVariant(
   }
 
   // Need userId for deterministic variant assignment
-  if (!context?.userId) return { variant: null, enabled: evaluateFlag(flagName, flag, context) };
+  if (!context?.userId) return { variant: null, enabled: evaluateFlag(flagName, flag, context, env, warnings) };
 
-  const enabled = evaluateFlag(flagName, flag, context);
+  const enabled = evaluateFlag(flagName, flag, context, env, warnings);
   return { variant: selectVariant(flagName, context.userId, flag.variants), enabled };
 }
 
 /**
  * Evaluate a flag using a named persona as the base context.
  * Persona context is merged with any additional context (additional takes precedence).
+ *
+ * @param flagName - The name of the flag to evaluate.
+ * @param flag - The flag definition.
+ * @param personaContext - The persona's context properties (e.g., `{ userId: 'test', plan: 'pro' }`).
+ * @param additionalContext - Optional additional context that overrides persona properties.
+ * @returns `true` if the flag is enabled for the merged context.
  */
 export function evaluateWithPersona(
   flagName: string,
