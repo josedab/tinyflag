@@ -1,4 +1,4 @@
-import type { FlagConfig, FlagDefinition, FlagSchedule, FlagLifecycleState, SegmentDefinition, Rule, Variant, ValidationError } from './types.js';
+import type { FlagConfig, FlagDefinition, FlagSchedule, FlagLifecycleState, SegmentDefinition, Rule, Variant, ValidationError, RolloutStrategy } from './types.js';
 
 const FLAG_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 const MAX_FLAG_NAME_LENGTH = 128;
@@ -41,8 +41,19 @@ function detectCircularSegments(segments: Record<string, Record<string, unknown>
 }
 
 /**
- * Validate a parsed flag configuration object.
- * Returns an array of validation errors (empty = valid).
+ * Validate a parsed flag configuration object against the TinyFlag schema.
+ *
+ * @param config - The parsed configuration object to validate (typically from `parseYaml()` or `JSON.parse()`).
+ * @param strict - When `true`, unknown fields are treated as errors instead of warnings. Defaults to `false`.
+ * @returns Array of validation errors. An empty array means the configuration is valid.
+ *
+ * @example
+ * ```ts
+ * const errors = validateConfig(parseYaml(yamlString));
+ * if (errors.length > 0) {
+ *   errors.forEach(e => console.error(`${e.path}: ${e.message}`));
+ * }
+ * ```
  */
 export function validateConfig(config: unknown, strict: boolean = false): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -211,15 +222,21 @@ function validateFlagDefinition(
     }
   }
 
-  // rollout
+  // rollout — simple number (0-100) or advanced strategy object
   if (flag.rollout !== undefined) {
-    if (typeof flag.rollout !== 'number' || !Number.isInteger(flag.rollout)) {
-      errors.push({ path: `${prefix}.rollout`, message: '"rollout" must be an integer' });
-    } else if (flag.rollout < 0 || flag.rollout > 100) {
-      errors.push({
-        path: `${prefix}.rollout`,
-        message: `"rollout" must be 0-100, got ${flag.rollout}`,
-      });
+    if (typeof flag.rollout === 'number') {
+      if (!Number.isInteger(flag.rollout)) {
+        errors.push({ path: `${prefix}.rollout`, message: '"rollout" must be an integer' });
+      } else if (flag.rollout < 0 || flag.rollout > 100) {
+        errors.push({
+          path: `${prefix}.rollout`,
+          message: `"rollout" must be 0-100, got ${flag.rollout}`,
+        });
+      }
+    } else if (typeof flag.rollout === 'object' && flag.rollout !== null && !Array.isArray(flag.rollout)) {
+      validateRolloutStrategy(prefix, flag.rollout as Record<string, unknown>, errors);
+    } else {
+      errors.push({ path: `${prefix}.rollout`, message: '"rollout" must be an integer (0-100) or a strategy object ({ type: "ramp" | "ring" | "cohort", ... })' });
     }
   }
 
@@ -327,6 +344,41 @@ function validateFlagDefinition(
   }
 }
 
+function validateRolloutStrategy(prefix: string, strategy: Record<string, unknown>, errors: ValidationError[]): void {
+  const validTypes = ['ramp', 'ring', 'cohort'];
+  if (!strategy.type || typeof strategy.type !== 'string' || !validTypes.includes(strategy.type)) {
+    errors.push({ path: `${prefix}.rollout.type`, message: `"type" must be one of: ${validTypes.join(', ')}` });
+    return;
+  }
+
+  switch (strategy.type) {
+    case 'ramp': {
+      if (typeof strategy.start !== 'number') errors.push({ path: `${prefix}.rollout.start`, message: '"start" must be a number (0-100)' });
+      if (typeof strategy.end !== 'number') errors.push({ path: `${prefix}.rollout.end`, message: '"end" must be a number (0-100)' });
+      if (typeof strategy.startAt !== 'string') errors.push({ path: `${prefix}.rollout.startAt`, message: '"startAt" must be an ISO 8601 string' });
+      if (typeof strategy.endAt !== 'string') errors.push({ path: `${prefix}.rollout.endAt`, message: '"endAt" must be an ISO 8601 string' });
+      break;
+    }
+    case 'ring': {
+      if (!Array.isArray(strategy.rings)) {
+        errors.push({ path: `${prefix}.rollout.rings`, message: '"rings" must be an array' });
+      } else {
+        for (let i = 0; i < strategy.rings.length; i++) {
+          const ring = strategy.rings[i] as Record<string, unknown>;
+          if (typeof ring?.name !== 'string') errors.push({ path: `${prefix}.rollout.rings[${i}].name`, message: '"name" must be a string' });
+          if (typeof ring?.percentage !== 'number') errors.push({ path: `${prefix}.rollout.rings[${i}].percentage`, message: '"percentage" must be a number' });
+        }
+      }
+      break;
+    }
+    case 'cohort': {
+      if (typeof strategy.field !== 'string') errors.push({ path: `${prefix}.rollout.field`, message: '"field" must be a string' });
+      if (typeof strategy.percentage !== 'number') errors.push({ path: `${prefix}.rollout.percentage`, message: '"percentage" must be a number (0-100)' });
+      break;
+    }
+  }
+}
+
 function validateRule(prefix: string, rule: unknown, errors: ValidationError[]): void {
   if (typeof rule !== 'object' || rule === null || Array.isArray(rule)) {
     errors.push({ path: prefix, message: 'Rule must be an object' });
@@ -396,7 +448,20 @@ function validateVariants(prefix: string, variants: unknown[], errors: Validatio
   }
 }
 
-/** Parse and validate a raw config object into a typed FlagConfig. */
+/**
+ * Parse and validate a raw configuration object into a typed `FlagConfig`.
+ * Combines validation and type-safe parsing in one step.
+ *
+ * @param raw - The raw parsed object (from `parseYaml()` or `JSON.parse()`).
+ * @param strict - When `true`, unknown fields are treated as errors. Defaults to `false`.
+ * @returns Object with `config` (typed `FlagConfig`), `errors` (fatal validation errors), and `warnings` (non-fatal issues like unknown fields in lenient mode).
+ *
+ * @example
+ * ```ts
+ * const { config, errors, warnings } = parseFlagConfig(parseYaml(yaml));
+ * if (errors.length > 0) throw new Error('Invalid config');
+ * ```
+ */
 export function parseFlagConfig(
   raw: unknown,
   strict: boolean = false,
@@ -434,7 +499,7 @@ export function parseFlagConfig(
 
     if (d.description !== undefined) flagDef.description = d.description as string;
     if (d.tags !== undefined) flagDef.tags = d.tags as string[];
-    if (d.rollout !== undefined) flagDef.rollout = d.rollout as number;
+    if (d.rollout !== undefined) flagDef.rollout = d.rollout as number | RolloutStrategy;
 
     if (d.rules !== undefined) {
       flagDef.rules = (d.rules as Record<string, unknown>[]).map((r) => {
