@@ -10,6 +10,29 @@ export interface LoadResult {
   warnings: ValidationError[];
 }
 
+/** Check if an HTTP status code represents a transient error worth retrying. */
+function isTransientError(status: number): boolean {
+  return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
+/** Error subclass that carries HTTP status for retry decisions. */
+class FetchError extends Error {
+  constructor(
+    message: string,
+    readonly status: number = 0,
+    readonly isNetworkError: boolean = false,
+  ) {
+    super(message);
+    this.name = 'FetchError';
+  }
+}
+
+/** Sleep for a duration with exponential backoff and jitter. */
+function retryDelay(attempt: number, baseDelay: number): Promise<void> {
+  const delay = baseDelay * Math.pow(2, attempt) * (0.5 + Math.random() * 0.5);
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
 const FILE_EXTENSIONS = ['.yml', '.yaml', '.json'];
 
 /** Detect the source type from the options. */
@@ -88,7 +111,7 @@ export async function loadFromFile(filePath: string, strict: boolean): Promise<L
   return parseSource(content, filePath, strict);
 }
 
-/** Load flags from a URL. */
+/** Load flags from a URL. Supports retries with exponential backoff for transient errors. */
 export async function loadFromUrl(
   url: string,
   strict: boolean,
@@ -96,8 +119,46 @@ export async function loadFromUrl(
   etag?: string,
   lastModified?: string,
   fetchTimeout?: number,
+  retries?: number,
+  retryDelayMs?: number,
 ): Promise<LoadResult & { etag?: string; lastModified?: string; notModified?: boolean }> {
-  const requestHeaders: Record<string, string> = { ...headers };
+  const maxRetries = retries ?? 0;
+  const baseDelay = retryDelayMs ?? 1000;
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      await retryDelay(attempt - 1, baseDelay);
+    }
+
+    try {
+      return await fetchFlagsFromUrl(url, strict, headers, etag, lastModified, fetchTimeout);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const retryable = error instanceof FetchError &&
+        (error.isNetworkError || isTransientError(error.status));
+      if (!retryable || attempt === maxRetries) {
+        throw lastError;
+      }
+    }
+  }
+
+  throw lastError!;
+}
+
+/** Internal: single fetch attempt for URL source. */
+async function fetchFlagsFromUrl(
+  url: string,
+  strict: boolean,
+  headers?: Record<string, string>,
+  etag?: string,
+  lastModified?: string,
+  fetchTimeout?: number,
+): Promise<LoadResult & { etag?: string; lastModified?: string; notModified?: boolean }> {
+  const requestHeaders: Record<string, string> = {
+    'User-Agent': 'TinyFlag/0.1.0',
+    ...headers,
+  };
   if (etag) {
     requestHeaders['If-None-Match'] = etag;
   }
@@ -115,8 +176,10 @@ export async function loadFromUrl(
       signal: controller.signal,
     });
   } catch (error) {
-    throw new Error(
+    throw new FetchError(
       `Failed to fetch flags from "${url}": ${error instanceof Error ? error.message : String(error)}`,
+      0,
+      true,
     );
   } finally {
     clearTimeout(timeout);
@@ -127,7 +190,10 @@ export async function loadFromUrl(
   }
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch flags from "${url}": HTTP ${response.status}`);
+    throw new FetchError(
+      `Failed to fetch flags from "${url}": HTTP ${response.status}`,
+      response.status,
+    );
   }
 
   const contentType = response.headers.get('content-type') ?? '';
@@ -176,6 +242,8 @@ export async function loadMultiSource(
   strict: boolean,
   headers?: Record<string, string>,
   fetchTimeout?: number,
+  retries?: number,
+  retryDelayMs?: number,
 ): Promise<LoadResult> {
   const configs: FlagConfig[] = [];
   const allWarnings: ValidationError[] = [];
@@ -188,7 +256,7 @@ export async function loadMultiSource(
         result = await loadFromFile(src as string, strict);
         break;
       case 'url':
-        result = await loadFromUrl(src as string, strict, headers, undefined, undefined, fetchTimeout);
+        result = await loadFromUrl(src as string, strict, headers, undefined, undefined, fetchTimeout, retries, retryDelayMs);
         break;
       case 'inline':
         result = loadFromInline(src as FlagConfig, strict);
