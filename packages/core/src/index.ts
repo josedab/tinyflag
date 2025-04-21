@@ -10,6 +10,7 @@ export type {
   ExposureEvent,
   ChangeEvent,
   ErrorEvent,
+  TinyFlagErrorCode,
   TinyFlagEvents,
   ValidationError,
   MergeWarning,
@@ -25,8 +26,13 @@ export type {
 export { parseYaml } from './yaml.js';
 export { validateConfig, parseFlagConfig } from './schema.js';
 export { mergeFlagConfigs } from './merge.js';
-export { detectCircularDependencies, buildDependencyTree, evaluateWithPersona, getEvaluationWarnings } from './evaluator.js';
-export type { EvaluationWarning } from './evaluator.js';
+export {
+  detectCircularDependencies,
+  buildDependencyTree,
+  evaluateWithPersona,
+  getEvaluationWarnings,
+} from './evaluator.js';
+export type { EvaluationWarning, EvaluationEnv } from './evaluator.js';
 export { setDebug } from './debug.js';
 export { generateKeyPair, signContent, verifyContent, signFile, verifyFile } from './signing.js';
 export {

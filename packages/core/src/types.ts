@@ -154,6 +154,10 @@ export interface TinyFlagOptions {
   debug?: boolean;
   /** Timeout in ms for fetching flags from a URL. Default: 5000. */
   fetchTimeout?: number;
+  /** Number of retries for URL source fetches on transient errors. Default: 0 (no retries). */
+  retries?: number;
+  /** Base delay in ms between retries (exponential backoff with jitter). Default: 1000. */
+  retryDelay?: number;
 }
 
 /** Event emitted when a flag is evaluated with a userId. */
@@ -173,10 +177,32 @@ export interface ChangeEvent {
   timestamp: number;
 }
 
+/**
+ * Known error codes emitted by TinyFlag.
+ * Use this union type to programmatically match on error types.
+ */
+export type TinyFlagErrorCode =
+  | 'FLAG_NOT_FOUND'
+  | 'INVALID_FLAG_NAME'
+  | 'LOAD_ERROR'
+  | 'UNKNOWN_FIELD'
+  | 'INSECURE_SOURCE'
+  | 'POLL_INTERVAL_CLAMPED'
+  | 'LISTENER_ERROR'
+  | 'CIRCULAR_DEPENDENCY'
+  | 'PERSONA_NOT_FOUND'
+  | 'SUNSET_FLAG'
+  | 'PARSE_ERROR'
+  | 'FETCH_ERROR'
+  | 'WS_ERROR';
+
 /** Error event emitted for non-fatal issues. */
 export interface ErrorEvent {
-  code: string;
+  /** Structured error code for programmatic matching. */
+  code: TinyFlagErrorCode;
+  /** Human-readable error message with actionable context. */
   message: string;
+  /** Name of the flag that triggered the error, if applicable. */
   flagName?: string;
 }
 
