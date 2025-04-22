@@ -1,6 +1,10 @@
 /**
  * MurmurHash3 (32-bit) — deterministic hash for rollout bucketing.
  * Same input always produces the same output, across all runtimes.
+ *
+ * @param key - The string to hash.
+ * @param seed - Optional seed value for independent hash streams. Defaults to `0`.
+ * @returns Unsigned 32-bit integer hash value.
  */
 export function murmurhash3(key: string, seed: number = 0): number {
   let h = seed >>> 0;
@@ -55,7 +59,12 @@ export function murmurhash3(key: string, seed: number = 0): number {
 
 /**
  * Returns a bucket 0–99 for percentage-based rollout.
- * Deterministic: same (flagName, userId) always returns the same bucket.
+ * Deterministic: same `(flagName, userId)` pair always returns the same bucket.
+ *
+ * @param flagName - The flag name (part of the hash key).
+ * @param userId - The user identifier (part of the hash key).
+ * @param seed - Optional hash seed. Defaults to `0`.
+ * @returns Integer in the range `[0, 99]`.
  */
 export function rolloutBucket(flagName: string, userId: string, seed: number = 0): number {
   const hash = murmurhash3(`${flagName}:${userId}`, seed);
@@ -64,7 +73,12 @@ export function rolloutBucket(flagName: string, userId: string, seed: number = 0
 
 /**
  * Selects a variant from a weighted list using deterministic hashing.
- * Uses a different seed than rollout to ensure independent bucketing.
+ * Uses a different seed (`0x5f3759df`) than rollout to ensure independent bucketing.
+ *
+ * @param flagName - The flag name (part of the hash key).
+ * @param userId - The user identifier (part of the hash key).
+ * @param variants - Array of variants with `name` and `weight` properties. Weights are relative.
+ * @returns The name of the selected variant.
  */
 export function selectVariant(
   flagName: string,

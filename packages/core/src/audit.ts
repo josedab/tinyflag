@@ -1,4 +1,5 @@
-import type { TinyFlag, ChangeEvent, FlagDefinition } from 'tinyflag';
+import type { ChangeEvent, FlagDefinition } from './types.js';
+import type { TinyFlag } from './tinyflag.js';
 
 /** Structured audit event for flag state changes. */
 export interface AuditEvent {
@@ -47,9 +48,14 @@ export function connectAudit(instance: TinyFlag, options: AuditOptions): () => v
 
     for (const sink of options.sinks) {
       try {
-        sink.write(auditEvent);
+        const result = sink.write(auditEvent);
+        if (result && typeof (result as Promise<void>).catch === 'function') {
+          (result as Promise<void>).catch(() => {
+            // Async sink errors must not break flag evaluation
+          });
+        }
       } catch {
-        // Sink errors must not break flag evaluation
+        // Sync sink errors must not break flag evaluation
       }
     }
   };

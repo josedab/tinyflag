@@ -17,6 +17,10 @@ export interface CachedTinyFlagOptions {
   pollingFallback?: boolean;
   /** Custom HTTP headers for requests. */
   headers?: Record<string, string>;
+  /** Timeout in ms for HTTP flag fetches. Default: 5000. */
+  fetchTimeout?: number;
+  /** Delay in ms before WebSocket reconnection attempt. Default: 5000. */
+  reconnectDelay?: number;
 }
 
 /**
@@ -120,7 +124,7 @@ export class CachedTinyFlag {
     }
 
     try {
-      const res = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
+      const res = await fetch(url, { headers, signal: AbortSignal.timeout(this.options.fetchTimeout ?? 5000) });
 
       if (res.status === 304) return;
 
@@ -182,8 +186,8 @@ export class CachedTinyFlag {
               debug('CachedTinyFlag: flags updated via WebSocket');
             }
           }
-        } catch {
-          // Ignore parse errors
+        } catch (parseError) {
+          debug('CachedTinyFlag: WebSocket message parse error: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
         }
       };
 
@@ -197,7 +201,7 @@ export class CachedTinyFlag {
         }
 
         if (this.options.autoReconnect) {
-          setTimeout(() => this.connectWebSocket(), 5000);
+          setTimeout(() => this.connectWebSocket(), this.options.reconnectDelay ?? 5000);
         }
       };
 

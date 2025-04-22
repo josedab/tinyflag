@@ -2,9 +2,17 @@ import type { FlagConfig, FlagDefinition, Variant, MergeWarning } from './types.
 
 /**
  * Deep-merge multiple FlagConfig objects in order (later sources override earlier).
- * - `enabled`, `rollout`, `description`, `tags`, `rules` are overridden by later sources.
- * - `variants` are merged by name: later sources can add or replace variants.
- * Returns merged config and any conflict warnings.
+ * Scalar fields (`enabled`, `rollout`, `description`, `tags`, `rules`) are overridden.
+ * Variants are merged by name: later sources can add or replace individual variants.
+ *
+ * @param configs - Array of flag configurations to merge, in priority order (last wins).
+ * @returns Object with `config` (the merged `FlagConfig`) and `warnings` (array of merge conflict descriptions).
+ *
+ * @example
+ * ```ts
+ * const { config, warnings } = mergeFlagConfigs([baseConfig, envOverlay]);
+ * warnings.forEach(w => console.warn(`${w.flag}.${w.field}: ${w.message}`));
+ * ```
  */
 export function mergeFlagConfigs(
   configs: FlagConfig[],

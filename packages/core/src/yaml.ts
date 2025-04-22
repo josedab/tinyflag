@@ -313,7 +313,17 @@ function parseMultilineString(
 
 /**
  * Parse a YAML string into a JavaScript object.
- * Throws an Error with a descriptive message if parsing fails.
+ * Supports the YAML subset used in flag definition files (mappings, sequences,
+ * scalars, comments, flow syntax, multiline strings).
+ *
+ * @param input - The YAML string to parse.
+ * @returns The parsed JavaScript value, or `null` if the input is empty.
+ * @throws {Error} If the YAML syntax is invalid.
+ *
+ * @example
+ * ```ts
+ * const config = parseYaml('version: 1\nflags:\n  my-flag:\n    enabled: true');
+ * ```
  */
 export function parseYaml(input: string): unknown {
   if (!input || input.trim() === '') {

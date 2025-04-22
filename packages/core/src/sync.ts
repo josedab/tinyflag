@@ -44,10 +44,19 @@ function writeMeta(outputPath: string, meta: SyncMeta): void {
  * Supports HTTP(S) endpoints. S3/GCS URLs are documented as requiring
  * pre-signed URLs or CLI tools (aws s3 cp, gsutil cp) as a prerequisite.
  */
+/**
+ * Pull flag config from a remote URL and write to a local file.
+ * Supports HTTP(S) endpoints with ETag-based conditional fetching.
+ *
+ * @param url - Remote URL to fetch flags from.
+ * @param outputPath - Local file path to write the flags to.
+ * @param options - Pull options: headers, force re-download, and timeout.
+ * @returns Pull result with status and optional ETag.
+ */
 export async function pullFlags(
   url: string,
   outputPath: string,
-  options: { headers?: Record<string, string>; force?: boolean } = {},
+  options: { headers?: Record<string, string>; force?: boolean; timeout?: number } = {},
 ): Promise<{ status: 'updated' | 'not-modified' | 'created'; etag?: string }> {
   const meta = readMeta(outputPath);
   const fetchHeaders: Record<string, string> = { ...options.headers };
@@ -59,7 +68,7 @@ export async function pullFlags(
 
   const response = await fetch(url, {
     headers: fetchHeaders,
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(options.timeout ?? 30_000),
   });
 
   if (response.status === 304) {
@@ -88,11 +97,16 @@ export async function pullFlags(
 /**
  * Push a local flag file to a remote HTTP endpoint.
  * Supports optimistic locking via ETags.
+ *
+ * @param url - Remote URL to push flags to.
+ * @param filePath - Local file path to read flags from.
+ * @param options - Push options: headers, force overwrite, and timeout.
+ * @returns Push result with status and optional ETag.
  */
 export async function pushFlags(
   url: string,
   filePath: string,
-  options: { headers?: Record<string, string>; force?: boolean } = {},
+  options: { headers?: Record<string, string>; force?: boolean; timeout?: number } = {},
 ): Promise<{ status: 'pushed' | 'conflict'; etag?: string }> {
   const content = readFileSync(filePath, 'utf-8');
   const meta = readMeta(filePath);
@@ -110,7 +124,7 @@ export async function pushFlags(
     method: 'PUT',
     headers: fetchHeaders,
     body: content,
-    signal: AbortSignal.timeout(30_000),
+    signal: AbortSignal.timeout(options.timeout ?? 30_000),
   });
 
   if (response.status === 412) {
