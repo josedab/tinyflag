@@ -1290,4 +1290,108 @@ describe('TinyFlag', () => {
       }
     });
   });
+
+  describe('instance isolation', () => {
+    it('two instances with different configs do not interfere', async () => {
+      const ff1 = new TinyFlag({
+        source: {
+          version: 1,
+          flags: {
+            'shared-flag': { enabled: true, rollout: 100 },
+            'only-in-1': { enabled: true },
+          },
+        },
+      });
+      const ff2 = new TinyFlag({
+        source: {
+          version: 1,
+          flags: {
+            'shared-flag': { enabled: false },
+            'only-in-2': { enabled: true },
+          },
+        },
+      });
+
+      await ff1.init();
+      await ff2.init();
+
+      // Each instance sees its own flags
+      expect(ff1.isEnabled('shared-flag', { userId: 'u1' })).toBe(true);
+      expect(ff2.isEnabled('shared-flag', { userId: 'u1' })).toBe(false);
+      expect(ff1.isEnabled('only-in-1')).toBe(true);
+      expect(ff2.isEnabled('only-in-2')).toBe(true);
+
+      ff1.destroy();
+      ff2.destroy();
+    });
+
+    it('sunset warnings from one instance do not leak to another', async () => {
+      const ff1 = new TinyFlag({
+        source: {
+          version: 1,
+          flags: {
+            'sunset-flag': {
+              enabled: true,
+              lifecycle: { state: 'sunset' as const, sunsetAt: '2025-01-01' },
+            },
+          },
+        },
+      });
+      const ff2 = new TinyFlag({
+        source: {
+          version: 1,
+          flags: { 'normal-flag': { enabled: true } },
+        },
+      });
+
+      await ff1.init();
+      await ff2.init();
+
+      const ff1Errors: ErrorEvent[] = [];
+      const ff2Errors: ErrorEvent[] = [];
+      ff1.on('error', (e) => ff1Errors.push(e));
+      ff2.on('error', (e) => ff2Errors.push(e));
+
+      // Trigger sunset warning on ff1
+      ff1.isEnabled('sunset-flag');
+
+      // ff2 should have no sunset warnings
+      ff2.isEnabled('normal-flag');
+      expect(ff1Errors.some((e) => e.code === 'SUNSET_FLAG')).toBe(true);
+      expect(ff2Errors.some((e) => e.code === 'SUNSET_FLAG')).toBe(false);
+
+      ff1.destroy();
+      ff2.destroy();
+    });
+
+    it('prerequisites resolve against correct instance flags', async () => {
+      const ff1 = new TinyFlag({
+        source: {
+          version: 1,
+          flags: {
+            'base': { enabled: true },
+            'dependent': { enabled: true, requires: ['base'] },
+          },
+        },
+      });
+      const ff2 = new TinyFlag({
+        source: {
+          version: 1,
+          flags: {
+            'base': { enabled: false },
+            'dependent': { enabled: true, requires: ['base'] },
+          },
+        },
+      });
+
+      await ff1.init();
+      await ff2.init();
+
+      expect(ff1.isEnabled('dependent')).toBe(true);
+      expect(ff2.isEnabled('dependent')).toBe(false);
+
+      ff1.destroy();
+      ff2.destroy();
+    });
+  });
 });

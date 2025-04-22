@@ -700,4 +700,79 @@ describe('parseFlagConfig advanced', () => {
     expect(errors).toEqual([]);
     expect(config.flags.f.rules?.[0].segment).toBe('beta');
   });
+
+  it('accepts ramp rollout strategy', () => {
+    const { errors } = parseFlagConfig({
+      version: 1,
+      flags: {
+        f: {
+          enabled: true,
+          rollout: {
+            type: 'ramp',
+            start: 0,
+            end: 100,
+            startAt: '2026-05-01T00:00:00Z',
+            endAt: '2026-05-14T00:00:00Z',
+          },
+        },
+      },
+    });
+    expect(errors).toEqual([]);
+  });
+
+  it('accepts ring rollout strategy', () => {
+    const { errors } = parseFlagConfig({
+      version: 1,
+      flags: {
+        f: {
+          enabled: true,
+          rollout: {
+            type: 'ring',
+            rings: [
+              { name: 'canary', percentage: 100, conditions: { team: 'eng' } },
+              { name: 'everyone', percentage: 10 },
+            ],
+          },
+        },
+      },
+    });
+    expect(errors).toEqual([]);
+  });
+
+  it('accepts cohort rollout strategy', () => {
+    const { errors } = parseFlagConfig({
+      version: 1,
+      flags: {
+        f: {
+          enabled: true,
+          rollout: { type: 'cohort', field: 'companyId', percentage: 25 },
+        },
+      },
+    });
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects invalid rollout strategy type', () => {
+    const errors = validateConfig({
+      version: 1,
+      flags: { f: { enabled: true, rollout: { type: 'invalid' } } },
+    });
+    expect(errors.some((e) => e.path.includes('rollout.type'))).toBe(true);
+  });
+
+  it('rejects ramp strategy missing required fields', () => {
+    const errors = validateConfig({
+      version: 1,
+      flags: { f: { enabled: true, rollout: { type: 'ramp', start: 0 } } },
+    });
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('rejects rollout as string', () => {
+    const errors = validateConfig({
+      version: 1,
+      flags: { f: { enabled: true, rollout: 'fifty' } },
+    });
+    expect(errors.some((e) => e.path.includes('rollout'))).toBe(true);
+  });
 });

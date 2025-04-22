@@ -807,4 +807,167 @@ describe('segment resolution', () => {
     // Missing tier → segment doesn't match → falls through to enabled=true
     expect(evaluateFlag('f', flags['f'], { plan: 'pro' })).toBe(true);
   });
+
+  describe('lifecycle edge cases', () => {
+    it('archived flag returns false even with rules', () => {
+      const flag: FlagDefinition = {
+        enabled: true,
+        lifecycle: { state: 'archived' },
+        rules: [{ conditions: {}, enabled: true }],
+      };
+      expect(evaluateFlag('archived', flag, { userId: 'u1' })).toBe(false);
+    });
+
+    it('draft flag with rules returns false in non-debug mode', () => {
+      setDebug(false);
+      const flag: FlagDefinition = {
+        enabled: true,
+        lifecycle: { state: 'draft' },
+        rules: [{ conditions: { plan: 'pro' }, enabled: true }],
+      };
+      expect(evaluateFlag('draft-rules', flag, { userId: 'u1', plan: 'pro' })).toBe(false);
+    });
+
+    it('draft flag returns true in debug mode', () => {
+      setDebug(true);
+      const flag: FlagDefinition = {
+        enabled: true,
+        lifecycle: { state: 'draft' },
+      };
+      expect(evaluateFlag('draft-debug', flag)).toBe(true);
+      setDebug(false);
+    });
+
+    it('sunset flag emits warning each evaluation', () => {
+      const flag: FlagDefinition = {
+        enabled: true,
+        lifecycle: { state: 'sunset', sunsetAt: '2025-06-01' },
+      };
+      evaluateFlag('sunset-test', flag);
+      const warnings = getEvaluationWarnings();
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0].code).toBe('SUNSET_FLAG');
+      expect(warnings[0].message).toContain('2025-06-01');
+    });
+
+    it('active lifecycle has no effect on evaluation', () => {
+      const flag: FlagDefinition = {
+        enabled: true,
+        lifecycle: { state: 'active' },
+      };
+      expect(evaluateFlag('active', flag)).toBe(true);
+      const warnings = getEvaluationWarnings();
+      expect(warnings).toHaveLength(0);
+    });
+  });
+
+  describe('schedule edge cases', () => {
+    it('flag disabled before enableAt', () => {
+      const future = new Date(Date.now() + 3600_000).toISOString();
+      const flag: FlagDefinition = {
+        enabled: true,
+        schedule: { enableAt: future },
+      };
+      expect(evaluateFlag('sched-before', flag)).toBe(false);
+    });
+
+    it('flag disabled after disableAt', () => {
+      const past = new Date(Date.now() - 3600_000).toISOString();
+      const flag: FlagDefinition = {
+        enabled: true,
+        schedule: { disableAt: past },
+      };
+      expect(evaluateFlag('sched-after', flag)).toBe(false);
+    });
+
+    it('flag enabled between enableAt and disableAt', () => {
+      const past = new Date(Date.now() - 3600_000).toISOString();
+      const future = new Date(Date.now() + 3600_000).toISOString();
+      const flag: FlagDefinition = {
+        enabled: true,
+        schedule: { enableAt: past, disableAt: future },
+      };
+      expect(evaluateFlag('sched-between', flag)).toBe(true);
+    });
+
+    it('handles invalid schedule dates gracefully', () => {
+      const flag: FlagDefinition = {
+        enabled: true,
+        schedule: { enableAt: 'not-a-date' },
+      };
+      expect(evaluateFlag('sched-invalid', flag)).toBe(true);
+    });
+  });
+
+  describe('prerequisite edge cases', () => {
+    it('prerequisite with rollout=0 blocks dependent', () => {
+      const flags: Record<string, FlagDefinition> = {
+        'base': { enabled: true, rollout: 0 },
+        'dependent': { enabled: true, requires: ['base'] },
+      };
+      setEvaluationContext(flags);
+      expect(evaluateFlag('dependent', flags['dependent'], { userId: 'u1' })).toBe(false);
+    });
+
+    it('3-level prerequisite chain works', () => {
+      const flags: Record<string, FlagDefinition> = {
+        'level-1': { enabled: true },
+        'level-2': { enabled: true, requires: ['level-1'] },
+        'level-3': { enabled: true, requires: ['level-2'] },
+      };
+      setEvaluationContext(flags);
+      expect(evaluateFlag('level-3', flags['level-3'])).toBe(true);
+    });
+
+    it('3-level chain fails when middle link disabled', () => {
+      const flags: Record<string, FlagDefinition> = {
+        'level-1': { enabled: true },
+        'level-2': { enabled: false, requires: ['level-1'] },
+        'level-3': { enabled: true, requires: ['level-2'] },
+      };
+      setEvaluationContext(flags);
+      expect(evaluateFlag('level-3', flags['level-3'])).toBe(false);
+    });
+
+    it('quadrilateral circular dependency returns false', () => {
+      const flags: Record<string, FlagDefinition> = {
+        'a': { enabled: true, requires: ['d'] },
+        'b': { enabled: true, requires: ['a'] },
+        'c': { enabled: true, requires: ['b'] },
+        'd': { enabled: true, requires: ['c'] },
+      };
+      setEvaluationContext(flags);
+      expect(evaluateFlag('a', flags['a'])).toBe(false);
+    });
+  });
+
+  describe('segment edge cases', () => {
+    it('3-level segment inheritance', () => {
+      const flags: Record<string, FlagDefinition> = {
+        'f': {
+          enabled: true,
+          rules: [{ conditions: {}, segment: 'grandchild', enabled: false }],
+        },
+      };
+      const segments = {
+        'grandparent': { conditions: { org: 'acme' } },
+        'parent': { conditions: { tier: 'enterprise' }, extends: ['grandparent'] as readonly string[] },
+        'grandchild': { conditions: { role: 'admin' }, extends: ['parent'] as readonly string[] },
+      };
+      setEvaluationContext(flags, segments);
+      expect(evaluateFlag('f', flags['f'], { org: 'acme', tier: 'enterprise', role: 'admin' })).toBe(false);
+      expect(evaluateFlag('f', flags['f'], { tier: 'enterprise', role: 'admin' })).toBe(true);
+    });
+
+    it('missing segment reference falls through to inline conditions', () => {
+      const flags: Record<string, FlagDefinition> = {
+        'f': {
+          enabled: true,
+          rules: [{ conditions: { plan: 'pro' }, segment: 'nonexistent' }],
+        },
+      };
+      setEvaluationContext(flags, {});
+      expect(evaluateFlag('f', flags['f'], { plan: 'pro' })).toBe(true);
+    });
+  });
 });

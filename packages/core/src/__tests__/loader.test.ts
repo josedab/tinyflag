@@ -354,3 +354,62 @@ describe('loadMultiSource', () => {
     expect(result.warnings.some((w) => w.message.includes('enabled'))).toBe(true);
   });
 });
+
+describe('loadFromUrl retry logic', () => {
+  it('retries on transient HTTP 503 errors', async () => {
+    let callCount = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        callCount++;
+        if (callCount < 3) {
+          return new Response('Service Unavailable', { status: 503 });
+        }
+        return new Response('version: 1\nflags:\n  f:\n    enabled: true', {
+          status: 200,
+          headers: { 'content-type': 'text/yaml' },
+        });
+      }),
+    );
+
+    const result = await loadFromUrl(
+      'https://example.com/flags.yml',
+      false,
+      undefined,
+      undefined,
+      undefined,
+      5000,
+      3,
+      10,
+    );
+    expect(result.config.flags['f'].enabled).toBe(true);
+    expect(callCount).toBe(3);
+  });
+
+  it('does not retry on 404 (non-transient)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('Not Found', { status: 404 })),
+    );
+
+    await expect(
+      loadFromUrl('https://example.com/flags.yml', false, undefined, undefined, undefined, 5000, 2, 10),
+    ).rejects.toThrow('HTTP 404');
+  });
+
+  it('defaults to no retries', async () => {
+    let callCount = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        callCount++;
+        return new Response('error', { status: 503 });
+      }),
+    );
+
+    await expect(
+      loadFromUrl('https://example.com/flags.yml', false),
+    ).rejects.toThrow('HTTP 503');
+    expect(callCount).toBe(1);
+  });
+});
