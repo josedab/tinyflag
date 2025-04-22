@@ -19,7 +19,8 @@ export class WebSocket extends EventEmitter {
 
     socket.on('data', (data) => {
       try {
-        const frame = decodeFrame(data);
+        const buf = typeof data === 'string' ? Buffer.from(data) : data;
+        const frame = decodeFrame(buf);
         if (frame.opcode === 0x08) {
           this.readyState = 3; // CLOSED
           this.emit('close');
@@ -34,8 +35,11 @@ export class WebSocket extends EventEmitter {
         if (frame.payload.length > 0) {
           this.emit('message', frame.payload.toString('utf-8'));
         }
-      } catch {
-        // Ignore malformed frames
+      } catch (err) {
+        // Log malformed frame errors for debugging
+        if (process.env.DEBUG) {
+          console.debug('[tinyflag-server] WebSocket frame decode error:', err instanceof Error ? err.message : String(err));
+        }
       }
     });
 
@@ -117,6 +121,8 @@ export class WebSocketServer extends EventEmitter {
   }
 }
 
+const MAX_FRAME_SIZE = 1024 * 1024; // 1MB max WebSocket frame
+
 function decodeFrame(data: Buffer): { opcode: number; payload: Buffer } {
   const opcode = data[0] & 0x0f;
   const masked = (data[1] & 0x80) !== 0;
@@ -129,6 +135,10 @@ function decodeFrame(data: Buffer): { opcode: number; payload: Buffer } {
   } else if (payloadLength === 127) {
     payloadLength = Number(data.readBigUInt64BE(2));
     offset = 10;
+  }
+
+  if (payloadLength > MAX_FRAME_SIZE) {
+    throw new Error(`WebSocket frame too large: ${payloadLength} bytes (max: ${MAX_FRAME_SIZE})`);
   }
 
   let payload: Buffer;

@@ -243,8 +243,9 @@ export function processCollabMessage(
   state: CollabState,
   sessionId: string,
   message: CollabMessage,
-): { responses: CollabResponse[]; broadcast?: CollabResponse } {
+): { responses: CollabResponse[]; broadcast?: CollabResponse; additionalBroadcasts?: CollabResponse[] } {
   const responses: CollabResponse[] = [];
+  const additionalBroadcasts: CollabResponse[] = [];
   let broadcast: CollabResponse | undefined;
 
   switch (message.type) {
@@ -266,7 +267,7 @@ export function processCollabMessage(
       const released = state.leave(message.sessionId);
       broadcast = { type: 'session-left', sessionId: message.sessionId };
       for (const flagName of released) {
-        // Will need separate broadcasts for each unlock
+        additionalBroadcasts.push({ type: 'unlocked', flagName });
       }
       break;
     }
@@ -320,5 +321,5 @@ export function processCollabMessage(
     }
   }
 
-  return { responses, broadcast };
+  return { responses, broadcast, additionalBroadcasts: additionalBroadcasts.length > 0 ? additionalBroadcasts : undefined };
 }

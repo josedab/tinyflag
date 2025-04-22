@@ -10,6 +10,8 @@ const PORT = parseInt(process.env.PORT || '3939', 10);
 const FLAGS_FILE = process.env.FLAGS_FILE || 'flags.yml';
 const GIT_AUTO_PULL = process.env.GIT_AUTO_PULL === 'true';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+const MAX_BODY_SIZE = 10 * 1024; // 10KB max request body
+const MAX_HISTORY_LIMIT = 500;
 
 let currentFlags: Record<string, unknown> = {};
 let currentEtag = '';
@@ -154,8 +156,16 @@ function handleWebhookSubscribe(req: IncomingMessage, res: ServerResponse): void
   }
 
   let body = '';
-  req.on('data', (chunk) => { body += chunk; });
+  req.on('data', (chunk) => {
+    body += chunk;
+    if (body.length > MAX_BODY_SIZE) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+    }
+  });
   req.on('end', () => {
+    if (body.length > MAX_BODY_SIZE) return;
     try {
       const { url } = JSON.parse(body);
       if (!url || typeof url !== 'string') {
@@ -182,8 +192,16 @@ function handleWebhookUnsubscribe(req: IncomingMessage, res: ServerResponse): vo
   }
 
   let body = '';
-  req.on('data', (chunk) => { body += chunk; });
+  req.on('data', (chunk) => {
+    body += chunk;
+    if (body.length > MAX_BODY_SIZE) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+    }
+  });
   req.on('end', () => {
+    if (body.length > MAX_BODY_SIZE) return;
     try {
       const { url } = JSON.parse(body);
       webhookSubscribers.delete(url);
@@ -218,7 +236,7 @@ function handleCollabPresence(_req: IncomingMessage, res: ServerResponse): void 
 function handleCollabHistory(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const flagName = url.searchParams.get('flag') || undefined;
-  const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), MAX_HISTORY_LIMIT);
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ operations: collabState.getHistory(flagName, limit) }));
 }
@@ -262,7 +280,7 @@ wss.on('connection', (ws: WebSocket) => {
 
       // Handle collaboration messages
       const sessionId = collabSessions.get(ws) || '';
-      const { responses, broadcast } = processCollabMessage(collabState, sessionId, msg);
+      const { responses, broadcast, additionalBroadcasts } = processCollabMessage(collabState, sessionId, msg);
 
       // If this is a join, store session mapping
       if (msg.type === 'join') {
@@ -281,6 +299,11 @@ wss.on('connection', (ws: WebSocket) => {
       // Broadcast to all other clients
       if (broadcast) {
         broadcastCollab(broadcast, ws);
+      }
+      if (additionalBroadcasts) {
+        for (const ab of additionalBroadcasts) {
+          broadcastCollab(ab, ws);
+        }
       }
     } catch { /* ignore invalid messages */ }
   });
