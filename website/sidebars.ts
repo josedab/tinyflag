@@ -3,6 +3,7 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   docsSidebar: [
     'getting-started',
+    'examples',
     {
       type: 'category',
       label: 'Core Concepts',
@@ -32,6 +33,7 @@ const sidebars: SidebarsConfig = {
     'security',
     'migration',
     'troubleshooting',
+    'why-tinyflag',
   ],
 };
 
