@@ -19,12 +19,17 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
 
+  markdown: {
+    mermaid: true,
+  },
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
   },
 
   themes: [
+    '@docusaurus/theme-mermaid',
     [
       '@easyops-cn/docusaurus-search-local',
       {
