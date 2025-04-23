@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { TinyFlag } from 'tinyflag';
-import type { FlagConfig, UserContext, TinyFlagOptions } from 'tinyflag';
+import type { FlagConfig, FlagDefinition, UserContext, TinyFlagOptions } from 'tinyflag';
 
 const CACHE_KEY = '@tinyflag/flags';
 
-/** Storage adapter interface for offline flag caching. */
+/** Storage adapter interface for offline flag caching (AsyncStorage-compatible). */
 export interface StorageAdapter {
   getItem(key: string): Promise<string | null>;
   setItem(key: string, value: string): Promise<void>;
 }
 
 /**
- * Load cached flags from AsyncStorage.
- * Falls back to empty config if no cache exists.
+ * Load cached flags from storage.
+ * Returns `null` if no cache exists or the cache is corrupted.
+ *
+ * @param storage - AsyncStorage-compatible storage adapter.
+ * @returns Cached flag configuration, or `null` if unavailable.
  */
 export async function loadCachedFlags(storage: StorageAdapter): Promise<FlagConfig | null> {
   try {
@@ -20,14 +23,19 @@ export async function loadCachedFlags(storage: StorageAdapter): Promise<FlagConf
     if (cached) {
       return JSON.parse(cached) as FlagConfig;
     }
-  } catch {
-    // Ignore cache read errors
+  } catch (error) {
+    if (typeof console !== 'undefined' && console.debug) {
+      console.debug('[tinyflag-react-native] Cache read failed:', error instanceof Error ? error.message : String(error));
+    }
   }
   return null;
 }
 
 /**
- * Save flags to AsyncStorage for offline use.
+ * Save flags to storage for offline use.
+ *
+ * @param storage - AsyncStorage-compatible storage adapter.
+ * @param flags - Flag configuration to cache.
  */
 export async function saveFlagsToCache(
   storage: StorageAdapter,
@@ -35,8 +43,10 @@ export async function saveFlagsToCache(
 ): Promise<void> {
   try {
     await storage.setItem(CACHE_KEY, JSON.stringify(flags));
-  } catch {
-    // Ignore cache write errors
+  } catch (error) {
+    if (typeof console !== 'undefined' && console.debug) {
+      console.debug('[tinyflag-react-native] Cache write failed:', error instanceof Error ? error.message : String(error));
+    }
   }
 }
 
@@ -49,13 +59,14 @@ export interface UseFlagWithOfflineOptions {
   context?: UserContext;
   /** Storage adapter for offline caching (AsyncStorage-compatible). */
   storage?: StorageAdapter;
-  /** Default value when offline and no cache. */
+  /** Default value when flag is not found. Default: false. */
   defaultValue?: boolean;
 }
 
 /**
  * React hook for flag evaluation with offline support.
- * Returns the flag value, falling back to cached value or default when offline.
+ * Returns the flag value. The `isOffline` field indicates whether
+ * the instance has no flags loaded (e.g., network unavailable and no cache).
  */
 export function useFlagWithOffline({
   instance,
@@ -63,15 +74,9 @@ export function useFlagWithOffline({
   context,
   defaultValue = false,
 }: UseFlagWithOfflineOptions): { enabled: boolean; isOffline: boolean } {
-  const [isOffline, setIsOffline] = useState(false);
-  const enabled = useMemo(() => {
-    try {
-      return instance.isEnabled(flagName, context);
-    } catch {
-      setIsOffline(true);
-      return defaultValue;
-    }
-  }, [instance, flagName, context, defaultValue]);
+  const flags = instance.getFlags();
+  const isOffline = Object.keys(flags).length === 0;
+  const enabled = isOffline ? defaultValue : instance.isEnabled(flagName, context);
 
   return { enabled, isOffline };
 }
@@ -103,10 +108,12 @@ export function useBackgroundRefresh({
         await instanceRef.current.reload();
         if (storage) {
           const flags = instanceRef.current.getFlags();
-          await saveFlagsToCache(storage, { flags: flags as Record<string, any> });
+          await saveFlagsToCache(storage, { flags: flags as Record<string, FlagDefinition> });
         }
-      } catch {
-        // Ignore refresh errors
+      } catch (error) {
+        if (typeof console !== 'undefined' && console.debug) {
+          console.debug('[tinyflag-react-native] Background refresh failed:', error instanceof Error ? error.message : String(error));
+        }
       }
     }, interval);
 
@@ -117,6 +124,10 @@ export function useBackgroundRefresh({
 /**
  * Create a TinyFlag instance with offline-first initialization.
  * Loads from cache first, then fetches from source in background.
+ *
+ * @param options - TinyFlag configuration options.
+ * @param storage - AsyncStorage-compatible storage adapter.
+ * @returns An initialized TinyFlag instance (may have cached or fresh flags).
  */
 export async function createOfflineInstance(
   options: TinyFlagOptions,
@@ -124,7 +135,6 @@ export async function createOfflineInstance(
 ): Promise<TinyFlag> {
   const cached = await loadCachedFlags(storage);
 
-  // Start with cached flags if available
   const instance = new TinyFlag({
     ...options,
     source: cached ?? options.source,
@@ -138,17 +148,19 @@ export async function createOfflineInstance(
       .init()
       .then(() => {
         const freshFlags = freshInstance.getFlags();
-        instance.reload({ flags: freshFlags as Record<string, any> });
-        saveFlagsToCache(storage, { flags: freshFlags as Record<string, any> });
+        instance.reload({ flags: freshFlags as Record<string, FlagDefinition> });
+        saveFlagsToCache(storage, { flags: freshFlags as Record<string, FlagDefinition> });
         freshInstance.destroy();
       })
-      .catch(() => {
+      .catch((error) => {
+        if (typeof console !== 'undefined' && console.debug) {
+          console.debug('[tinyflag-react-native] Background init failed:', error instanceof Error ? error.message : String(error));
+        }
         freshInstance.destroy();
       });
   } else {
-    // Cache the initial load
     const flags = instance.getFlags();
-    await saveFlagsToCache(storage, { flags: flags as Record<string, any> });
+    await saveFlagsToCache(storage, { flags: flags as Record<string, FlagDefinition> });
   }
 
   return instance;

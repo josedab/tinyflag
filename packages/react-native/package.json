@@ -26,7 +26,10 @@
       }
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "keywords": [
     "feature-flags",
     "react-native",
@@ -36,13 +39,14 @@
   ],
   "scripts": {
     "build": "tsup",
+    "test": "vitest run",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
+    "@react-native-async-storage/async-storage": ">=1.0.0",
     "react": ">=18.0.0",
-    "tinyflag": "workspace:*",
-    "@react-native-async-storage/async-storage": ">=1.0.0"
+    "tinyflag": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@react-native-async-storage/async-storage": {
@@ -50,9 +54,15 @@
     }
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.7",
+    "jsdom": "^29.0.2",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.1",
     "tinyflag": "workspace:*",
     "tsup": "^8.3.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   }
 }
