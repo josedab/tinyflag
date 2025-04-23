@@ -225,9 +225,9 @@ describe('createDenoHandler', () => {
 
   it('applies flag headers to custom handler response', async () => {
     const instance = createMockInstance();
-    const customHandler = vi.fn().mockReturnValue(
-      new Response('OK', { headers: { 'x-custom': 'yes' } }),
-    );
+    const customHandler = vi
+      .fn()
+      .mockReturnValue(new Response('OK', { headers: { 'x-custom': 'yes' } }));
     const handler = createDenoHandler({ instance, handler: customHandler });
 
     const request = new Request('https://example.com');
@@ -267,7 +267,7 @@ describe('edge context extraction edge cases', () => {
     const request = new Request('https://example.com', {
       headers: {
         'x-user-id': 'header-user',
-        'cookie': 'tinyflag-uid=cookie-user',
+        cookie: 'tinyflag-uid=cookie-user',
       },
     });
     const ctx = extractContextFromRequest(request);

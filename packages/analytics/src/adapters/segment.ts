@@ -15,9 +15,9 @@ import type { ExposureEvent } from 'tinyflag';
  * connectAnalytics(ff, adapter);
  * ```
  */
-export function createSegmentAdapter(
-  analytics: { track: (params: { userId: string; event: string; properties: Record<string, unknown> }) => void },
-): TinyFlagAnalyticsAdapter {
+export function createSegmentAdapter(analytics: {
+  track: (params: { userId: string; event: string; properties: Record<string, unknown> }) => void;
+}): TinyFlagAnalyticsAdapter {
   return {
     trackExposure(event: ExposureEvent): void {
       analytics.track({

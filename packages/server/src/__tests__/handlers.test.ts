@@ -44,7 +44,7 @@ function handleGetFlags(req: IncomingMessage, res: ServerResponse): void {
   }
   res.writeHead(200, {
     'Content-Type': 'application/json',
-    'ETag': currentEtag,
+    ETag: currentEtag,
     'Cache-Control': 'no-cache',
   });
   res.end(JSON.stringify({ version: 1, flags: currentFlags }));
@@ -68,7 +68,9 @@ function handleWebhookSubscribe(req: IncomingMessage, res: ServerResponse): void
     return;
   }
   let body = '';
-  req.on('data', (chunk) => { body += chunk; });
+  req.on('data', (chunk) => {
+    body += chunk;
+  });
   req.on('end', () => {
     try {
       const { url } = JSON.parse(body);
@@ -94,7 +96,9 @@ function handleWebhookUnsubscribe(req: IncomingMessage, res: ServerResponse): vo
     return;
   }
   let body = '';
-  req.on('data', (chunk) => { body += chunk; });
+  req.on('data', (chunk) => {
+    body += chunk;
+  });
   req.on('end', () => {
     try {
       const { url } = JSON.parse(body);
@@ -175,7 +179,9 @@ async function request(
   });
   const body = await res.text();
   const headers: Record<string, string> = {};
-  res.headers.forEach((value, key) => { headers[key] = value; });
+  res.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
   return { status: res.status, headers, body };
 }
 
@@ -183,10 +189,13 @@ describe('Server HTTP Handlers', () => {
   beforeAll(async () => {
     tmpDir = mkdtempSync(join(tmpdir(), 'tinyflag-test-'));
     flagsFile = join(tmpDir, 'flags.json');
-    writeFileSync(flagsFile, JSON.stringify({
-      version: 1,
-      flags: { 'test-flag': { enabled: true }, 'disabled-flag': { enabled: false } },
-    }));
+    writeFileSync(
+      flagsFile,
+      JSON.stringify({
+        version: 1,
+        flags: { 'test-flag': { enabled: true }, 'disabled-flag': { enabled: false } },
+      }),
+    );
     loadFlags();
 
     server = createServer(handleRequest);
@@ -201,7 +210,9 @@ describe('Server HTTP Handlers', () => {
 
   afterAll(async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    try { unlinkSync(flagsFile); } catch {}
+    try {
+      unlinkSync(flagsFile);
+    } catch {}
   });
 
   beforeEach(() => {

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createSegmentAdapter, createPostHogAdapter, createMixpanelAdapter, createAmplitudeAdapter } from '../index.js';
+import {
+  createSegmentAdapter,
+  createPostHogAdapter,
+  createMixpanelAdapter,
+  createAmplitudeAdapter,
+} from '../index.js';
 import type { ExposureEvent } from 'tinyflag';
 
 const mockEvent: ExposureEvent = {
@@ -37,7 +42,10 @@ describe('Analytics Adapters', () => {
     const track = vi.fn();
     const adapter = createMixpanelAdapter({ track });
     adapter.trackExposure(mockEvent);
-    expect(track).toHaveBeenCalledWith('Feature Flag Evaluated', expect.objectContaining({ flag: 'test-flag' }));
+    expect(track).toHaveBeenCalledWith(
+      'Feature Flag Evaluated',
+      expect.objectContaining({ flag: 'test-flag' }),
+    );
   });
 
   it('Amplitude adapter calls track', () => {

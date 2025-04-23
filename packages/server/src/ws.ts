@@ -38,7 +38,10 @@ export class WebSocket extends EventEmitter {
       } catch (err) {
         // Log malformed frame errors for debugging
         if (process.env.DEBUG) {
-          console.debug('[tinyflag-server] WebSocket frame decode error:', err instanceof Error ? err.message : String(err));
+          console.debug(
+            '[tinyflag-server] WebSocket frame decode error:',
+            err instanceof Error ? err.message : String(err),
+          );
         }
       }
     });

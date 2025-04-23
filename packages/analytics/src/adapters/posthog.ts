@@ -15,9 +15,13 @@ import type { ExposureEvent } from 'tinyflag';
  * connectAnalytics(ff, adapter);
  * ```
  */
-export function createPostHogAdapter(
-  posthog: { capture: (params: { distinctId: string; event: string; properties: Record<string, unknown> }) => void },
-): TinyFlagAnalyticsAdapter {
+export function createPostHogAdapter(posthog: {
+  capture: (params: {
+    distinctId: string;
+    event: string;
+    properties: Record<string, unknown>;
+  }) => void;
+}): TinyFlagAnalyticsAdapter {
   return {
     trackExposure(event: ExposureEvent): void {
       posthog.capture({

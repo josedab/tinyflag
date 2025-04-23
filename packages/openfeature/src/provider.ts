@@ -8,7 +8,12 @@ import type {
   Hook,
   ProviderEventEmitter,
 } from '@openfeature/server-sdk';
-import { OpenFeatureEventEmitter, ProviderEvents, ErrorCode, StandardResolutionReasons } from '@openfeature/server-sdk';
+import {
+  OpenFeatureEventEmitter,
+  ProviderEvents,
+  ErrorCode,
+  StandardResolutionReasons,
+} from '@openfeature/server-sdk';
 import type { TinyFlag, UserContext, ChangeEvent, ErrorEvent } from 'tinyflag';
 
 /**

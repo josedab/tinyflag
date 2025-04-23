@@ -43,7 +43,7 @@ describe('edge middleware', () => {
 
   it('extracts context from cookies', () => {
     const request = new Request('https://example.com', {
-      headers: { 'cookie': 'tinyflag-uid=user-99; tinyflag-plan=pro' },
+      headers: { cookie: 'tinyflag-uid=user-99; tinyflag-plan=pro' },
     });
 
     const ctx = extractContextFromRequest(request);
@@ -54,7 +54,7 @@ describe('edge middleware', () => {
   it('applies flag headers to response', () => {
     const response = new Response('OK');
     const result = {
-      flags: { 'test': { enabled: true, variant: null } },
+      flags: { test: { enabled: true, variant: null } },
       headers: { 'x-tinyflag-test': '1' },
     };
 

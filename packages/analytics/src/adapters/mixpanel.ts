@@ -15,9 +15,9 @@ import type { ExposureEvent } from 'tinyflag';
  * connectAnalytics(ff, adapter);
  * ```
  */
-export function createMixpanelAdapter(
-  mixpanel: { track: (event: string, properties: Record<string, unknown>) => void },
-): TinyFlagAnalyticsAdapter {
+export function createMixpanelAdapter(mixpanel: {
+  track: (event: string, properties: Record<string, unknown>) => void;
+}): TinyFlagAnalyticsAdapter {
   return {
     trackExposure(event: ExposureEvent): void {
       mixpanel.track('Feature Flag Evaluated', {

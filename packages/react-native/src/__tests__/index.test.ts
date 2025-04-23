@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loadCachedFlags, saveFlagsToCache, useFlagWithOffline, createOfflineInstance } from '../index.js';
+import {
+  loadCachedFlags,
+  saveFlagsToCache,
+  useFlagWithOffline,
+  createOfflineInstance,
+} from '../index.js';
 import type { StorageAdapter } from '../index.js';
 import type { FlagConfig } from 'tinyflag';
 
@@ -7,7 +12,9 @@ function createMockStorage(data: Record<string, string> = {}): StorageAdapter {
   const store = { ...data };
   return {
     getItem: vi.fn(async (key: string) => store[key] ?? null),
-    setItem: vi.fn(async (key: string, value: string) => { store[key] = value; }),
+    setItem: vi.fn(async (key: string, value: string) => {
+      store[key] = value;
+    }),
   };
 }
 
@@ -35,7 +42,9 @@ describe('loadCachedFlags', () => {
 
   it('returns null when storage.getItem throws', async () => {
     const storage: StorageAdapter = {
-      getItem: vi.fn(async () => { throw new Error('Storage unavailable'); }),
+      getItem: vi.fn(async () => {
+        throw new Error('Storage unavailable');
+      }),
       setItem: vi.fn(),
     };
     const result = await loadCachedFlags(storage);
@@ -55,7 +64,9 @@ describe('saveFlagsToCache', () => {
   it('does not throw when storage.setItem fails', async () => {
     const storage: StorageAdapter = {
       getItem: vi.fn(),
-      setItem: vi.fn(async () => { throw new Error('Disk full'); }),
+      setItem: vi.fn(async () => {
+        throw new Error('Disk full');
+      }),
     };
 
     await expect(saveFlagsToCache(storage, { flags: {} })).resolves.toBeUndefined();

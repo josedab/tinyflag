@@ -117,7 +117,7 @@ describe('tinyflag-svelte', () => {
 
   it('flag() and variant() throw when called without createTinyFlag', async () => {
     // Reset fallback by creating and immediately destroying
-    const ff = createInstance({ 'x': { enabled: true } });
+    const ff = createInstance({ x: { enabled: true } });
     await ff.init();
     const { destroy } = createTinyFlag({ source: { flags: {} }, instance: ff });
     destroy();

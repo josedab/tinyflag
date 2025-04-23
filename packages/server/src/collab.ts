@@ -243,7 +243,11 @@ export function processCollabMessage(
   state: CollabState,
   sessionId: string,
   message: CollabMessage,
-): { responses: CollabResponse[]; broadcast?: CollabResponse; additionalBroadcasts?: CollabResponse[] } {
+): {
+  responses: CollabResponse[];
+  broadcast?: CollabResponse;
+  additionalBroadcasts?: CollabResponse[];
+} {
   const responses: CollabResponse[] = [];
   const additionalBroadcasts: CollabResponse[] = [];
   let broadcast: CollabResponse | undefined;
@@ -278,7 +282,11 @@ export function processCollabMessage(
         responses.push({ type: 'locked', flagName: message.flagName, lock: result.lock });
         broadcast = { type: 'locked', flagName: message.flagName, lock: result.lock };
       } else {
-        responses.push({ type: 'lock-denied', flagName: message.flagName, heldBy: result.heldBy || 'unknown' });
+        responses.push({
+          type: 'lock-denied',
+          flagName: message.flagName,
+          heldBy: result.heldBy || 'unknown',
+        });
       }
       break;
     }
@@ -292,18 +300,32 @@ export function processCollabMessage(
     }
 
     case 'edit': {
-      const op = state.recordEdit('update', message.flagName, message.field, null, message.value, sessionId);
+      const op = state.recordEdit(
+        'update',
+        message.flagName,
+        message.field,
+        null,
+        message.value,
+        sessionId,
+      );
       if (op) {
         broadcast = { type: 'edited', operation: op };
       } else {
-        responses.push({ type: 'error', message: `Cannot edit ${message.flagName}: not locked by you` });
+        responses.push({
+          type: 'error',
+          message: `Cannot edit ${message.flagName}: not locked by you`,
+        });
       }
       break;
     }
 
     case 'cursor': {
       state.updateCursor(sessionId, message);
-      broadcast = { type: 'cursor-update', sessionId, cursor: { flag: message.flag, field: message.field } };
+      broadcast = {
+        type: 'cursor-update',
+        sessionId,
+        cursor: { flag: message.flag, field: message.field },
+      };
       break;
     }
 
@@ -321,5 +343,9 @@ export function processCollabMessage(
     }
   }
 
-  return { responses, broadcast, additionalBroadcasts: additionalBroadcasts.length > 0 ? additionalBroadcasts : undefined };
+  return {
+    responses,
+    broadcast,
+    additionalBroadcasts: additionalBroadcasts.length > 0 ? additionalBroadcasts : undefined,
+  };
 }

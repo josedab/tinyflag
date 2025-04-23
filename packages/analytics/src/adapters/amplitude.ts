@@ -15,9 +15,13 @@ import type { ExposureEvent } from 'tinyflag';
  * connectAnalytics(ff, adapter);
  * ```
  */
-export function createAmplitudeAdapter(
-  amplitude: { track: (event: string, properties: Record<string, unknown>, options?: { user_id?: string }) => void },
-): TinyFlagAnalyticsAdapter {
+export function createAmplitudeAdapter(amplitude: {
+  track: (
+    event: string,
+    properties: Record<string, unknown>,
+    options?: { user_id?: string },
+  ) => void;
+}): TinyFlagAnalyticsAdapter {
   return {
     trackExposure(event: ExposureEvent): void {
       amplitude.track(

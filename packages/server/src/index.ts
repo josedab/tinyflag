@@ -50,7 +50,8 @@ function broadcastUpdate(): void {
   const message = JSON.stringify({ type: 'flags-updated', flags: currentFlags, etag: currentEtag });
   for (const client of wsClients) {
     try {
-      if (client.readyState === 1) { // OPEN
+      if (client.readyState === 1) {
+        // OPEN
         client.send(message);
       }
     } catch {
@@ -120,7 +121,7 @@ function handleGetFlags(req: IncomingMessage, res: ServerResponse): void {
 
   res.writeHead(200, {
     'Content-Type': 'application/json',
-    'ETag': currentEtag,
+    ETag: currentEtag,
     'Cache-Control': 'no-cache',
   });
   res.end(JSON.stringify({ version: 1, flags: currentFlags }));
@@ -215,7 +216,11 @@ function handleWebhookUnsubscribe(req: IncomingMessage, res: ServerResponse): vo
 }
 
 function notifyWebhookSubscribers(): void {
-  const payload = JSON.stringify({ type: 'flags-updated', etag: currentEtag, timestamp: Date.now() });
+  const payload = JSON.stringify({
+    type: 'flags-updated',
+    etag: currentEtag,
+    timestamp: Date.now(),
+  });
   for (const url of webhookSubscribers) {
     fetch(url, {
       method: 'POST',
@@ -247,7 +252,9 @@ function broadcastCollab(msg: CollabResponse, excludeWs?: WebSocket): void {
     if (client === excludeWs) continue;
     try {
       if (client.readyState === 1) client.send(data);
-    } catch { /* ignore dead connections */ }
+    } catch {
+      /* ignore dead connections */
+    }
   }
 }
 
@@ -280,7 +287,11 @@ wss.on('connection', (ws: WebSocket) => {
 
       // Handle collaboration messages
       const sessionId = collabSessions.get(ws) || '';
-      const { responses, broadcast, additionalBroadcasts } = processCollabMessage(collabState, sessionId, msg);
+      const { responses, broadcast, additionalBroadcasts } = processCollabMessage(
+        collabState,
+        sessionId,
+        msg,
+      );
 
       // If this is a join, store session mapping
       if (msg.type === 'join') {
@@ -305,7 +316,9 @@ wss.on('connection', (ws: WebSocket) => {
           broadcastCollab(ab, ws);
         }
       }
-    } catch { /* ignore invalid messages */ }
+    } catch {
+      /* ignore invalid messages */
+    }
   });
 
   ws.on('close', () => {

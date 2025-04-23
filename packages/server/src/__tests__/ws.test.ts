@@ -248,7 +248,9 @@ describe('WebSocket', () => {
   describe('sendFrame error handling', () => {
     it('sets readyState to CLOSED on write error', () => {
       const socket = createMockSocket();
-      socket.write = vi.fn(() => { throw new Error('write error'); });
+      socket.write = vi.fn(() => {
+        throw new Error('write error');
+      });
       const ws = new WebSocket(socket);
 
       ws.send('data');

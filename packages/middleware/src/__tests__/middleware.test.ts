@@ -93,7 +93,9 @@ describe('evaluateForContext', () => {
 
   it('traceSpan handles throwing __OTEL_TRACER__ gracefully', () => {
     (globalThis as any).__OTEL_TRACER__ = {
-      startSpan: () => { throw new Error('boom'); },
+      startSpan: () => {
+        throw new Error('boom');
+      },
     };
     try {
       const instance = createMockInstance();
@@ -163,7 +165,9 @@ describe('tinyflagExpress', () => {
 
   it('contextFromRequest throwing → error propagated to next(err)', () => {
     const instance = createMockInstance();
-    const contextFromRequest = vi.fn(() => { throw new Error('context extraction failed'); });
+    const contextFromRequest = vi.fn(() => {
+      throw new Error('context extraction failed');
+    });
     const middleware = tinyflagExpress({ instance, contextFromRequest });
 
     const req: any = {};
@@ -253,7 +257,9 @@ describe('tinyflagFastify', () => {
 
   it('contextFromRequest throwing → hookDone still called with error', () => {
     const instance = createMockInstance();
-    const contextFromRequest = vi.fn(() => { throw new Error('fastify ctx error'); });
+    const contextFromRequest = vi.fn(() => {
+      throw new Error('fastify ctx error');
+    });
     const hooks: Record<string, Function> = {};
     const fastify = {
       decorateRequest: vi.fn(),
@@ -300,7 +306,9 @@ describe('tinyflagHono', () => {
 
     const setValues: Record<string, any> = {};
     const c: any = {
-      set: vi.fn((key: string, val: any) => { setValues[key] = val; }),
+      set: vi.fn((key: string, val: any) => {
+        setValues[key] = val;
+      }),
     };
     const next = vi.fn().mockResolvedValue(undefined);
 
@@ -326,7 +334,9 @@ describe('tinyflagHono', () => {
 
   it('contextFromRequest throwing → error propagated', async () => {
     const instance = createMockInstance();
-    const contextFromRequest = vi.fn(() => { throw new Error('hono ctx error'); });
+    const contextFromRequest = vi.fn(() => {
+      throw new Error('hono ctx error');
+    });
     const middleware = tinyflagHono({ instance, contextFromRequest });
 
     const c: any = { set: vi.fn() };
@@ -351,7 +361,11 @@ describe('tinyflagHono', () => {
     const middleware = tinyflagHono({ instance, contextFromRequest });
 
     const setValues: Record<string, any> = {};
-    const c: any = { set: vi.fn((k: string, v: any) => { setValues[k] = v; }) };
+    const c: any = {
+      set: vi.fn((k: string, v: any) => {
+        setValues[k] = v;
+      }),
+    };
     const next = vi.fn().mockResolvedValue(undefined);
 
     await middleware(c, next);

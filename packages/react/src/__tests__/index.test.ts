@@ -8,7 +8,10 @@ import { TinyFlag } from 'tinyflag';
 afterEach(() => cleanup());
 
 function createInstance(
-  flags: Record<string, { enabled: boolean; rollout?: number; variants?: { name: string; weight: number }[] }>,
+  flags: Record<
+    string,
+    { enabled: boolean; rollout?: number; variants?: { name: string; weight: number }[] }
+  >,
 ) {
   return new TinyFlag({
     source: { flags },
@@ -185,7 +188,7 @@ describe('tinyflag-react', () => {
   });
 
   it('useTinyFlagInstance returns the instance', async () => {
-    const ff = createInstance({ 'test': { enabled: true } });
+    const ff = createInstance({ test: { enabled: true } });
     await ff.init();
 
     let result: TinyFlag | undefined;

@@ -59,8 +59,9 @@ export class TinyFlag extends pulumi.ComponentResource {
     this.enabled = enabled;
 
     // Create a dynamic provider to manage the flag file
-    pulumi.all([flagsFile, flagName, enabled, description, rollout, tags]).apply(
-      ([file, name, en, desc, roll, t]) => {
+    pulumi
+      .all([flagsFile, flagName, enabled, description, rollout, tags])
+      .apply(([file, name, en, desc, roll, t]) => {
         let doc: FlagsDoc = { version: 1, flags: {} };
 
         if (existsSync(file)) {
@@ -81,8 +82,7 @@ export class TinyFlag extends pulumi.ComponentResource {
         doc.flags[name] = flagDef;
 
         writeFileSync(file, JSON.stringify(doc, null, 2), 'utf-8');
-      },
-    );
+      });
 
     this.registerOutputs({
       flagName: this.flagName,

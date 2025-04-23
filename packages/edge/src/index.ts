@@ -22,10 +22,7 @@ export interface EdgeFlagResult {
  * Evaluate flags for an edge request and generate response headers.
  * Target: <1ms evaluation overhead per request.
  */
-export function evaluateEdgeFlags(
-  request: Request,
-  options: EdgeFlagOptions,
-): EdgeFlagResult {
+export function evaluateEdgeFlags(request: Request, options: EdgeFlagOptions): EdgeFlagResult {
   const prefix = options.headerPrefix ?? 'x-tinyflag-';
   const context = options.contextFromRequest?.(request) ?? extractContextFromRequest(request);
   const headers: Record<string, string> = {};

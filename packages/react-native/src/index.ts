@@ -25,7 +25,10 @@ export async function loadCachedFlags(storage: StorageAdapter): Promise<FlagConf
     }
   } catch (error) {
     if (typeof console !== 'undefined' && console.debug) {
-      console.debug('[tinyflag-react-native] Cache read failed:', error instanceof Error ? error.message : String(error));
+      console.debug(
+        '[tinyflag-react-native] Cache read failed:',
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
   return null;
@@ -37,15 +40,15 @@ export async function loadCachedFlags(storage: StorageAdapter): Promise<FlagConf
  * @param storage - AsyncStorage-compatible storage adapter.
  * @param flags - Flag configuration to cache.
  */
-export async function saveFlagsToCache(
-  storage: StorageAdapter,
-  flags: FlagConfig,
-): Promise<void> {
+export async function saveFlagsToCache(storage: StorageAdapter, flags: FlagConfig): Promise<void> {
   try {
     await storage.setItem(CACHE_KEY, JSON.stringify(flags));
   } catch (error) {
     if (typeof console !== 'undefined' && console.debug) {
-      console.debug('[tinyflag-react-native] Cache write failed:', error instanceof Error ? error.message : String(error));
+      console.debug(
+        '[tinyflag-react-native] Cache write failed:',
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 }
@@ -112,7 +115,10 @@ export function useBackgroundRefresh({
         }
       } catch (error) {
         if (typeof console !== 'undefined' && console.debug) {
-          console.debug('[tinyflag-react-native] Background refresh failed:', error instanceof Error ? error.message : String(error));
+          console.debug(
+            '[tinyflag-react-native] Background refresh failed:',
+            error instanceof Error ? error.message : String(error),
+          );
         }
       }
     }, interval);
@@ -154,7 +160,10 @@ export async function createOfflineInstance(
       })
       .catch((error) => {
         if (typeof console !== 'undefined' && console.debug) {
-          console.debug('[tinyflag-react-native] Background init failed:', error instanceof Error ? error.message : String(error));
+          console.debug(
+            '[tinyflag-react-native] Background init failed:',
+            error instanceof Error ? error.message : String(error),
+          );
         }
         freshInstance.destroy();
       });

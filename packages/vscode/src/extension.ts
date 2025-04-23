@@ -165,9 +165,10 @@ export function activate(context: vscode.ExtensionContext): void {
               }),
             );
           } else {
-            const label = flag.rollout !== undefined
-              ? `✅ ${flagName} (${flag.rollout}% rollout)`
-              : `✅ ${flagName}`;
+            const label =
+              flag.rollout !== undefined
+                ? `✅ ${flagName} (${flag.rollout}% rollout)`
+                : `✅ ${flagName}`;
             lenses.push(new vscode.CodeLens(range, { title: label, command: '' }));
           }
         }
@@ -290,7 +291,9 @@ function parseSimpleYaml(content: string): Record<string, any> | null {
   try {
     const lines = content.split('\n');
     const result: any = {};
-    const stack: { indent: number; obj: any; key: string }[] = [{ indent: -1, obj: result, key: '' }];
+    const stack: { indent: number; obj: any; key: string }[] = [
+      { indent: -1, obj: result, key: '' },
+    ];
 
     for (const line of lines) {
       const trimmed = line.replace(/#.*$/, '').trimEnd();
@@ -332,7 +335,10 @@ function parseScalarValue(value: string): any {
   if (value === 'null' || value === '~') return null;
   if (/^-?\d+$/.test(value)) return parseInt(value, 10);
   if (/^-?\d+\.\d+$/.test(value)) return parseFloat(value);
-  if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+  if (
+    (value.startsWith("'") && value.endsWith("'")) ||
+    (value.startsWith('"') && value.endsWith('"'))
+  ) {
     return value.slice(1, -1);
   }
   return value;

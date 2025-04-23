@@ -15,7 +15,11 @@
     "tinyflag-server": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "files": ["dist", "Dockerfile", "README.md"],
+  "files": [
+    "dist",
+    "Dockerfile",
+    "README.md"
+  ],
   "keywords": [
     "feature-flags",
     "server",

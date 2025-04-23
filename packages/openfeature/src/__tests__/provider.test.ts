@@ -12,7 +12,12 @@ function createMockInstance(overrides: Partial<TinyFlag> = {}): TinyFlag {
       'test-flag': { enabled: true, variant: 'control' },
     }),
     getFlags: vi.fn().mockReturnValue({
-      'test-flag': { enabled: true, rollout: 50, rules: [], variants: [{ name: 'control', weight: 50 }] },
+      'test-flag': {
+        enabled: true,
+        rollout: 50,
+        rules: [],
+        variants: [{ name: 'control', weight: 50 }],
+      },
     }),
     on: vi.fn(),
     off: vi.fn(),
@@ -52,7 +57,9 @@ describe('TinyFlagProvider', () => {
 
   describe('resolveBooleanEvaluation', () => {
     it('returns enabled state', () => {
-      const result = provider.resolveBooleanEvaluation('test-flag', false, { targetingKey: 'user-1' });
+      const result = provider.resolveBooleanEvaluation('test-flag', false, {
+        targetingKey: 'user-1',
+      });
       expect(result.value).toBe(true);
       expect(mock.isEnabled).toHaveBeenCalledWith('test-flag', { userId: 'user-1' });
     });
@@ -68,7 +75,9 @@ describe('TinyFlagProvider', () => {
 
   describe('resolveStringEvaluation', () => {
     it('returns variant name', () => {
-      const result = provider.resolveStringEvaluation('test-flag', 'default', { targetingKey: 'user-1' });
+      const result = provider.resolveStringEvaluation('test-flag', 'default', {
+        targetingKey: 'user-1',
+      });
       expect(result.value).toBe('control');
       expect(result.variant).toBe('control');
     });
@@ -146,7 +155,12 @@ describe('TinyFlagProvider', () => {
         (c: any[]) => c[0] === 'change',
       );
       const changeHandler = changeCall![1];
-      changeHandler({ flag: 'my-flag', previous: undefined, current: { enabled: true }, timestamp: 0 });
+      changeHandler({
+        flag: 'my-flag',
+        previous: undefined,
+        current: { enabled: true },
+        timestamp: 0,
+      });
 
       expect(eventSpy).toHaveBeenCalledWith(
         'PROVIDER_CONFIGURATION_CHANGED',
@@ -176,10 +190,7 @@ describe('TinyFlagProvider', () => {
       const errorHandler = errorCall![1];
       errorHandler({ code: 'INSECURE_SOURCE', message: 'http' });
 
-      expect(eventSpy).not.toHaveBeenCalledWith(
-        'PROVIDER_ERROR',
-        expect.anything(),
-      );
+      expect(eventSpy).not.toHaveBeenCalledWith('PROVIDER_ERROR', expect.anything());
     });
   });
 
@@ -207,7 +218,7 @@ describe('TinyFlagProvider', () => {
     it('returns TARGETING_MATCH when rules exist and context provided', () => {
       const m = createMockInstance({
         getFlags: vi.fn().mockReturnValue({
-          'f': { enabled: true, rules: [{ conditions: { plan: 'pro' } }], rollout: undefined },
+          f: { enabled: true, rules: [{ conditions: { plan: 'pro' } }], rollout: undefined },
         }),
       });
       const p = new TinyFlagProvider(m);
@@ -218,7 +229,7 @@ describe('TinyFlagProvider', () => {
     it('returns SPLIT when rollout is defined and userId present', () => {
       const m = createMockInstance({
         getFlags: vi.fn().mockReturnValue({
-          'f': { enabled: true, rollout: 50 },
+          f: { enabled: true, rollout: 50 },
         }),
       });
       const p = new TinyFlagProvider(m);
@@ -229,7 +240,7 @@ describe('TinyFlagProvider', () => {
     it('returns STATIC when no rules or rollout', () => {
       const m = createMockInstance({
         getFlags: vi.fn().mockReturnValue({
-          'f': { enabled: true },
+          f: { enabled: true },
         }),
       });
       const p = new TinyFlagProvider(m);
@@ -243,7 +254,7 @@ describe('TinyFlagProvider', () => {
       const m = createMockInstance({
         getVariant: vi.fn().mockReturnValue('treatment'),
         getFlags: vi.fn().mockReturnValue({
-          'f': { enabled: true, variants: [{ name: 'treatment', weight: 100 }] },
+          f: { enabled: true, variants: [{ name: 'treatment', weight: 100 }] },
         }),
       });
       const p = new TinyFlagProvider(m);

@@ -150,7 +150,7 @@ describe('tinyflag-vue', () => {
   });
 
   it('options forwarding (instance is passed through)', async () => {
-    const ff = createInstance({ 'f': { enabled: true } });
+    const ff = createInstance({ f: { enabled: true } });
     await ff.init();
 
     let result: TinyFlag | undefined;

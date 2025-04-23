@@ -9,7 +9,12 @@
     "build": "tsc",
     "clean": "rm -rf dist"
   },
-  "keywords": ["pulumi", "feature-flags", "tinyflag", "infrastructure-as-code"],
+  "keywords": [
+    "pulumi",
+    "feature-flags",
+    "tinyflag",
+    "infrastructure-as-code"
+  ],
   "license": "MIT",
   "peerDependencies": {
     "@pulumi/pulumi": "^3.0.0"
