@@ -1193,12 +1193,15 @@ describe('TinyFlag', () => {
   describe('startAutoRefresh URL polling', () => {
     it('emits POLL_INTERVAL_CLAMPED when pollInterval < 5000ms for URL source', async () => {
       const errors: ErrorEvent[] = [];
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        text: async () => '{"version":1,"flags":{"f":{"enabled":true}}}',
-        headers: { get: () => null },
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          text: async () => '{"version":1,"flags":{"f":{"enabled":true}}}',
+          headers: { get: () => null },
+        }),
+      );
 
       const ff = new TinyFlag({
         source: 'https://cdn.example.com/flags.json',
@@ -1214,18 +1217,19 @@ describe('TinyFlag', () => {
 
     it('polls URL and triggers reload on change', async () => {
       let callCount = 0;
-      vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
-        callCount++;
-        const flags = callCount === 1
-          ? { f: { enabled: true } }
-          : { f: { enabled: false } };
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          text: async () => JSON.stringify({ version: 1, flags }),
-          headers: { get: () => null },
-        });
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(() => {
+          callCount++;
+          const flags = callCount === 1 ? { f: { enabled: true } } : { f: { enabled: false } };
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: async () => JSON.stringify({ version: 1, flags }),
+            headers: { get: () => null },
+          });
+        }),
+      );
 
       const changes: ChangeEvent[] = [];
       const ff = new TinyFlag({
@@ -1247,15 +1251,18 @@ describe('TinyFlag', () => {
 
     it('destroy() clears poll timer', async () => {
       let fetchCount = 0;
-      vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
-        fetchCount++;
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          text: async () => '{"version":1,"flags":{"f":{"enabled":true}}}',
-          headers: { get: () => null },
-        });
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockImplementation(() => {
+          fetchCount++;
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            text: async () => '{"version":1,"flags":{"f":{"enabled":true}}}',
+            headers: { get: () => null },
+          });
+        }),
+      );
 
       const ff = new TinyFlag({
         source: 'https://cdn.example.com/flags.json',
@@ -1369,8 +1376,8 @@ describe('TinyFlag', () => {
         source: {
           version: 1,
           flags: {
-            'base': { enabled: true },
-            'dependent': { enabled: true, requires: ['base'] },
+            base: { enabled: true },
+            dependent: { enabled: true, requires: ['base'] },
           },
         },
       });
@@ -1378,8 +1385,8 @@ describe('TinyFlag', () => {
         source: {
           version: 1,
           flags: {
-            'base': { enabled: false },
-            'dependent': { enabled: true, requires: ['base'] },
+            base: { enabled: false },
+            dependent: { enabled: true, requires: ['base'] },
           },
         },
       });

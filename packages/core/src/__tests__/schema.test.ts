@@ -105,7 +105,7 @@ describe('validateConfig', () => {
       {
         flags: { f: { enabled: true } },
         tenants: {
-          'acme': { flags: { f: { enabled: false } } },
+          acme: { flags: { f: { enabled: false } } },
         },
       },
       true,
@@ -379,7 +379,9 @@ describe('lifecycle validation', () => {
 
   it('accepts sunset with sunsetAt', () => {
     const errors = validateConfig({
-      flags: { f: { enabled: true, lifecycle: { state: 'sunset', sunsetAt: '2025-01-01T00:00:00Z' } } },
+      flags: {
+        f: { enabled: true, lifecycle: { state: 'sunset', sunsetAt: '2025-01-01T00:00:00Z' } },
+      },
     });
     expect(errors.filter((e) => e.path.includes('lifecycle'))).toHaveLength(0);
   });
@@ -402,7 +404,9 @@ describe('lifecycle validation', () => {
     const errors = validateConfig({
       flags: { f: { enabled: true, lifecycle: { state: 'sunset', sunsetAt: 12345 } } },
     });
-    expect(errors.some((e) => e.message.includes('ISO 8601') || e.message.includes('string'))).toBe(true);
+    expect(errors.some((e) => e.message.includes('ISO 8601') || e.message.includes('string'))).toBe(
+      true,
+    );
   });
 
   it('rejects missing state field', () => {
@@ -432,7 +436,9 @@ describe('schedule validation', () => {
     const errors = validateConfig({
       flags: { f: { enabled: true, schedule: { enableAt: 123 } } },
     });
-    expect(errors.some((e) => e.message.includes('ISO 8601') || e.message.includes('string'))).toBe(true);
+    expect(errors.some((e) => e.message.includes('ISO 8601') || e.message.includes('string'))).toBe(
+      true,
+    );
   });
 
   it('rejects invalid disableAt date', () => {
@@ -446,7 +452,9 @@ describe('schedule validation', () => {
     const errors = validateConfig({
       flags: { f: { enabled: true, schedule: { disableAt: 123 } } },
     });
-    expect(errors.some((e) => e.message.includes('ISO 8601') || e.message.includes('string'))).toBe(true);
+    expect(errors.some((e) => e.message.includes('ISO 8601') || e.message.includes('string'))).toBe(
+      true,
+    );
   });
 
   it('rejects unknown schedule fields', () => {
@@ -533,7 +541,7 @@ describe('flag name validation', () => {
   });
 
   it('rejects unicode flag name', () => {
-    const errors = validateConfig({ flags: { 'flåg': { enabled: true } } });
+    const errors = validateConfig({ flags: { flåg: { enabled: true } } });
     expect(errors.some((e) => e.message.includes('Invalid flag name'))).toBe(true);
   });
 
@@ -590,12 +598,18 @@ describe('segments validation', () => {
   });
 
   it('rejects non-array extends in segment', () => {
-    const errors = validateConfig({ flags: {}, segments: { s: { conditions: {}, extends: 'parent' } } });
+    const errors = validateConfig({
+      flags: {},
+      segments: { s: { conditions: {}, extends: 'parent' } },
+    });
     expect(errors.some((e) => e.message.includes('array'))).toBe(true);
   });
 
   it('rejects empty string in extends', () => {
-    const errors = validateConfig({ flags: {}, segments: { s: { conditions: {}, extends: [''] } } });
+    const errors = validateConfig({
+      flags: {},
+      segments: { s: { conditions: {}, extends: [''] } },
+    });
     expect(errors.some((e) => e.message.includes('non-empty'))).toBe(true);
   });
 });

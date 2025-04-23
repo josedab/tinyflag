@@ -1,4 +1,14 @@
-import type { FlagConfig, FlagDefinition, FlagSchedule, FlagLifecycleState, SegmentDefinition, Rule, Variant, ValidationError, RolloutStrategy } from './types.js';
+import type {
+  FlagConfig,
+  FlagDefinition,
+  FlagSchedule,
+  FlagLifecycleState,
+  SegmentDefinition,
+  Rule,
+  Variant,
+  ValidationError,
+  RolloutStrategy,
+} from './types.js';
 
 const FLAG_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 const MAX_FLAG_NAME_LENGTH = 128;
@@ -106,12 +116,18 @@ export function validateConfig(config: unknown, strict: boolean = false): Valida
   // Validate personas
   if (obj.personas !== undefined) {
     if (typeof obj.personas !== 'object' || Array.isArray(obj.personas) || obj.personas === null) {
-      errors.push({ path: 'personas', message: '"personas" must be an object mapping names to context objects' });
+      errors.push({
+        path: 'personas',
+        message: '"personas" must be an object mapping names to context objects',
+      });
     } else {
       const personas = obj.personas as Record<string, unknown>;
       for (const [pName, pDef] of Object.entries(personas)) {
         if (typeof pDef !== 'object' || pDef === null || Array.isArray(pDef)) {
-          errors.push({ path: `personas.${pName}`, message: 'Persona definition must be an object' });
+          errors.push({
+            path: `personas.${pName}`,
+            message: 'Persona definition must be an object',
+          });
         }
       }
     }
@@ -120,26 +136,48 @@ export function validateConfig(config: unknown, strict: boolean = false): Valida
   // Validate segments
   if (obj.segments !== undefined) {
     if (typeof obj.segments !== 'object' || Array.isArray(obj.segments) || obj.segments === null) {
-      errors.push({ path: 'segments', message: '"segments" must be an object mapping names to segment definitions' });
+      errors.push({
+        path: 'segments',
+        message: '"segments" must be an object mapping names to segment definitions',
+      });
     } else {
       const segments = obj.segments as Record<string, unknown>;
       for (const [sName, sDef] of Object.entries(segments)) {
         if (typeof sDef !== 'object' || sDef === null || Array.isArray(sDef)) {
-          errors.push({ path: `segments.${sName}`, message: 'Segment definition must be an object' });
+          errors.push({
+            path: `segments.${sName}`,
+            message: 'Segment definition must be an object',
+          });
         } else {
           const seg = sDef as Record<string, unknown>;
           if (seg.conditions === undefined) {
-            errors.push({ path: `segments.${sName}.conditions`, message: 'Segment must have a "conditions" field' });
-          } else if (typeof seg.conditions !== 'object' || seg.conditions === null || Array.isArray(seg.conditions)) {
-            errors.push({ path: `segments.${sName}.conditions`, message: '"conditions" must be an object' });
+            errors.push({
+              path: `segments.${sName}.conditions`,
+              message: 'Segment must have a "conditions" field',
+            });
+          } else if (
+            typeof seg.conditions !== 'object' ||
+            seg.conditions === null ||
+            Array.isArray(seg.conditions)
+          ) {
+            errors.push({
+              path: `segments.${sName}.conditions`,
+              message: '"conditions" must be an object',
+            });
           }
           if (seg.extends !== undefined) {
             if (!Array.isArray(seg.extends)) {
-              errors.push({ path: `segments.${sName}.extends`, message: '"extends" must be an array of segment names' });
+              errors.push({
+                path: `segments.${sName}.extends`,
+                message: '"extends" must be an array of segment names',
+              });
             } else {
               for (const ext of seg.extends) {
                 if (typeof ext !== 'string' || ext === '') {
-                  errors.push({ path: `segments.${sName}.extends`, message: 'Extended segment name must be a non-empty string' });
+                  errors.push({
+                    path: `segments.${sName}.extends`,
+                    message: 'Extended segment name must be a non-empty string',
+                  });
                 }
               }
             }
@@ -147,9 +185,14 @@ export function validateConfig(config: unknown, strict: boolean = false): Valida
         }
       }
       // Detect circular segment inheritance
-      const segmentCircles = detectCircularSegments(segments as Record<string, Record<string, unknown>>);
+      const segmentCircles = detectCircularSegments(
+        segments as Record<string, Record<string, unknown>>,
+      );
       for (const cycle of segmentCircles) {
-        errors.push({ path: 'segments', message: `Circular segment inheritance: ${cycle.join(' → ')}` });
+        errors.push({
+          path: 'segments',
+          message: `Circular segment inheritance: ${cycle.join(' → ')}`,
+        });
       }
     }
   }
@@ -233,10 +276,18 @@ function validateFlagDefinition(
           message: `"rollout" must be 0-100, got ${flag.rollout}`,
         });
       }
-    } else if (typeof flag.rollout === 'object' && flag.rollout !== null && !Array.isArray(flag.rollout)) {
+    } else if (
+      typeof flag.rollout === 'object' &&
+      flag.rollout !== null &&
+      !Array.isArray(flag.rollout)
+    ) {
       validateRolloutStrategy(prefix, flag.rollout as Record<string, unknown>, errors);
     } else {
-      errors.push({ path: `${prefix}.rollout`, message: '"rollout" must be an integer (0-100) or a strategy object ({ type: "ramp" | "ring" | "cohort", ... })' });
+      errors.push({
+        path: `${prefix}.rollout`,
+        message:
+          '"rollout" must be an integer (0-100) or a strategy object ({ type: "ramp" | "ring" | "cohort", ... })',
+      });
     }
   }
 
@@ -263,11 +314,17 @@ function validateFlagDefinition(
   // requires
   if (flag.requires !== undefined) {
     if (!Array.isArray(flag.requires)) {
-      errors.push({ path: `${prefix}.requires`, message: '"requires" must be an array of flag name strings' });
+      errors.push({
+        path: `${prefix}.requires`,
+        message: '"requires" must be an array of flag name strings',
+      });
     } else {
       for (let i = 0; i < flag.requires.length; i++) {
         if (typeof flag.requires[i] !== 'string' || flag.requires[i] === '') {
-          errors.push({ path: `${prefix}.requires[${i}]`, message: 'Required flag name must be a non-empty string' });
+          errors.push({
+            path: `${prefix}.requires[${i}]`,
+            message: 'Required flag name must be a non-empty string',
+          });
         }
       }
     }
@@ -275,28 +332,47 @@ function validateFlagDefinition(
 
   // schedule
   if (flag.schedule !== undefined) {
-    if (typeof flag.schedule !== 'object' || flag.schedule === null || Array.isArray(flag.schedule)) {
+    if (
+      typeof flag.schedule !== 'object' ||
+      flag.schedule === null ||
+      Array.isArray(flag.schedule)
+    ) {
       errors.push({ path: `${prefix}.schedule`, message: '"schedule" must be an object' });
     } else {
       const schedule = flag.schedule as Record<string, unknown>;
       if (schedule.enableAt !== undefined) {
         if (typeof schedule.enableAt !== 'string') {
-          errors.push({ path: `${prefix}.schedule.enableAt`, message: '"enableAt" must be an ISO 8601 string' });
+          errors.push({
+            path: `${prefix}.schedule.enableAt`,
+            message: '"enableAt" must be an ISO 8601 string',
+          });
         } else if (isNaN(new Date(schedule.enableAt).getTime())) {
-          errors.push({ path: `${prefix}.schedule.enableAt`, message: `Invalid ISO 8601 date: "${schedule.enableAt}"` });
+          errors.push({
+            path: `${prefix}.schedule.enableAt`,
+            message: `Invalid ISO 8601 date: "${schedule.enableAt}"`,
+          });
         }
       }
       if (schedule.disableAt !== undefined) {
         if (typeof schedule.disableAt !== 'string') {
-          errors.push({ path: `${prefix}.schedule.disableAt`, message: '"disableAt" must be an ISO 8601 string' });
+          errors.push({
+            path: `${prefix}.schedule.disableAt`,
+            message: '"disableAt" must be an ISO 8601 string',
+          });
         } else if (isNaN(new Date(schedule.disableAt).getTime())) {
-          errors.push({ path: `${prefix}.schedule.disableAt`, message: `Invalid ISO 8601 date: "${schedule.disableAt}"` });
+          errors.push({
+            path: `${prefix}.schedule.disableAt`,
+            message: `Invalid ISO 8601 date: "${schedule.disableAt}"`,
+          });
         }
       }
       const knownScheduleFields = new Set(['enableAt', 'disableAt']);
       for (const key of Object.keys(schedule)) {
         if (!knownScheduleFields.has(key)) {
-          errors.push({ path: `${prefix}.schedule.${key}`, message: `Unknown schedule field "${key}"` });
+          errors.push({
+            path: `${prefix}.schedule.${key}`,
+            message: `Unknown schedule field "${key}"`,
+          });
         }
       }
     }
@@ -304,24 +380,43 @@ function validateFlagDefinition(
 
   // lifecycle
   if (flag.lifecycle !== undefined) {
-    if (typeof flag.lifecycle !== 'object' || flag.lifecycle === null || Array.isArray(flag.lifecycle)) {
+    if (
+      typeof flag.lifecycle !== 'object' ||
+      flag.lifecycle === null ||
+      Array.isArray(flag.lifecycle)
+    ) {
       errors.push({ path: `${prefix}.lifecycle`, message: '"lifecycle" must be an object' });
     } else {
       const lc = flag.lifecycle as Record<string, unknown>;
       const validStates = ['draft', 'active', 'sunset', 'archived'];
       if (lc.state === undefined) {
-        errors.push({ path: `${prefix}.lifecycle.state`, message: 'Missing required field "state"' });
+        errors.push({
+          path: `${prefix}.lifecycle.state`,
+          message: 'Missing required field "state"',
+        });
       } else if (typeof lc.state !== 'string' || !validStates.includes(lc.state)) {
-        errors.push({ path: `${prefix}.lifecycle.state`, message: `"state" must be one of: ${validStates.join(', ')}` });
+        errors.push({
+          path: `${prefix}.lifecycle.state`,
+          message: `"state" must be one of: ${validStates.join(', ')}`,
+        });
       }
       if (lc.state === 'sunset' && lc.sunsetAt === undefined) {
-        errors.push({ path: `${prefix}.lifecycle.sunsetAt`, message: '"sunsetAt" is required when state is "sunset"' });
+        errors.push({
+          path: `${prefix}.lifecycle.sunsetAt`,
+          message: '"sunsetAt" is required when state is "sunset"',
+        });
       }
       if (lc.sunsetAt !== undefined) {
         if (typeof lc.sunsetAt !== 'string') {
-          errors.push({ path: `${prefix}.lifecycle.sunsetAt`, message: '"sunsetAt" must be an ISO 8601 string' });
+          errors.push({
+            path: `${prefix}.lifecycle.sunsetAt`,
+            message: '"sunsetAt" must be an ISO 8601 string',
+          });
         } else if (isNaN(new Date(lc.sunsetAt).getTime())) {
-          errors.push({ path: `${prefix}.lifecycle.sunsetAt`, message: `Invalid ISO 8601 date: "${lc.sunsetAt}"` });
+          errors.push({
+            path: `${prefix}.lifecycle.sunsetAt`,
+            message: `Invalid ISO 8601 date: "${lc.sunsetAt}"`,
+          });
         }
       }
     }
@@ -335,7 +430,18 @@ function validateFlagDefinition(
   }
 
   if (strict) {
-    const knownFields = new Set(['enabled', 'description', 'tags', 'rollout', 'rules', 'variants', 'schedule', 'requires', 'lifecycle', 'config']);
+    const knownFields = new Set([
+      'enabled',
+      'description',
+      'tags',
+      'rollout',
+      'rules',
+      'variants',
+      'schedule',
+      'requires',
+      'lifecycle',
+      'config',
+    ]);
     for (const key of Object.keys(flag)) {
       if (!knownFields.has(key)) {
         errors.push({ path: `${prefix}.${key}`, message: `Unknown field "${key}"` });
@@ -344,19 +450,39 @@ function validateFlagDefinition(
   }
 }
 
-function validateRolloutStrategy(prefix: string, strategy: Record<string, unknown>, errors: ValidationError[]): void {
+function validateRolloutStrategy(
+  prefix: string,
+  strategy: Record<string, unknown>,
+  errors: ValidationError[],
+): void {
   const validTypes = ['ramp', 'ring', 'cohort'];
   if (!strategy.type || typeof strategy.type !== 'string' || !validTypes.includes(strategy.type)) {
-    errors.push({ path: `${prefix}.rollout.type`, message: `"type" must be one of: ${validTypes.join(', ')}` });
+    errors.push({
+      path: `${prefix}.rollout.type`,
+      message: `"type" must be one of: ${validTypes.join(', ')}`,
+    });
     return;
   }
 
   switch (strategy.type) {
     case 'ramp': {
-      if (typeof strategy.start !== 'number') errors.push({ path: `${prefix}.rollout.start`, message: '"start" must be a number (0-100)' });
-      if (typeof strategy.end !== 'number') errors.push({ path: `${prefix}.rollout.end`, message: '"end" must be a number (0-100)' });
-      if (typeof strategy.startAt !== 'string') errors.push({ path: `${prefix}.rollout.startAt`, message: '"startAt" must be an ISO 8601 string' });
-      if (typeof strategy.endAt !== 'string') errors.push({ path: `${prefix}.rollout.endAt`, message: '"endAt" must be an ISO 8601 string' });
+      if (typeof strategy.start !== 'number')
+        errors.push({
+          path: `${prefix}.rollout.start`,
+          message: '"start" must be a number (0-100)',
+        });
+      if (typeof strategy.end !== 'number')
+        errors.push({ path: `${prefix}.rollout.end`, message: '"end" must be a number (0-100)' });
+      if (typeof strategy.startAt !== 'string')
+        errors.push({
+          path: `${prefix}.rollout.startAt`,
+          message: '"startAt" must be an ISO 8601 string',
+        });
+      if (typeof strategy.endAt !== 'string')
+        errors.push({
+          path: `${prefix}.rollout.endAt`,
+          message: '"endAt" must be an ISO 8601 string',
+        });
       break;
     }
     case 'ring': {
@@ -365,15 +491,28 @@ function validateRolloutStrategy(prefix: string, strategy: Record<string, unknow
       } else {
         for (let i = 0; i < strategy.rings.length; i++) {
           const ring = strategy.rings[i] as Record<string, unknown>;
-          if (typeof ring?.name !== 'string') errors.push({ path: `${prefix}.rollout.rings[${i}].name`, message: '"name" must be a string' });
-          if (typeof ring?.percentage !== 'number') errors.push({ path: `${prefix}.rollout.rings[${i}].percentage`, message: '"percentage" must be a number' });
+          if (typeof ring?.name !== 'string')
+            errors.push({
+              path: `${prefix}.rollout.rings[${i}].name`,
+              message: '"name" must be a string',
+            });
+          if (typeof ring?.percentage !== 'number')
+            errors.push({
+              path: `${prefix}.rollout.rings[${i}].percentage`,
+              message: '"percentage" must be a number',
+            });
         }
       }
       break;
     }
     case 'cohort': {
-      if (typeof strategy.field !== 'string') errors.push({ path: `${prefix}.rollout.field`, message: '"field" must be a string' });
-      if (typeof strategy.percentage !== 'number') errors.push({ path: `${prefix}.rollout.percentage`, message: '"percentage" must be a number (0-100)' });
+      if (typeof strategy.field !== 'string')
+        errors.push({ path: `${prefix}.rollout.field`, message: '"field" must be a string' });
+      if (typeof strategy.percentage !== 'number')
+        errors.push({
+          path: `${prefix}.rollout.percentage`,
+          message: '"percentage" must be a number (0-100)',
+        });
       break;
     }
   }

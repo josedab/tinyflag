@@ -242,7 +242,9 @@ describe('rollout strategies', () => {
         rollout: { type: 'cohort', field: 'companyId', percentage: 50 },
       };
       // null cohort field → falls through to enabled
-      expect(evaluateFlag('cohort-null', flag, { userId: 'u1', companyId: null as unknown as string })).toBe(true);
+      expect(
+        evaluateFlag('cohort-null', flag, { userId: 'u1', companyId: null as unknown as string }),
+      ).toBe(true);
     });
 
     it('handles numeric cohort field values', () => {
@@ -285,7 +287,8 @@ describe('rollout strategies', () => {
       };
       let count = 0;
       for (let i = 0; i < 1000; i++) {
-        if (evaluateFlag('cohort-99pct', flag, { userId: 'u1', companyId: `company-${i}` })) count++;
+        if (evaluateFlag('cohort-99pct', flag, { userId: 'u1', companyId: `company-${i}` }))
+          count++;
       }
       // ~99% of cohorts should be included
       expect(count).toBeGreaterThan(950);

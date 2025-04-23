@@ -33,8 +33,11 @@ export interface AuditOptions {
 export function connectAudit(instance: TinyFlag, options: AuditOptions): () => void {
   const handler = (event: ChangeEvent) => {
     const action: AuditEvent['action'] =
-      event.previous === undefined ? 'created' :
-      event.current === undefined ? 'deleted' : 'updated';
+      event.previous === undefined
+        ? 'created'
+        : event.current === undefined
+          ? 'deleted'
+          : 'updated';
 
     const auditEvent: AuditEvent = {
       flag: event.flag,
@@ -65,7 +68,9 @@ export function connectAudit(instance: TinyFlag, options: AuditOptions): () => v
   return () => {
     instance.off('change', handler);
     for (const sink of options.sinks) {
-      try { sink.close?.(); } catch {}
+      try {
+        sink.close?.();
+      } catch {}
     }
   };
 }

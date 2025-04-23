@@ -221,7 +221,13 @@ describe('loadFromUrl', () => {
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    await loadFromUrl('https://cdn.example.com/flags.json', false, {}, '"etag-1"', 'Mon, 01 Jan 2024');
+    await loadFromUrl(
+      'https://cdn.example.com/flags.json',
+      false,
+      {},
+      '"etag-1"',
+      'Mon, 01 Jan 2024',
+    );
 
     const headers = mockFetch.mock.calls[0][1].headers;
     expect(headers['If-None-Match']).toBe('"etag-1"');
@@ -237,7 +243,7 @@ describe('loadFromUrl', () => {
         ok: true,
         status: 200,
         text: async () => '<html></html>',
-        headers: { get: (key: string) => key === 'content-type' ? 'text/html' : null },
+        headers: { get: (key: string) => (key === 'content-type' ? 'text/html' : null) },
       }),
     );
 
@@ -255,7 +261,7 @@ describe('loadFromUrl', () => {
         ok: true,
         status: 200,
         text: async () => 'version: 1\nflags:\n  f:\n    enabled: true',
-        headers: { get: (key: string) => key === 'content-type' ? 'text/plain' : null },
+        headers: { get: (key: string) => (key === 'content-type' ? 'text/plain' : null) },
       }),
     );
 
@@ -337,19 +343,13 @@ describe('loadMultiSource', () => {
   });
 
   it('later source overrides earlier for same flag', async () => {
-    const sources = [
-      { flags: { 'f': { enabled: true } } },
-      { flags: { 'f': { enabled: false } } },
-    ];
+    const sources = [{ flags: { f: { enabled: true } } }, { flags: { f: { enabled: false } } }];
     const result = await loadMultiSource(sources, false);
     expect(result.config.flags['f'].enabled).toBe(false);
   });
 
   it('includes merge warnings in result', async () => {
-    const sources = [
-      { flags: { 'f': { enabled: true } } },
-      { flags: { 'f': { enabled: false } } },
-    ];
+    const sources = [{ flags: { f: { enabled: true } } }, { flags: { f: { enabled: false } } }];
     const result = await loadMultiSource(sources, false);
     expect(result.warnings.some((w) => w.message.includes('enabled'))).toBe(true);
   });
@@ -393,7 +393,16 @@ describe('loadFromUrl retry logic', () => {
     );
 
     await expect(
-      loadFromUrl('https://example.com/flags.yml', false, undefined, undefined, undefined, 5000, 2, 10),
+      loadFromUrl(
+        'https://example.com/flags.yml',
+        false,
+        undefined,
+        undefined,
+        undefined,
+        5000,
+        2,
+        10,
+      ),
     ).rejects.toThrow('HTTP 404');
   });
 
@@ -407,9 +416,7 @@ describe('loadFromUrl retry logic', () => {
       }),
     );
 
-    await expect(
-      loadFromUrl('https://example.com/flags.yml', false),
-    ).rejects.toThrow('HTTP 503');
+    await expect(loadFromUrl('https://example.com/flags.yml', false)).rejects.toThrow('HTTP 503');
     expect(callCount).toBe(1);
   });
 });

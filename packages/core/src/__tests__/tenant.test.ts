@@ -62,29 +62,17 @@ describe('multi-tenant', () => {
 
   describe('evaluateTenantFlag', () => {
     it('evaluates with tenant context', () => {
-      const result = evaluateTenantFlag(
-        CONFIG,
-        'dark-mode',
-        { tenantId: 'acme-corp' },
-      );
+      const result = evaluateTenantFlag(CONFIG, 'dark-mode', { tenantId: 'acme-corp' });
       expect(result).toBe(true);
     });
 
     it('uses global defaults for unknown tenant', () => {
-      const result = evaluateTenantFlag(
-        CONFIG,
-        'dark-mode',
-        { tenantId: 'unknown' },
-      );
+      const result = evaluateTenantFlag(CONFIG, 'dark-mode', { tenantId: 'unknown' });
       expect(result).toBe(false);
     });
 
     it('returns false for non-existent flag', () => {
-      const result = evaluateTenantFlag(
-        CONFIG,
-        'nonexistent',
-        { tenantId: 'acme-corp' },
-      );
+      const result = evaluateTenantFlag(CONFIG, 'nonexistent', { tenantId: 'acme-corp' });
       expect(result).toBe(false);
     });
 
@@ -102,11 +90,7 @@ describe('multi-tenant', () => {
 
   describe('evaluateTenantVariant', () => {
     it('returns null variant when no variants defined', () => {
-      const result = evaluateTenantVariant(
-        CONFIG,
-        'dark-mode',
-        { tenantId: 'acme-corp' },
-      );
+      const result = evaluateTenantVariant(CONFIG, 'dark-mode', { tenantId: 'acme-corp' });
       expect(result.variant).toBeNull();
       expect(result.enabled).toBe(true);
     });
@@ -142,7 +126,7 @@ describe('multi-tenant', () => {
       const config: MultiTenantFlagConfig = {
         flags: { 'global-flag': { enabled: true } },
         tenants: {
-          'b': {
+          b: {
             flags: { 'extra-flag': { enabled: true } },
           },
         },
@@ -157,10 +141,10 @@ describe('multi-tenant', () => {
       const config: MultiTenantFlagConfig = {
         flags: { 'global-flag': { enabled: true } },
         tenants: {
-          'a': {
+          a: {
             flags: { 'only-a': { enabled: true } },
           },
-          'b': {
+          b: {
             flags: {},
           },
         },
@@ -196,8 +180,8 @@ describe('multi-tenant', () => {
       const config: MultiTenantFlagConfig = {
         flags: { global: { enabled: true } },
         tenants: {
-          'a': { flags: { 'private-a': { enabled: true } } },
-          'b': { flags: { 'private-a': { enabled: true } } },
+          a: { flags: { 'private-a': { enabled: true } } },
+          b: { flags: { 'private-a': { enabled: true } } },
         },
       };
       const violations = validateTenantIsolation(config);

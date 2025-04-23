@@ -18,7 +18,9 @@ function makeKeyPair() {
 const cleanup: string[] = [];
 afterAll(() => {
   for (const f of cleanup) {
-    try { if (existsSync(f)) unlinkSync(f); } catch {}
+    try {
+      if (existsSync(f)) unlinkSync(f);
+    } catch {}
   }
 });
 

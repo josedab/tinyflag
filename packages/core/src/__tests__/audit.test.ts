@@ -102,7 +102,9 @@ describe('audit', () => {
     const instance = createMockInstance();
     const badSink: AuditSink = {
       name: 'bad',
-      write() { throw new Error('sink error'); },
+      write() {
+        throw new Error('sink error');
+      },
     };
 
     connectAudit(instance, { sinks: [badSink] });
@@ -137,7 +139,9 @@ describe('audit', () => {
     const events: AuditEvent[] = [];
     const badSink: AuditSink = {
       name: 'bad',
-      write() { throw new Error('boom'); },
+      write() {
+        throw new Error('boom');
+      },
     };
     const goodSink: AuditSink = { name: 'good', write: (e) => events.push(e) };
 
@@ -189,7 +193,9 @@ describe('audit', () => {
     const sink: AuditSink = {
       name: 'test',
       write: () => {},
-      close: () => { throw new Error('close error'); },
+      close: () => {
+        throw new Error('close error');
+      },
     };
 
     const disconnect = connectAudit(instance, { sinks: [sink] });
@@ -319,7 +325,9 @@ describe('audit', () => {
 
     it('handles OTel emit error gracefully', () => {
       (globalThis as any).__OTEL_LOGGER__ = {
-        emit: () => { throw new Error('otel error'); },
+        emit: () => {
+          throw new Error('otel error');
+        },
       };
       const sink = createOtelSink();
       expect(() => sink.write(makeAuditEvent())).not.toThrow();

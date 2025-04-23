@@ -18,7 +18,7 @@ describe('createMockTinyFlag', () => {
   it('creates instance from full flag definitions', async () => {
     const ff = await createMockTinyFlag({
       flags: {
-        'experiment': {
+        experiment: {
           enabled: true,
           variants: [
             { name: 'control', weight: 50 },
@@ -37,8 +37,8 @@ describe('createMockTinyFlag', () => {
   it('supports mixed boolean and full definitions', async () => {
     const ff = await createMockTinyFlag({
       flags: {
-        'simple': true,
-        'complex': {
+        simple: true,
+        complex: {
           enabled: true,
           rollout: 50,
           description: 'A complex flag',
@@ -53,7 +53,7 @@ describe('createMockTinyFlag', () => {
 
   it('supports overrides on mock instance', async () => {
     const ff = await createMockTinyFlag({
-      flags: { 'feature': false },
+      flags: { feature: false },
     });
 
     expect(ff.isEnabled('feature')).toBe(false);

@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  createReplayRecorder,
-  parseReplayLog,
-  generateReplayHtmlReport,
-} from '../replay.js';
+import { createReplayRecorder, parseReplayLog, generateReplayHtmlReport } from '../replay.js';
 import type { ReplayLogEntry, ReplayDiff } from '../replay.js';
 
 describe('createReplayRecorder', () => {

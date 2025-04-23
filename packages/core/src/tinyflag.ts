@@ -7,7 +7,14 @@ import type {
   ExposureEvent,
 } from './types.js';
 import { EventEmitter } from './events.js';
-import { evaluateFlag, evaluateVariant, setEvaluationContext, detectCircularDependencies, evaluateWithPersona as coreEvaluateWithPersona, getEvaluationWarnings } from './evaluator.js';
+import {
+  evaluateFlag,
+  evaluateVariant,
+  setEvaluationContext,
+  detectCircularDependencies,
+  evaluateWithPersona as coreEvaluateWithPersona,
+  getEvaluationWarnings,
+} from './evaluator.js';
 import type { EvaluationEnv, EvaluationWarning } from './evaluator.js';
 import {
   detectSourceType,
@@ -195,7 +202,12 @@ export class TinyFlag {
     if (overrideValue === false) return null;
 
     const normalizedContext = normalizeContext(context);
-    const { variant, enabled } = evaluateVariant(normalizedName, flag, normalizedContext, this.evalEnv);
+    const { variant, enabled } = evaluateVariant(
+      normalizedName,
+      flag,
+      normalizedContext,
+      this.evalEnv,
+    );
 
     debug(`getVariant("${normalizedName}") → ${variant}`, context ? { context } : undefined);
 
@@ -293,7 +305,11 @@ export class TinyFlag {
    * Evaluate a flag using a named persona as the base context.
    * Returns false if the persona or flag is not found.
    */
-  evaluateWithPersona(flagName: string, personaName: string, additionalContext?: UserContext): boolean {
+  evaluateWithPersona(
+    flagName: string,
+    personaName: string,
+    additionalContext?: UserContext,
+  ): boolean {
     const normalizedName = flagName?.trim();
     if (!normalizedName) {
       this.emitter.emit('error', { code: 'INVALID_FLAG_NAME', message: 'Flag name is empty' });
@@ -302,13 +318,20 @@ export class TinyFlag {
 
     const flag = this.config.flags[normalizedName];
     if (!flag) {
-      this.emitter.emit('error', { code: 'FLAG_NOT_FOUND', message: `Flag "${normalizedName}" not found`, flagName: normalizedName });
+      this.emitter.emit('error', {
+        code: 'FLAG_NOT_FOUND',
+        message: `Flag "${normalizedName}" not found`,
+        flagName: normalizedName,
+      });
       return false;
     }
 
     const persona = this.config.personas?.[personaName];
     if (!persona) {
-      this.emitter.emit('error', { code: 'PERSONA_NOT_FOUND', message: `Persona "${personaName}" not found` });
+      this.emitter.emit('error', {
+        code: 'PERSONA_NOT_FOUND',
+        message: `Persona "${personaName}" not found`,
+      });
       return false;
     }
 

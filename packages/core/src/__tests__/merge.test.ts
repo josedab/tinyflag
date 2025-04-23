@@ -21,44 +21,44 @@ describe('mergeFlagConfigs', () => {
   });
 
   it('later config overrides enabled field', () => {
-    const c1 = makeConfig({ 'f': { enabled: true } });
-    const c2 = makeConfig({ 'f': { enabled: false } });
+    const c1 = makeConfig({ f: { enabled: true } });
+    const c2 = makeConfig({ f: { enabled: false } });
     const { config, warnings } = mergeFlagConfigs([c1, c2]);
     expect(config.flags['f'].enabled).toBe(false);
     expect(warnings.some((w) => w.field === 'enabled')).toBe(true);
   });
 
   it('later config overrides rollout', () => {
-    const c1 = makeConfig({ 'f': { enabled: true, rollout: 50 } });
-    const c2 = makeConfig({ 'f': { enabled: true, rollout: 75 } });
+    const c1 = makeConfig({ f: { enabled: true, rollout: 50 } });
+    const c2 = makeConfig({ f: { enabled: true, rollout: 75 } });
     const { config, warnings } = mergeFlagConfigs([c1, c2]);
     expect(config.flags['f'].rollout).toBe(75);
     expect(warnings.some((w) => w.field === 'rollout')).toBe(true);
   });
 
   it('later config overrides description', () => {
-    const c1 = makeConfig({ 'f': { enabled: true, description: 'old' } });
-    const c2 = makeConfig({ 'f': { enabled: true, description: 'new' } });
+    const c1 = makeConfig({ f: { enabled: true, description: 'old' } });
+    const c2 = makeConfig({ f: { enabled: true, description: 'new' } });
     const { config } = mergeFlagConfigs([c1, c2]);
     expect(config.flags['f'].description).toBe('new');
   });
 
   it('later config overrides tags', () => {
-    const c1 = makeConfig({ 'f': { enabled: true, tags: ['a', 'b'] } });
-    const c2 = makeConfig({ 'f': { enabled: true, tags: ['c'] } });
+    const c1 = makeConfig({ f: { enabled: true, tags: ['a', 'b'] } });
+    const c2 = makeConfig({ f: { enabled: true, tags: ['c'] } });
     const { config } = mergeFlagConfigs([c1, c2]);
     expect(config.flags['f'].tags).toEqual(['c']);
   });
 
   it('later config overrides rules with warning', () => {
     const c1 = makeConfig({
-      'f': {
+      f: {
         enabled: true,
         rules: [{ conditions: { plan: 'pro' } }],
       },
     });
     const c2 = makeConfig({
-      'f': {
+      f: {
         enabled: true,
         rules: [{ conditions: { plan: 'enterprise' } }, { conditions: { plan: 'team' } }],
       },
@@ -69,8 +69,8 @@ describe('mergeFlagConfigs', () => {
   });
 
   it('later config overrides schedule', () => {
-    const c1 = makeConfig({ 'f': { enabled: true, schedule: { enableAt: '2025-01-01T00:00:00Z' } } });
-    const c2 = makeConfig({ 'f': { enabled: true, schedule: { enableAt: '2026-01-01T00:00:00Z' } } });
+    const c1 = makeConfig({ f: { enabled: true, schedule: { enableAt: '2025-01-01T00:00:00Z' } } });
+    const c2 = makeConfig({ f: { enabled: true, schedule: { enableAt: '2026-01-01T00:00:00Z' } } });
     const { config } = mergeFlagConfigs([c1, c2]);
     expect(config.flags['f'].schedule?.enableAt).toBe('2026-01-01T00:00:00Z');
   });
@@ -78,13 +78,13 @@ describe('mergeFlagConfigs', () => {
   describe('variant merging by name', () => {
     it('adds new variants from overlay', () => {
       const c1 = makeConfig({
-        'f': {
+        f: {
           enabled: true,
           variants: [{ name: 'control', weight: 50 }],
         },
       });
       const c2 = makeConfig({
-        'f': {
+        f: {
           enabled: true,
           variants: [{ name: 'treatment', weight: 50 }],
         },
@@ -97,13 +97,16 @@ describe('mergeFlagConfigs', () => {
 
     it('replaces existing variant weight with warning', () => {
       const c1 = makeConfig({
-        'f': {
+        f: {
           enabled: true,
-          variants: [{ name: 'control', weight: 50 }, { name: 'treatment', weight: 50 }],
+          variants: [
+            { name: 'control', weight: 50 },
+            { name: 'treatment', weight: 50 },
+          ],
         },
       });
       const c2 = makeConfig({
-        'f': {
+        f: {
           enabled: true,
           variants: [{ name: 'control', weight: 80 }],
         },
@@ -115,9 +118,9 @@ describe('mergeFlagConfigs', () => {
     });
 
     it('sets variants directly when base has no variants', () => {
-      const c1 = makeConfig({ 'f': { enabled: true } });
+      const c1 = makeConfig({ f: { enabled: true } });
       const c2 = makeConfig({
-        'f': {
+        f: {
           enabled: true,
           variants: [{ name: 'a', weight: 100 }],
         },
@@ -137,16 +140,16 @@ describe('mergeFlagConfigs', () => {
   });
 
   it('uses version from last config', () => {
-    const c1 = makeConfig({ 'f': { enabled: true } }, 1);
-    const c2 = makeConfig({ 'g': { enabled: true } }, 1);
+    const c1 = makeConfig({ f: { enabled: true } }, 1);
+    const c2 = makeConfig({ g: { enabled: true } }, 1);
     const { config } = mergeFlagConfigs([c1, c2]);
     expect(config.version).toBe(1);
   });
 
   it('merges three configs in order', () => {
-    const c1 = makeConfig({ 'f': { enabled: true, rollout: 10 } });
-    const c2 = makeConfig({ 'f': { enabled: true, rollout: 50 } });
-    const c3 = makeConfig({ 'f': { enabled: false, rollout: 90 } });
+    const c1 = makeConfig({ f: { enabled: true, rollout: 10 } });
+    const c2 = makeConfig({ f: { enabled: true, rollout: 50 } });
+    const c3 = makeConfig({ f: { enabled: false, rollout: 90 } });
     const { config, warnings } = mergeFlagConfigs([c1, c2, c3]);
     expect(config.flags['f'].enabled).toBe(false);
     expect(config.flags['f'].rollout).toBe(90);
@@ -154,29 +157,29 @@ describe('mergeFlagConfigs', () => {
   });
 
   it('generates no warning when enabled values are the same', () => {
-    const c1 = makeConfig({ 'f': { enabled: true } });
-    const c2 = makeConfig({ 'f': { enabled: true } });
+    const c1 = makeConfig({ f: { enabled: true } });
+    const c2 = makeConfig({ f: { enabled: true } });
     const { warnings } = mergeFlagConfigs([c1, c2]);
     expect(warnings.filter((w) => w.field === 'enabled')).toHaveLength(0);
   });
 
   it('generates no warning when rollout is undefined in overlay', () => {
-    const c1 = makeConfig({ 'f': { enabled: true, rollout: 50 } });
-    const c2 = makeConfig({ 'f': { enabled: true } });
+    const c1 = makeConfig({ f: { enabled: true, rollout: 50 } });
+    const c2 = makeConfig({ f: { enabled: true } });
     const { warnings } = mergeFlagConfigs([c1, c2]);
     expect(warnings.filter((w) => w.field === 'rollout')).toHaveLength(0);
   });
 
   it('defaults version to 1 when last config has no version', () => {
-    const c1: FlagConfig = { flags: { 'f': { enabled: true } } };
-    const c2: FlagConfig = { flags: { 'g': { enabled: false } } };
+    const c1: FlagConfig = { flags: { f: { enabled: true } } };
+    const c2: FlagConfig = { flags: { g: { enabled: false } } };
     const { config } = mergeFlagConfigs([c1, c2]);
     expect(config.version).toBe(1);
   });
 
   it('produces rollout warning "none → 50" when base has no rollout and overlay adds one', () => {
-    const c1 = makeConfig({ 'f': { enabled: true } });
-    const c2 = makeConfig({ 'f': { enabled: true, rollout: 50 } });
+    const c1 = makeConfig({ f: { enabled: true } });
+    const c2 = makeConfig({ f: { enabled: true, rollout: 50 } });
     const { config, warnings } = mergeFlagConfigs([c1, c2]);
     expect(config.flags['f'].rollout).toBe(50);
     const rolloutWarning = warnings.find((w) => w.field === 'rollout');
@@ -186,15 +189,15 @@ describe('mergeFlagConfigs', () => {
   });
 
   it('uses version from last config when explicit versions differ', () => {
-    const c1 = makeConfig({ 'f': { enabled: true } }, 2);
-    const c2 = makeConfig({ 'g': { enabled: true } }, 5);
+    const c1 = makeConfig({ f: { enabled: true } }, 2);
+    const c2 = makeConfig({ g: { enabled: true } }, 5);
     const { config } = mergeFlagConfigs([c1, c2]);
     expect(config.version).toBe(5);
   });
 
   it('preserves version: 0 from last config', () => {
-    const c1 = makeConfig({ 'f': { enabled: true } }, 3);
-    const c2 = makeConfig({ 'g': { enabled: true } }, 0);
+    const c1 = makeConfig({ f: { enabled: true } }, 3);
+    const c2 = makeConfig({ g: { enabled: true } }, 0);
     const { config } = mergeFlagConfigs([c1, c2]);
     expect(config.version).toBe(0);
   });

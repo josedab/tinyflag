@@ -29,13 +29,26 @@ export interface CachedTinyFlagOptions {
  */
 export class CachedTinyFlag {
   private config: FlagConfig = { flags: {} };
-  private readonly options: Required<Pick<CachedTinyFlagOptions, 'mode' | 'pollInterval' | 'autoReconnect' | 'pollingFallback'>> & CachedTinyFlagOptions;
+  private readonly options: Required<
+    Pick<CachedTinyFlagOptions, 'mode' | 'pollInterval' | 'autoReconnect' | 'pollingFallback'>
+  > &
+    CachedTinyFlagOptions;
   private readonly emitter = new EventEmitter();
-  private ws?: { close(): void; send(data: string): void; readyState: number; onmessage: ((event: { data: string }) => void) | null; onclose: (() => void) | null; onerror: ((event: unknown) => void) | null };
+  private ws?: {
+    close(): void;
+    send(data: string): void;
+    readyState: number;
+    onmessage: ((event: { data: string }) => void) | null;
+    onclose: (() => void) | null;
+    onerror: ((event: unknown) => void) | null;
+  };
   private pollTimer?: ReturnType<typeof setInterval>;
   private etag?: string;
   private connected = false;
-  private cache = new Map<string, { enabled: boolean; variant: string | null; timestamp: number }>();
+  private cache = new Map<
+    string,
+    { enabled: boolean; variant: string | null; timestamp: number }
+  >();
   private cacheMaxAge = 60_000;
 
   constructor(options: CachedTinyFlagOptions) {
@@ -117,14 +130,17 @@ export class CachedTinyFlag {
     const url = `${this.options.serverUrl}/flags`;
     const headers: Record<string, string> = {
       ...this.options.headers,
-      'Accept': 'application/json',
+      Accept: 'application/json',
     };
     if (this.etag) {
       headers['If-None-Match'] = this.etag;
     }
 
     try {
-      const res = await fetch(url, { headers, signal: AbortSignal.timeout(this.options.fetchTimeout ?? 5000) });
+      const res = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(this.options.fetchTimeout ?? 5000),
+      });
 
       if (res.status === 304) return;
 
@@ -133,11 +149,14 @@ export class CachedTinyFlag {
       }
 
       this.etag = res.headers.get('etag') ?? undefined;
-      const data = await res.json() as { version?: number; flags: Record<string, unknown> };
+      const data = (await res.json()) as { version?: number; flags: Record<string, unknown> };
       const { config, errors } = parseFlagConfig(data);
 
       if (errors.length > 0) {
-        this.emitter.emit('error', { code: 'PARSE_ERROR', message: `Flag parse errors: ${errors.map((e) => e.message).join(', ')}` });
+        this.emitter.emit('error', {
+          code: 'PARSE_ERROR',
+          message: `Flag parse errors: ${errors.map((e) => e.message).join(', ')}`,
+        });
         return;
       }
 
@@ -187,7 +206,10 @@ export class CachedTinyFlag {
             }
           }
         } catch (parseError) {
-          debug('CachedTinyFlag: WebSocket message parse error: ' + (parseError instanceof Error ? parseError.message : String(parseError)));
+          debug(
+            'CachedTinyFlag: WebSocket message parse error: ' +
+              (parseError instanceof Error ? parseError.message : String(parseError)),
+          );
         }
       };
 

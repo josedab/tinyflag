@@ -69,6 +69,8 @@ export async function createMockTinyFlag(options: MockTinyFlagOptions): Promise<
  * const flag = createFlag({ enabled: true, rollout: 50 });
  * ```
  */
-export function createFlag(overrides: Partial<FlagDefinition> & { enabled: boolean }): FlagDefinition {
+export function createFlag(
+  overrides: Partial<FlagDefinition> & { enabled: boolean },
+): FlagDefinition {
   return { ...overrides };
 }

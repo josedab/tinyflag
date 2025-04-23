@@ -14,9 +14,10 @@ import type { FlagConfig, FlagDefinition, Variant, MergeWarning } from './types.
  * warnings.forEach(w => console.warn(`${w.flag}.${w.field}: ${w.message}`));
  * ```
  */
-export function mergeFlagConfigs(
-  configs: FlagConfig[],
-): { config: FlagConfig; warnings: MergeWarning[] } {
+export function mergeFlagConfigs(configs: FlagConfig[]): {
+  config: FlagConfig;
+  warnings: MergeWarning[];
+} {
   if (configs.length === 0) {
     return { config: { flags: {} }, warnings: [] };
   }

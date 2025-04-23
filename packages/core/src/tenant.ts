@@ -105,12 +105,8 @@ export function diffTenantFlags(
   tenantA: string | null,
   tenantB: string | null,
 ): TenantDiffEntry[] {
-  const flagsA = tenantA
-    ? resolveTenantFlags(config, tenantA)
-    : config.flags;
-  const flagsB = tenantB
-    ? resolveTenantFlags(config, tenantB)
-    : config.flags;
+  const flagsA = tenantA ? resolveTenantFlags(config, tenantA) : config.flags;
+  const flagsB = tenantB ? resolveTenantFlags(config, tenantB) : config.flags;
 
   const allFlags = new Set([...Object.keys(flagsA), ...Object.keys(flagsB)]);
   const diffs: TenantDiffEntry[] = [];
@@ -120,9 +116,19 @@ export function diffTenantFlags(
     const b = flagsB[flag];
 
     if (!a && b) {
-      diffs.push({ flag, type: 'added', tenantA: tenantA ?? '(global)', tenantB: tenantB ?? '(global)' });
+      diffs.push({
+        flag,
+        type: 'added',
+        tenantA: tenantA ?? '(global)',
+        tenantB: tenantB ?? '(global)',
+      });
     } else if (a && !b) {
-      diffs.push({ flag, type: 'removed', tenantA: tenantA ?? '(global)', tenantB: tenantB ?? '(global)' });
+      diffs.push({
+        flag,
+        type: 'removed',
+        tenantA: tenantA ?? '(global)',
+        tenantB: tenantB ?? '(global)',
+      });
     } else if (a && b) {
       const changes: string[] = [];
       if (a.enabled !== b.enabled) changes.push(`enabled: ${a.enabled} → ${b.enabled}`);
@@ -155,9 +161,7 @@ export interface TenantDiffEntry {
  * Validate that no cross-tenant flag leakage occurs.
  * Returns violations where a tenant can see flags from another tenant's namespace.
  */
-export function validateTenantIsolation(
-  config: MultiTenantFlagConfig,
-): TenantIsolationViolation[] {
+export function validateTenantIsolation(config: MultiTenantFlagConfig): TenantIsolationViolation[] {
   const violations: TenantIsolationViolation[] = [];
   const tenants = listTenants(config);
 
@@ -197,9 +201,7 @@ export interface TenantIsolationViolation {
 /**
  * Format tenant list as human-readable output.
  */
-export function formatTenantList(
-  config: MultiTenantFlagConfig,
-): string {
+export function formatTenantList(config: MultiTenantFlagConfig): string {
   const tenants = listTenants(config);
   if (tenants.length === 0) return 'No tenants configured.';
 

@@ -1,4 +1,11 @@
-import type { FlagDefinition, FlagConfig, Rule, UserContext, RolloutStrategy, SegmentDefinition } from './types.js';
+import type {
+  FlagDefinition,
+  FlagConfig,
+  Rule,
+  UserContext,
+  RolloutStrategy,
+  SegmentDefinition,
+} from './types.js';
 import type { TinyFlagErrorCode } from './types.js';
 import { rolloutBucket, selectVariant, murmurhash3 } from './hash.js';
 import { isDebug } from './debug.js';
@@ -161,7 +168,11 @@ function globMatch(pattern: string, value: string): boolean {
  * @param segments - Optional named segment definitions for segment reference resolution. Falls back to module-level context if not provided.
  * @returns `true` if all conditions in the rule match the context.
  */
-export function matchRule(rule: Rule, context: UserContext, segments?: Record<string, SegmentDefinition>): boolean {
+export function matchRule(
+  rule: Rule,
+  context: UserContext,
+  segments?: Record<string, SegmentDefinition>,
+): boolean {
   const resolvedSegments = segments ?? currentSegments;
   let conditions = rule.conditions;
 
@@ -352,7 +363,12 @@ export function buildDependencyTree(
 }
 
 /** Core evaluation logic without prerequisite checking (used internally). */
-function evaluateFlagCore(flagName: string, flag: FlagDefinition, context?: UserContext, segments?: Record<string, SegmentDefinition>): boolean {
+function evaluateFlagCore(
+  flagName: string,
+  flag: FlagDefinition,
+  context?: UserContext,
+  segments?: Record<string, SegmentDefinition>,
+): boolean {
   const scheduledEnabled = applySchedule(flag);
   if (!scheduledEnabled) return false;
   if (!flag.enabled) return false;
@@ -391,7 +407,10 @@ let currentSegments: Record<string, SegmentDefinition> = {};
  * @param flags - Map of all flag definitions.
  * @param segments - Optional map of named segment definitions.
  */
-export function setEvaluationContext(flags: Record<string, FlagDefinition>, segments?: Record<string, SegmentDefinition>): void {
+export function setEvaluationContext(
+  flags: Record<string, FlagDefinition>,
+  segments?: Record<string, SegmentDefinition>,
+): void {
   currentFlags = flags;
   currentSegments = segments ?? {};
 }
@@ -558,7 +577,8 @@ export function evaluateVariant(
   }
 
   // Need userId for deterministic variant assignment
-  if (!context?.userId) return { variant: null, enabled: evaluateFlag(flagName, flag, context, env, warnings) };
+  if (!context?.userId)
+    return { variant: null, enabled: evaluateFlag(flagName, flag, context, env, warnings) };
 
   const enabled = evaluateFlag(flagName, flag, context, env, warnings);
   return { variant: selectVariant(flagName, context.userId, flag.variants), enabled };

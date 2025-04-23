@@ -485,8 +485,8 @@ describe('checkPrerequisites', () => {
 
   it('detects circular dependency A→B→A', () => {
     const flags: Record<string, FlagDefinition> = {
-      'a': { enabled: true, requires: ['b'] },
-      'b': { enabled: true, requires: ['a'] },
+      a: { enabled: true, requires: ['b'] },
+      b: { enabled: true, requires: ['a'] },
     };
     setEvaluationContext(flags);
     // Circular → returns false
@@ -495,9 +495,9 @@ describe('checkPrerequisites', () => {
 
   it('detects circular dependency A→B→C→A', () => {
     const flags: Record<string, FlagDefinition> = {
-      'a': { enabled: true, requires: ['b'] },
-      'b': { enabled: true, requires: ['c'] },
-      'c': { enabled: true, requires: ['a'] },
+      a: { enabled: true, requires: ['b'] },
+      b: { enabled: true, requires: ['c'] },
+      c: { enabled: true, requires: ['a'] },
     };
     setEvaluationContext(flags);
     expect(evaluateFlag('a', flags['a'])).toBe(false);
@@ -515,8 +515,8 @@ describe('checkPrerequisites', () => {
 
   it('evaluateVariant also checks prerequisites', () => {
     const flags: Record<string, FlagDefinition> = {
-      'base': { enabled: false },
-      'child': {
+      base: { enabled: false },
+      child: {
         enabled: true,
         requires: ['base'],
         variants: [{ name: 'a', weight: 100 }],
@@ -561,16 +561,16 @@ describe('applySchedule', () => {
 describe('detectCircularDependencies', () => {
   it('returns empty for no cycles', () => {
     const flags: Record<string, FlagDefinition> = {
-      'a': { enabled: true },
-      'b': { enabled: true, requires: ['a'] },
+      a: { enabled: true },
+      b: { enabled: true, requires: ['a'] },
     };
     expect(detectCircularDependencies(flags)).toEqual([]);
   });
 
   it('detects A→B→A cycle', () => {
     const flags: Record<string, FlagDefinition> = {
-      'a': { enabled: true, requires: ['b'] },
-      'b': { enabled: true, requires: ['a'] },
+      a: { enabled: true, requires: ['b'] },
+      b: { enabled: true, requires: ['a'] },
     };
     const cycles = detectCircularDependencies(flags);
     expect(cycles.length).toBeGreaterThan(0);
@@ -578,9 +578,9 @@ describe('detectCircularDependencies', () => {
 
   it('detects A→B→C→A cycle', () => {
     const flags: Record<string, FlagDefinition> = {
-      'a': { enabled: true, requires: ['b'] },
-      'b': { enabled: true, requires: ['c'] },
-      'c': { enabled: true, requires: ['a'] },
+      a: { enabled: true, requires: ['b'] },
+      b: { enabled: true, requires: ['c'] },
+      c: { enabled: true, requires: ['a'] },
     };
     const cycles = detectCircularDependencies(flags);
     expect(cycles.length).toBeGreaterThan(0);
@@ -590,8 +590,8 @@ describe('detectCircularDependencies', () => {
 describe('buildDependencyTree', () => {
   it('builds tree for simple dependency', () => {
     const flags: Record<string, FlagDefinition> = {
-      'parent': { enabled: true },
-      'child': { enabled: true, requires: ['parent'] },
+      parent: { enabled: true },
+      child: { enabled: true, requires: ['parent'] },
     };
     const tree = buildDependencyTree('child', flags);
     expect(tree).toContain('child');
@@ -600,8 +600,8 @@ describe('buildDependencyTree', () => {
 
   it('handles circular dependency in tree', () => {
     const flags: Record<string, FlagDefinition> = {
-      'a': { enabled: true, requires: ['b'] },
-      'b': { enabled: true, requires: ['a'] },
+      a: { enabled: true, requires: ['b'] },
+      b: { enabled: true, requires: ['a'] },
     };
     const tree = buildDependencyTree('a', flags);
     expect(tree).toContain('circular');
@@ -626,7 +626,7 @@ describe('getEvaluationWarnings', () => {
       enabled: true,
       lifecycle: { state: 'sunset', sunsetAt: '2025-01-01' },
     };
-    setEvaluationContext({ 'f': flag });
+    setEvaluationContext({ f: flag });
     evaluateFlag('f', flag);
     const warnings = getEvaluationWarnings();
     expect(warnings.some((w) => w.code === 'SUNSET_FLAG')).toBe(true);
@@ -758,7 +758,7 @@ describe('segment resolution', () => {
 
   it('resolves segment conditions for rule matching', () => {
     const flags: Record<string, FlagDefinition> = {
-      'f': {
+      f: {
         enabled: false, // disabled by default
         rules: [{ conditions: {}, segment: 'enterprise-users', enabled: true }],
       },
@@ -773,15 +773,13 @@ describe('segment resolution', () => {
 
   it('segment conditions merged with rule conditions', () => {
     const flags: Record<string, FlagDefinition> = {
-      'f': {
+      f: {
         enabled: true,
-        rules: [
-          { conditions: { extra: 'yes' }, segment: 'premium', enabled: false },
-        ],
+        rules: [{ conditions: { extra: 'yes' }, segment: 'premium', enabled: false }],
       },
     };
     const segments = {
-      'premium': { conditions: { plan: 'pro' } },
+      premium: { conditions: { plan: 'pro' } },
     };
     setEvaluationContext(flags, segments);
     // Rule matches when both segment conditions (plan=pro) and inline (extra=yes) match
@@ -792,7 +790,7 @@ describe('segment resolution', () => {
 
   it('handles segment with extends', () => {
     const flags: Record<string, FlagDefinition> = {
-      'f': {
+      f: {
         enabled: true,
         rules: [{ conditions: {}, segment: 'child-segment', enabled: false }],
       },
@@ -902,8 +900,8 @@ describe('segment resolution', () => {
   describe('prerequisite edge cases', () => {
     it('prerequisite with rollout=0 blocks dependent', () => {
       const flags: Record<string, FlagDefinition> = {
-        'base': { enabled: true, rollout: 0 },
-        'dependent': { enabled: true, requires: ['base'] },
+        base: { enabled: true, rollout: 0 },
+        dependent: { enabled: true, requires: ['base'] },
       };
       setEvaluationContext(flags);
       expect(evaluateFlag('dependent', flags['dependent'], { userId: 'u1' })).toBe(false);
@@ -931,10 +929,10 @@ describe('segment resolution', () => {
 
     it('quadrilateral circular dependency returns false', () => {
       const flags: Record<string, FlagDefinition> = {
-        'a': { enabled: true, requires: ['d'] },
-        'b': { enabled: true, requires: ['a'] },
-        'c': { enabled: true, requires: ['b'] },
-        'd': { enabled: true, requires: ['c'] },
+        a: { enabled: true, requires: ['d'] },
+        b: { enabled: true, requires: ['a'] },
+        c: { enabled: true, requires: ['b'] },
+        d: { enabled: true, requires: ['c'] },
       };
       setEvaluationContext(flags);
       expect(evaluateFlag('a', flags['a'])).toBe(false);
@@ -944,24 +942,29 @@ describe('segment resolution', () => {
   describe('segment edge cases', () => {
     it('3-level segment inheritance', () => {
       const flags: Record<string, FlagDefinition> = {
-        'f': {
+        f: {
           enabled: true,
           rules: [{ conditions: {}, segment: 'grandchild', enabled: false }],
         },
       };
       const segments = {
-        'grandparent': { conditions: { org: 'acme' } },
-        'parent': { conditions: { tier: 'enterprise' }, extends: ['grandparent'] as readonly string[] },
-        'grandchild': { conditions: { role: 'admin' }, extends: ['parent'] as readonly string[] },
+        grandparent: { conditions: { org: 'acme' } },
+        parent: {
+          conditions: { tier: 'enterprise' },
+          extends: ['grandparent'] as readonly string[],
+        },
+        grandchild: { conditions: { role: 'admin' }, extends: ['parent'] as readonly string[] },
       };
       setEvaluationContext(flags, segments);
-      expect(evaluateFlag('f', flags['f'], { org: 'acme', tier: 'enterprise', role: 'admin' })).toBe(false);
+      expect(
+        evaluateFlag('f', flags['f'], { org: 'acme', tier: 'enterprise', role: 'admin' }),
+      ).toBe(false);
       expect(evaluateFlag('f', flags['f'], { tier: 'enterprise', role: 'admin' })).toBe(true);
     });
 
     it('missing segment reference falls through to inline conditions', () => {
       const flags: Record<string, FlagDefinition> = {
-        'f': {
+        f: {
           enabled: true,
           rules: [{ conditions: { plan: 'pro' }, segment: 'nonexistent' }],
         },

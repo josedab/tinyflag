@@ -36,7 +36,9 @@ function retryDelay(attempt: number, baseDelay: number): Promise<void> {
 const FILE_EXTENSIONS = ['.yml', '.yaml', '.json'];
 
 /** Detect the source type from the options. */
-export function detectSourceType(source: string | FlagConfig | Array<string | FlagConfig>): SourceType {
+export function detectSourceType(
+  source: string | FlagConfig | Array<string | FlagConfig>,
+): SourceType {
   if (Array.isArray(source)) return 'multi';
   if (typeof source !== 'string') return 'inline';
   if (source.startsWith('http://') || source.startsWith('https://')) return 'url';
@@ -135,8 +137,8 @@ export async function loadFromUrl(
       return await fetchFlagsFromUrl(url, strict, headers, etag, lastModified, fetchTimeout);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      const retryable = error instanceof FetchError &&
-        (error.isNetworkError || isTransientError(error.status));
+      const retryable =
+        error instanceof FetchError && (error.isNetworkError || isTransientError(error.status));
       if (!retryable || attempt === maxRetries) {
         throw lastError;
       }
@@ -256,7 +258,16 @@ export async function loadMultiSource(
         result = await loadFromFile(src as string, strict);
         break;
       case 'url':
-        result = await loadFromUrl(src as string, strict, headers, undefined, undefined, fetchTimeout, retries, retryDelayMs);
+        result = await loadFromUrl(
+          src as string,
+          strict,
+          headers,
+          undefined,
+          undefined,
+          fetchTimeout,
+          retries,
+          retryDelayMs,
+        );
         break;
       case 'inline':
         result = loadFromInline(src as FlagConfig, strict);
