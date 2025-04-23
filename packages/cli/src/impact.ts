@@ -3,14 +3,27 @@ import { join, extname, relative } from 'path';
 import type { FlagConfig, FlagDefinition } from 'tinyflag';
 
 /** Patterns that indicate flag usage in code. */
-const FLAG_USAGE_PATTERN = /(?:isEnabled|getVariant|evaluateFlag|useFlag|useFeatureFlag)\s*\(\s*['"]([a-z0-9-]+)['"]/g;
+const FLAG_USAGE_PATTERN =
+  /(?:isEnabled|getVariant|evaluateFlag|useFlag|useFeatureFlag)\s*\(\s*['"]([a-z0-9-]+)['"]/g;
 
 /** Annotation pattern: // tinyflag-uses: flag-name */
-const ANNOTATION_PATTERN = /\/\/\s*tinyflag-uses:\s*([a-z0-9][a-z0-9-]*(?:\s*,\s*[a-z0-9][a-z0-9-]*)*)/g;
+const ANNOTATION_PATTERN =
+  /\/\/\s*tinyflag-uses:\s*([a-z0-9][a-z0-9-]*(?:\s*,\s*[a-z0-9][a-z0-9-]*)*)/g;
 
 const SCANNABLE_EXTENSIONS = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-  '.vue', '.svelte', '.py', '.go', '.rs', '.kt', '.java',
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.vue',
+  '.svelte',
+  '.py',
+  '.go',
+  '.rs',
+  '.kt',
+  '.java',
 ]);
 
 /** A location where a flag is referenced in code. */
@@ -69,7 +82,14 @@ export interface RiskMatrix {
 export function scanFlagReferences(
   dir: string,
   flagName: string,
-  excludeDirs: Set<string> = new Set(['node_modules', 'dist', '.git', 'coverage', '.next', 'build']),
+  excludeDirs: Set<string> = new Set([
+    'node_modules',
+    'dist',
+    '.git',
+    'coverage',
+    '.next',
+    'build',
+  ]),
 ): FlagReference[] {
   const references: FlagReference[] = [];
 
@@ -104,11 +124,7 @@ export function scanFlagReferences(
   return references;
 }
 
-function scanFileForFlag(
-  filePath: string,
-  flagName: string,
-  references: FlagReference[],
-): void {
+function scanFileForFlag(filePath: string, flagName: string, references: FlagReference[]): void {
   let content: string;
   try {
     content = readFileSync(filePath, 'utf-8');
@@ -183,13 +199,14 @@ export function classifyAffectedFiles(
 }
 
 function isRouteLike(file: string): boolean {
-  return /(?:route|page|api|handler|controller|endpoint)/i.test(file) ||
-    /(?:pages|routes|api)\//i.test(file);
+  return (
+    /(?:route|page|api|handler|controller|endpoint)/i.test(file) ||
+    /(?:pages|routes|api)\//i.test(file)
+  );
 }
 
 function isComponentLike(file: string): boolean {
-  return /(?:component|widget|view)/i.test(file) ||
-    /\.(tsx|vue|svelte)$/.test(file);
+  return /(?:component|widget|view)/i.test(file) || /\.(tsx|vue|svelte)$/.test(file);
 }
 
 function isTestFile(file: string): boolean {
@@ -209,16 +226,14 @@ export function calculateBlastRadius(
     routes: affectedFiles.filter((f) => f.isRoute && !f.isTest).length,
     components: affectedFiles.filter((f) => f.isComponent && !f.isTest).length,
     tests: affectedFiles.filter((f) => f.isTest).length,
-    rolloutPercentage: typeof flag?.rollout === 'number' ? flag.rollout : (flag?.enabled ? 100 : 0),
+    rolloutPercentage: typeof flag?.rollout === 'number' ? flag.rollout : flag?.enabled ? 100 : 0,
   };
 }
 
 /**
  * Calculate risk matrix based on blast radius.
  */
-export function calculateRiskMatrix(
-  blastRadius: BlastRadius,
-): RiskMatrix {
+export function calculateRiskMatrix(blastRadius: BlastRadius): RiskMatrix {
   let score = 0;
   const factors: string[] = [];
 
@@ -290,11 +305,7 @@ export function recommendStrategy(risk: RiskMatrix, blastRadius: BlastRadius): s
 /**
  * Run full impact analysis for a flag.
  */
-export function analyzeImpact(
-  dir: string,
-  flagName: string,
-  config?: FlagConfig,
-): ImpactAnalysis {
+export function analyzeImpact(dir: string, flagName: string, config?: FlagConfig): ImpactAnalysis {
   const references = scanFlagReferences(dir, flagName);
   const affectedFiles = classifyAffectedFiles(references, dir);
   const flagDef = config?.flags[flagName];
@@ -353,7 +364,9 @@ export function formatImpactReport(analysis: ImpactAnalysis, baseDir?: string): 
       if (f.isComponent) tags.push('component');
       if (f.isTest) tags.push('test');
       const tagStr = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
-      lines.push(`   ${f.file}${tagStr} (${f.references.length} ref${f.references.length !== 1 ? 's' : ''})`);
+      lines.push(
+        `   ${f.file}${tagStr} (${f.references.length} ref${f.references.length !== 1 ? 's' : ''})`,
+      );
     }
     lines.push('');
   }

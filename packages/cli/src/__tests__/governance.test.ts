@@ -63,21 +63,13 @@ describe('governance', () => {
     const config = parseFlagOwners(SAMPLE_OWNERS);
 
     it('passes when all approvals present', () => {
-      const result = checkApprovals(
-        ['checkout-v2'],
-        config,
-        ['@payments-team'],
-      );
+      const result = checkApprovals(['checkout-v2'], config, ['@payments-team']);
       expect(result.passed).toBe(true);
       expect(result.missingApprovals).toHaveLength(0);
     });
 
     it('fails when approval missing', () => {
-      const result = checkApprovals(
-        ['checkout-v2'],
-        config,
-        ['@random-user'],
-      );
+      const result = checkApprovals(['checkout-v2'], config, ['@random-user']);
       expect(result.passed).toBe(false);
       expect(result.missingApprovals).toHaveLength(1);
       expect(result.missingApprovals[0].missing).toEqual(['@payments-team']);
@@ -122,7 +114,9 @@ describe('governance', () => {
 
   describe('loadFlagOwners', () => {
     it('throws on non-existent file', () => {
-      expect(() => loadFlagOwners('/nonexistent/flag-owners.yml')).toThrow('Flag owners file not found');
+      expect(() => loadFlagOwners('/nonexistent/flag-owners.yml')).toThrow(
+        'Flag owners file not found',
+      );
     });
   });
 

@@ -1,15 +1,74 @@
 export { generateTypes } from './generate.js';
 export { diffConfigs, formatChanges, formatChangesMarkdown } from './diff.js';
 export { scanFlagUsage, generateStaleReport, formatStaleReport } from './stale.js';
-export { parseFlagOwners, loadFlagOwners, resolveOwnership, checkApprovals, formatApprovalResult, formatOwnershipReport } from './governance.js';
-export { scanFlagReferences, classifyAffectedFiles, calculateBlastRadius, calculateRiskMatrix, analyzeImpact, formatImpactReport } from './impact.js';
-export { parseTestSpec, runTestSpec, runTestSpecs, formatTestResults, formatJUnitXml } from './testing.js';
-export { parseFlagCommand, generateOverlayFile, applyOverlay, writeOverlay, loadOverlay, cleanupExpiredOverlays, listActiveOverlays, createOverlayHandler } from './ephemeral.js';
-export { CanaryController, createPrometheusAdapter, createDatadogAdapter, createCloudWatchAdapter, formatCanaryState } from './canary.js';
+export {
+  parseFlagOwners,
+  loadFlagOwners,
+  resolveOwnership,
+  checkApprovals,
+  formatApprovalResult,
+  formatOwnershipReport,
+} from './governance.js';
+export {
+  scanFlagReferences,
+  classifyAffectedFiles,
+  calculateBlastRadius,
+  calculateRiskMatrix,
+  analyzeImpact,
+  formatImpactReport,
+} from './impact.js';
+export {
+  parseTestSpec,
+  runTestSpec,
+  runTestSpecs,
+  formatTestResults,
+  formatJUnitXml,
+} from './testing.js';
+export {
+  parseFlagCommand,
+  generateOverlayFile,
+  applyOverlay,
+  writeOverlay,
+  loadOverlay,
+  cleanupExpiredOverlays,
+  listActiveOverlays,
+  createOverlayHandler,
+} from './ephemeral.js';
+export {
+  CanaryController,
+  createPrometheusAdapter,
+  createDatadogAdapter,
+  createCloudWatchAdapter,
+  formatCanaryState,
+} from './canary.js';
 export type { FlagChange } from './diff.js';
 export type { StaleReport } from './stale.js';
-export type { FlagOwnerEntry, FlagOwnersConfig, OwnershipResult, ApprovalCheckResult } from './governance.js';
-export type { FlagReference, AffectedFile, ImpactAnalysis, BlastRadius, RiskMatrix, RiskLevel } from './impact.js';
-export type { FlagTestSpec, FlagTestCase, FlagTestAssertion, TestRunResult, SpecResult } from './testing.js';
+export type {
+  FlagOwnerEntry,
+  FlagOwnersConfig,
+  OwnershipResult,
+  ApprovalCheckResult,
+} from './governance.js';
+export type {
+  FlagReference,
+  AffectedFile,
+  ImpactAnalysis,
+  BlastRadius,
+  RiskMatrix,
+  RiskLevel,
+} from './impact.js';
+export type {
+  FlagTestSpec,
+  FlagTestCase,
+  FlagTestAssertion,
+  TestRunResult,
+  SpecResult,
+} from './testing.js';
 export type { EphemeralOverride, OverlayFile } from './ephemeral.js';
-export type { CanaryConfig, CanaryState, CanaryEvent, HealthMetrics, MetricsAdapter } from './canary.js';
+export type {
+  CanaryConfig,
+  CanaryState,
+  CanaryEvent,
+  HealthMetrics,
+  MetricsAdapter,
+} from './canary.js';

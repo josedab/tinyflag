@@ -156,9 +156,7 @@ tests:
         flags: {
           'ab-flag': {
             enabled: true,
-            rules: [
-              { conditions: { plan: { $in: ['pro', 'enterprise'] } }, enabled: true },
-            ],
+            rules: [{ conditions: { plan: { $in: ['pro', 'enterprise'] } }, enabled: true }],
           },
         },
       };
@@ -193,9 +191,7 @@ tests:
         flags: {
           'not-flag': {
             enabled: true,
-            rules: [
-              { conditions: { role: { $not: 'admin' } }, enabled: true },
-            ],
+            rules: [{ conditions: { role: { $not: 'admin' } }, enabled: true }],
           },
         },
       };
@@ -230,9 +226,7 @@ tests:
         flags: {
           'ctx-flag': {
             enabled: true,
-            rules: [
-              { conditions: { plan: 'pro' }, enabled: true },
-            ],
+            rules: [{ conditions: { plan: 'pro' }, enabled: true }],
           },
         },
       };
@@ -291,15 +285,20 @@ tests:
 
   describe('runTestSpecs', () => {
     it('discovers and runs spec files', () => {
-      writeFileSync(join(tmpDir, 'basic.test.yml'), `
+      writeFileSync(
+        join(tmpDir, 'basic.test.yml'),
+        `
 tests:
   - name: dark mode off
     context: {}
     assertions:
       - flag: dark-mode
         enabled: false
-`);
-      writeFileSync(join(tmpDir, 'rules.test.yml'), `
+`,
+      );
+      writeFileSync(
+        join(tmpDir, 'rules.test.yml'),
+        `
 tests:
   - name: admin beta
     context:
@@ -308,7 +307,8 @@ tests:
     assertions:
       - flag: beta-features
         enabled: true
-`);
+`,
+      );
 
       const result = runTestSpecs(tmpDir, FLAGS_CONFIG);
       expect(result.specs).toHaveLength(2);
@@ -333,7 +333,13 @@ tests:
         enabled: true
 `);
       const result = runTestSpec(spec, FLAGS_CONFIG);
-      const output = formatTestResults({ specs: [result], totalPassed: 1, totalFailed: 1, totalSkipped: 0, duration: 10 });
+      const output = formatTestResults({
+        specs: [result],
+        totalPassed: 1,
+        totalFailed: 1,
+        totalSkipped: 0,
+        duration: 10,
+      });
       expect(output).toContain('✅');
       expect(output).toContain('❌');
       expect(output).toContain('Results:');
@@ -351,7 +357,13 @@ tests:
         enabled: false
 `);
       const result = runTestSpec(spec, FLAGS_CONFIG);
-      const xml = formatJUnitXml({ specs: [result], totalPassed: 1, totalFailed: 0, totalSkipped: 0, duration: 5 });
+      const xml = formatJUnitXml({
+        specs: [result],
+        totalPassed: 1,
+        totalFailed: 0,
+        totalSkipped: 0,
+        duration: 5,
+      });
       expect(xml).toContain('<?xml version="1.0"');
       expect(xml).toContain('<testsuites');
       expect(xml).toContain('<testcase');
@@ -368,7 +380,13 @@ tests:
         enabled: true
 `);
       const result = runTestSpec(spec, FLAGS_CONFIG);
-      const xml = formatJUnitXml({ specs: [result], totalPassed: 0, totalFailed: 1, totalSkipped: 0, duration: 5 });
+      const xml = formatJUnitXml({
+        specs: [result],
+        totalPassed: 0,
+        totalFailed: 1,
+        totalSkipped: 0,
+        duration: 5,
+      });
       expect(xml).toContain('<failure');
     });
 
@@ -388,7 +406,13 @@ tests:
         enabled: false
 `);
       const result = runTestSpec(spec, config, 'file&<test>.yml');
-      const xml = formatJUnitXml({ specs: [result], totalPassed: 0, totalFailed: 1, totalSkipped: 0, duration: 5 });
+      const xml = formatJUnitXml({
+        specs: [result],
+        totalPassed: 0,
+        totalFailed: 1,
+        totalSkipped: 0,
+        duration: 5,
+      });
       expect(xml).toContain('&amp;');
       expect(xml).toContain('&lt;');
       expect(xml).toContain('&gt;');
@@ -408,43 +432,58 @@ tests:
         enabled: false
 `);
       const result = runTestSpec(spec, FLAGS_CONFIG);
-      const xml = formatJUnitXml({ specs: [result], totalPassed: 1, totalFailed: 0, totalSkipped: 0, duration: 1 });
+      const xml = formatJUnitXml({
+        specs: [result],
+        totalPassed: 1,
+        totalFailed: 0,
+        totalSkipped: 0,
+        duration: 1,
+      });
       expect(xml).toContain('<testcase');
     });
   });
 
   describe('findSpecFiles (via runTestSpecs)', () => {
     it('finds .test.yml and .spec.yml files', () => {
-      writeFileSync(join(tmpDir, 'a.test.yml'), `
+      writeFileSync(
+        join(tmpDir, 'a.test.yml'),
+        `
 tests:
   - name: test a
     context: {}
     assertions:
       - flag: dark-mode
         enabled: false
-`);
-      writeFileSync(join(tmpDir, 'b.spec.yml'), `
+`,
+      );
+      writeFileSync(
+        join(tmpDir, 'b.spec.yml'),
+        `
 tests:
   - name: test b
     context: {}
     assertions:
       - flag: dark-mode
         enabled: false
-`);
+`,
+      );
       const result = runTestSpecs(tmpDir, FLAGS_CONFIG);
       expect(result.specs).toHaveLength(2);
     });
 
     it('finds files in nested directories', () => {
       mkdirSync(join(tmpDir, 'sub'));
-      writeFileSync(join(tmpDir, 'sub', 'nested.test.yml'), `
+      writeFileSync(
+        join(tmpDir, 'sub', 'nested.test.yml'),
+        `
 tests:
   - name: nested test
     context: {}
     assertions:
       - flag: dark-mode
         enabled: false
-`);
+`,
+      );
       const result = runTestSpecs(tmpDir, FLAGS_CONFIG);
       expect(result.specs).toHaveLength(1);
       expect(result.specs[0].file).toContain('nested.test.yml');

@@ -54,10 +54,7 @@ export function generateVectors(config: FlagConfig, count: number): ConsistencyV
 }
 
 /** Run consistency check against available SDKs via subprocess. */
-export function checkConsistency(
-  flagsFile: string,
-  count: number,
-): ConsistencyResult {
+export function checkConsistency(flagsFile: string, count: number): ConsistencyResult {
   let content: string;
   try {
     content = readFileSync(flagsFile, 'utf-8');

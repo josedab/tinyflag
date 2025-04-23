@@ -84,9 +84,7 @@ describe('formatChangesMarkdown', () => {
   });
 
   it('formats single removed flag', () => {
-    const output = formatChangesMarkdown([
-      { name: 'old-flag', type: 'removed' },
-    ]);
+    const output = formatChangesMarkdown([{ name: 'old-flag', type: 'removed' }]);
     expect(output).toContain('`old-flag`');
     expect(output).toContain('removed');
     expect(output).toContain('**-**');
@@ -94,7 +92,11 @@ describe('formatChangesMarkdown', () => {
 
   it('formats modified flag with multiple field changes', () => {
     const output = formatChangesMarkdown([
-      { name: 'mod-flag', type: 'modified', details: ['enabled: false → true', 'rollout: 10% → 50%'] },
+      {
+        name: 'mod-flag',
+        type: 'modified',
+        details: ['enabled: false → true', 'rollout: 10% → 50%'],
+      },
     ]);
     expect(output).toContain('`mod-flag`');
     expect(output).toContain('**~**');

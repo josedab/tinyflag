@@ -91,7 +91,9 @@ export function createPrometheusAdapter(baseUrl: string): MetricsAdapter {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Prometheus query failed: ${response.status}`);
 
-      const data = await response.json() as { data?: { result?: Array<{ value?: [number, string] }> } };
+      const data = (await response.json()) as {
+        data?: { result?: Array<{ value?: [number, string] }> };
+      };
       const value = data?.data?.result?.[0]?.value?.[1];
 
       return {
@@ -105,7 +107,11 @@ export function createPrometheusAdapter(baseUrl: string): MetricsAdapter {
 /**
  * Create a Datadog metrics adapter.
  */
-export function createDatadogAdapter(apiKey: string, appKey: string, site: string = 'datadoghq.com'): MetricsAdapter {
+export function createDatadogAdapter(
+  apiKey: string,
+  appKey: string,
+  site: string = 'datadoghq.com',
+): MetricsAdapter {
   return {
     name: 'datadog',
     async fetchMetrics(service: string, window: number): Promise<HealthMetrics> {
@@ -122,7 +128,9 @@ export function createDatadogAdapter(apiKey: string, appKey: string, site: strin
       });
 
       if (!response.ok) throw new Error(`Datadog query failed: ${response.status}`);
-      const data = await response.json() as { series?: Array<{ pointlist?: Array<[number, number]> }> };
+      const data = (await response.json()) as {
+        series?: Array<{ pointlist?: Array<[number, number]> }>;
+      };
       const points = data?.series?.[0]?.pointlist;
       const lastValue = points?.[points.length - 1]?.[1] ?? 0;
 
@@ -143,7 +151,9 @@ export function createCloudWatchAdapter(region: string): MetricsAdapter {
     async fetchMetrics(service: string, window: number): Promise<HealthMetrics> {
       // CloudWatch requires AWS SDK — this adapter provides the interface
       // Implementation depends on the AWS SDK version in use
-      throw new Error('CloudWatch adapter requires AWS SDK. Use createCloudWatchAdapterWithClient() instead.');
+      throw new Error(
+        'CloudWatch adapter requires AWS SDK. Use createCloudWatchAdapterWithClient() instead.',
+      );
     },
   };
 }
@@ -197,7 +207,11 @@ export class CanaryController {
 
       if (breached) {
         this.state.breachCount++;
-        this.addEvent('breach-detected', `Error rate ${(metrics.errorRate * 100).toFixed(2)}% exceeds threshold ${(this.config.errorThreshold * 100).toFixed(2)}%`, metrics);
+        this.addEvent(
+          'breach-detected',
+          `Error rate ${(metrics.errorRate * 100).toFixed(2)}% exceeds threshold ${(this.config.errorThreshold * 100).toFixed(2)}%`,
+          metrics,
+        );
 
         if (this.state.breachCount >= this.config.confirmationWindow) {
           await this.rollback(`${this.config.confirmationWindow} consecutive breaches detected`);
@@ -205,7 +219,11 @@ export class CanaryController {
         }
       } else {
         this.state.breachCount = 0;
-        this.addEvent('check-passed', `Error rate ${(metrics.errorRate * 100).toFixed(2)}% within threshold`, metrics);
+        this.addEvent(
+          'check-passed',
+          `Error rate ${(metrics.errorRate * 100).toFixed(2)}% within threshold`,
+          metrics,
+        );
       }
 
       return true;
@@ -272,17 +290,17 @@ export class CanaryController {
 
   private isThresholdBreached(metrics: HealthMetrics): boolean {
     if (metrics.errorRate > this.config.errorThreshold) return true;
-    if (this.config.latencyThreshold && metrics.latencyP99 && metrics.latencyP99 > this.config.latencyThreshold) {
+    if (
+      this.config.latencyThreshold &&
+      metrics.latencyP99 &&
+      metrics.latencyP99 > this.config.latencyThreshold
+    ) {
       return true;
     }
     return false;
   }
 
-  private addEvent(
-    type: CanaryEvent['type'],
-    message: string,
-    metrics?: HealthMetrics,
-  ): void {
+  private addEvent(type: CanaryEvent['type'], message: string, metrics?: HealthMetrics): void {
     this.state.history.push({
       type,
       timestamp: Date.now(),
@@ -305,11 +323,11 @@ export class CanaryController {
 export function formatCanaryState(state: CanaryState): string {
   const lines: string[] = [];
   const statusIcons: Record<string, string> = {
-    'running': '🟢',
-    'paused': '⏸️',
+    running: '🟢',
+    paused: '⏸️',
     'rolled-back': '🔴',
-    'completed': '✅',
-    'error': '❌',
+    completed: '✅',
+    error: '❌',
   };
 
   lines.push(`Canary Rollout: ${state.flag}`);

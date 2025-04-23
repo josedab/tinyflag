@@ -20,7 +20,10 @@ export interface LintRule {
 }
 
 export interface LintConfig {
-  rules?: Record<string, LintSeverity | false | { severity: LintSeverity; options?: Record<string, unknown> }>;
+  rules?: Record<
+    string,
+    LintSeverity | false | { severity: LintSeverity; options?: Record<string, unknown> }
+  >;
   extends?: string[];
 }
 
@@ -73,11 +76,13 @@ const builtinRules: LintRule[] = [
       const max = (options?.max as number) ?? 50;
       const count = Object.keys(config.flags).length;
       if (count > max) {
-        return [{
-          rule: 'max-flags-per-file',
-          severity: 'warning',
-          message: `File contains ${count} flags (max: ${max}). Consider splitting into multiple files.`,
-        }];
+        return [
+          {
+            rule: 'max-flags-per-file',
+            severity: 'warning',
+            message: `File contains ${count} flags (max: ${max}). Consider splitting into multiple files.`,
+          },
+        ];
       }
       return [];
     },
@@ -227,7 +232,9 @@ export function formatLintResults(results: LintResult[]): string {
   }
 
   lines.push('');
-  lines.push(`Summary: ${errors.length} error(s), ${warnings.length} warning(s), ${infos.length} info(s)`);
+  lines.push(
+    `Summary: ${errors.length} error(s), ${warnings.length} warning(s), ${infos.length} info(s)`,
+  );
 
   return lines.join('\n');
 }
@@ -235,31 +242,39 @@ export function formatLintResults(results: LintResult[]): string {
 /** Format lint results as SARIF for GitHub Code Scanning integration. */
 export function formatLintSarif(results: LintResult[], filePath: string): object {
   return {
-    $schema: 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json',
+    $schema:
+      'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/sarif-2.1/schema/sarif-schema-2.1.0.json',
     version: '2.1.0',
-    runs: [{
-      tool: {
-        driver: {
-          name: 'tinyflag-lint',
-          version: '0.1.0',
-          rules: builtinRules.map((r) => ({
-            id: r.name,
-            shortDescription: { text: r.name },
-            defaultConfiguration: { level: r.severity === 'error' ? 'error' : r.severity === 'warning' ? 'warning' : 'note' },
-          })),
-        },
-      },
-      results: results.map((r) => ({
-        ruleId: r.rule,
-        level: r.severity === 'error' ? 'error' : r.severity === 'warning' ? 'warning' : 'note',
-        message: { text: r.message },
-        locations: [{
-          physicalLocation: {
-            artifactLocation: { uri: filePath },
-            region: { startLine: 1 },
+    runs: [
+      {
+        tool: {
+          driver: {
+            name: 'tinyflag-lint',
+            version: '0.1.0',
+            rules: builtinRules.map((r) => ({
+              id: r.name,
+              shortDescription: { text: r.name },
+              defaultConfiguration: {
+                level:
+                  r.severity === 'error' ? 'error' : r.severity === 'warning' ? 'warning' : 'note',
+              },
+            })),
           },
-        }],
-      })),
-    }],
+        },
+        results: results.map((r) => ({
+          ruleId: r.rule,
+          level: r.severity === 'error' ? 'error' : r.severity === 'warning' ? 'warning' : 'note',
+          message: { text: r.message },
+          locations: [
+            {
+              physicalLocation: {
+                artifactLocation: { uri: filePath },
+                region: { startLine: 1 },
+              },
+            },
+          ],
+        })),
+      },
+    ],
   };
 }

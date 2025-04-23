@@ -32,7 +32,8 @@ const PATTERNS = [
   },
   // config.featureX / config.enableX / config.isX
   {
-    regex: /(?:config|settings|options|features)\.(?:feature|enable|is|has|show|use|allow)([A-Z]\w*)/g,
+    regex:
+      /(?:config|settings|options|features)\.(?:feature|enable|is|has|show|use|allow)([A-Z]\w*)/g,
     category: 'config' as const,
     extractName: (match: RegExpMatchArray) => toKebabCase(match[1]),
     type: 'boolean' as const,

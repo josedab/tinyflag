@@ -13,18 +13,16 @@ vi.mock('tinyflag', async (importOriginal) => {
   };
 });
 
-import {
-  generateVectors,
-  checkConsistency,
-  formatConsistencyReport,
-} from '../consistency.js';
+import { generateVectors, checkConsistency, formatConsistencyReport } from '../consistency.js';
 import type { ConsistencyResult } from '../consistency.js';
 
 const cleanup: string[] = [];
 
 afterAll(() => {
   for (const f of cleanup) {
-    try { if (existsSync(f)) unlinkSync(f); } catch {}
+    try {
+      if (existsSync(f)) unlinkSync(f);
+    } catch {}
   }
 });
 
@@ -57,8 +55,14 @@ describe('generateVectors', () => {
   it('cycles through flag names', () => {
     const config = makeConfig();
     const vectors = generateVectors(config, 9);
-    const flagNames = vectors.map(v => v.flagName);
-    const counts = flagNames.reduce((acc, n) => { acc[n] = (acc[n] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const flagNames = vectors.map((v) => v.flagName);
+    const counts = flagNames.reduce(
+      (acc, n) => {
+        acc[n] = (acc[n] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
     expect(Object.values(counts)).toEqual([3, 3, 3]);
   });
 

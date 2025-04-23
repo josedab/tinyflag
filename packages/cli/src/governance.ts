@@ -60,9 +60,7 @@ export function parseFlagOwners(content: string): FlagOwnersConfig {
   const raw = parseYaml(content) as Record<string, unknown>;
 
   const version = typeof raw.version === 'number' ? raw.version : 1;
-  const defaultOwners = Array.isArray(raw.defaultOwners)
-    ? (raw.defaultOwners as string[])
-    : [];
+  const defaultOwners = Array.isArray(raw.defaultOwners) ? (raw.defaultOwners as string[]) : [];
 
   const entries: FlagOwnerEntry[] = [];
   const flagEntries = raw.flags;
@@ -109,10 +107,7 @@ function matchOwnerPattern(pattern: string, flagName: string): boolean {
 /**
  * Resolve ownership for a single flag.
  */
-export function resolveOwnership(
-  flagName: string,
-  config: FlagOwnersConfig,
-): OwnershipResult {
+export function resolveOwnership(flagName: string, config: FlagOwnersConfig): OwnershipResult {
   for (const entry of config.entries) {
     if (matchOwnerPattern(entry.pattern, flagName)) {
       return {
@@ -198,17 +193,16 @@ export function formatApprovalResult(result: ApprovalCheckResult): string {
 /**
  * Format ownership info for all flags as a report.
  */
-export function formatOwnershipReport(
-  config: FlagConfig,
-  ownersConfig: FlagOwnersConfig,
-): string {
+export function formatOwnershipReport(config: FlagConfig, ownersConfig: FlagOwnersConfig): string {
   const lines: string[] = ['Flag Ownership Report', '═'.repeat(50), ''];
 
   for (const flagName of Object.keys(config.flags).sort()) {
     const ownership = resolveOwnership(flagName, ownersConfig);
     const icon = ownership.hasOwner ? '👤' : '⚠️';
     lines.push(`${icon} ${flagName}`);
-    lines.push(`   Owners: ${ownership.owners.length > 0 ? ownership.owners.join(', ') : '(unowned)'}`);
+    lines.push(
+      `   Owners: ${ownership.owners.length > 0 ? ownership.owners.join(', ') : '(unowned)'}`,
+    );
     if (ownership.reviewers.length > 0) {
       lines.push(`   Reviewers: ${ownership.reviewers.join(', ')}`);
     }

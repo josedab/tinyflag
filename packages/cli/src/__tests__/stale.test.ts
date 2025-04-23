@@ -11,31 +11,36 @@ beforeAll(() => {
 
   // Create source files with flag references
   mkdirSync(join(TMP_DIR, 'src'), { recursive: true });
-  writeFileSync(join(TMP_DIR, 'src', 'app.ts'), [
-    'import { ff } from "./flags";',
-    'if (ff.isEnabled("dark-mode")) {',
-    '  console.log("dark");',
-    '}',
-    'const v = ff.getVariant("checkout-v2");',
-  ].join('\n'));
+  writeFileSync(
+    join(TMP_DIR, 'src', 'app.ts'),
+    [
+      'import { ff } from "./flags";',
+      'if (ff.isEnabled("dark-mode")) {',
+      '  console.log("dark");',
+      '}',
+      'const v = ff.getVariant("checkout-v2");',
+    ].join('\n'),
+  );
 
-  writeFileSync(join(TMP_DIR, 'src', 'other.tsx'), [
-    'const enabled = ff.isEnabled("beta-features");',
-    '// tinyflag-ignore',
-    'ff.isEnabled("ignored-flag");',
-    'ff.isEnabled("inline-ignored"); // tinyflag-ignore',
-  ].join('\n'));
+  writeFileSync(
+    join(TMP_DIR, 'src', 'other.tsx'),
+    [
+      'const enabled = ff.isEnabled("beta-features");',
+      '// tinyflag-ignore',
+      'ff.isEnabled("ignored-flag");',
+      'ff.isEnabled("inline-ignored"); // tinyflag-ignore',
+    ].join('\n'),
+  );
 
   // Create files in excluded directories
   mkdirSync(join(TMP_DIR, 'node_modules', 'pkg'), { recursive: true });
-  writeFileSync(join(TMP_DIR, 'node_modules', 'pkg', 'index.js'),
+  writeFileSync(
+    join(TMP_DIR, 'node_modules', 'pkg', 'index.js'),
     'ff.isEnabled("should-not-scan");',
   );
 
   mkdirSync(join(TMP_DIR, 'dist'), { recursive: true });
-  writeFileSync(join(TMP_DIR, 'dist', 'app.js'),
-    'ff.isEnabled("should-not-scan-dist");',
-  );
+  writeFileSync(join(TMP_DIR, 'dist', 'app.js'), 'ff.isEnabled("should-not-scan-dist");');
 
   // Create a non-scannable file
   writeFileSync(join(TMP_DIR, 'src', 'data.json'), '{"key": "value"}');
@@ -85,7 +90,7 @@ describe('scanFlagUsage', () => {
   it('does not scan non-scannable extensions', () => {
     const usages = scanFlagUsage(TMP_DIR);
     // .json files should not be scanned
-    expect([...usages.keys()].some(k => k === 'key')).toBe(false);
+    expect([...usages.keys()].some((k) => k === 'key')).toBe(false);
   });
 
   it('handles unreadable directories gracefully', () => {
@@ -133,7 +138,7 @@ describe('generateStaleReport', () => {
 
   it('identifies zero-rollout enabled flags', () => {
     const defined = {
-      'active': { enabled: true, rollout: 50 },
+      active: { enabled: true, rollout: 50 },
       'zero-roll': { enabled: true, rollout: 0 },
       'disabled-zero': { enabled: false, rollout: 0 },
     };

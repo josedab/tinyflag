@@ -44,7 +44,10 @@ export function generateTypes(config: FlagConfig): string {
 }
 
 function toPascalCase(name: string): string {
-  return name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
+  return name
+    .split('-')
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join('');
 }
 
 function inferTsType(value: unknown): string {

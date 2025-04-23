@@ -40,11 +40,15 @@ const MAX_TTL = 30 * 24 * 60 * 60; // 30 days
  *   /flag variant my-flag treatment
  *   /flag reset my-flag
  */
-export function parseFlagCommand(comment: string): EphemeralOverride | { action: 'reset'; flag: string } | null {
+export function parseFlagCommand(
+  comment: string,
+): EphemeralOverride | { action: 'reset'; flag: string } | null {
   const lines = comment.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
-    const match = trimmed.match(/^\/flag\s+(enable|disable|rollout|variant|reset)\s+([a-z0-9][a-z0-9-]*[a-z0-9]|[a-z0-9])(?:\s+(.+))?$/i);
+    const match = trimmed.match(
+      /^\/flag\s+(enable|disable|rollout|variant|reset)\s+([a-z0-9][a-z0-9-]*[a-z0-9]|[a-z0-9])(?:\s+(.+))?$/i,
+    );
     if (!match) continue;
 
     const [, action, flag, value] = match;
@@ -137,11 +141,7 @@ export function applyOverlay(
 /**
  * Write an overlay file to disk.
  */
-export function writeOverlay(
-  dir: string,
-  scope: string,
-  overlay: OverlayFile,
-): string {
+export function writeOverlay(dir: string, scope: string, overlay: OverlayFile): string {
   const safeName = scope.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
   const filePath = join(dir, `.tinyflag-overlay-${safeName}.json`);
   writeFileSync(filePath, JSON.stringify(overlay, null, 2));
@@ -163,14 +163,13 @@ export function loadOverlay(filePath: string): OverlayFile | null {
 /**
  * Remove expired overlays from a directory. Returns paths of removed files.
  */
-export function cleanupExpiredOverlays(
-  dir: string,
-  now: Date = new Date(),
-): string[] {
+export function cleanupExpiredOverlays(dir: string, now: Date = new Date()): string[] {
   const removed: string[] = [];
   if (!existsSync(dir)) return removed;
 
-  const files = readdirSync(dir).filter((f) => f.startsWith('.tinyflag-overlay-') && f.endsWith('.json'));
+  const files = readdirSync(dir).filter(
+    (f) => f.startsWith('.tinyflag-overlay-') && f.endsWith('.json'),
+  );
 
   for (const file of files) {
     const filePath = join(dir, file);
@@ -190,13 +189,12 @@ export function cleanupExpiredOverlays(
 /**
  * List all active overlays in a directory.
  */
-export function listActiveOverlays(
-  dir: string,
-  now: Date = new Date(),
-): OverlayFile[] {
+export function listActiveOverlays(dir: string, now: Date = new Date()): OverlayFile[] {
   if (!existsSync(dir)) return [];
 
-  const files = readdirSync(dir).filter((f) => f.startsWith('.tinyflag-overlay-') && f.endsWith('.json'));
+  const files = readdirSync(dir).filter(
+    (f) => f.startsWith('.tinyflag-overlay-') && f.endsWith('.json'),
+  );
   const active: OverlayFile[] = [];
 
   for (const file of files) {
@@ -213,10 +211,7 @@ export function listActiveOverlays(
  * HTTP handler for the ephemeral flag override API.
  * Returns a request handler compatible with Node.js http.createServer.
  */
-export function createOverlayHandler(
-  overlayDir: string,
-  baseConfigPath: string,
-) {
+export function createOverlayHandler(overlayDir: string, baseConfigPath: string) {
   return {
     /** POST /overlays — create or update an overlay */
     createOverlay(scope: string, overrides: EphemeralOverride[], ttl?: number): OverlayFile {

@@ -14,7 +14,7 @@ describe('lint rules', () => {
     it('warns when flag has no description', () => {
       const config = makeConfig({ 'my-flag': { enabled: true } });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'require-description' && r.flag === 'my-flag');
+      const match = results.find((r) => r.rule === 'require-description' && r.flag === 'my-flag');
       expect(match).toBeTruthy();
       expect(match!.severity).toBe('warning');
     });
@@ -22,14 +22,14 @@ describe('lint rules', () => {
     it('passes when flag has description', () => {
       const config = makeConfig({ 'my-flag': { enabled: true, description: 'A flag' } });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'require-description' && r.flag === 'my-flag');
+      const match = results.find((r) => r.rule === 'require-description' && r.flag === 'my-flag');
       expect(match).toBeUndefined();
     });
 
     it('warns for empty description', () => {
       const config = makeConfig({ 'my-flag': { enabled: true, description: '  ' } });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'require-description' && r.flag === 'my-flag');
+      const match = results.find((r) => r.rule === 'require-description' && r.flag === 'my-flag');
       expect(match).toBeTruthy();
     });
   });
@@ -38,21 +38,21 @@ describe('lint rules', () => {
     it('warns when flag has no tags', () => {
       const config = makeConfig({ 'my-flag': { enabled: true } });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'require-tags' && r.flag === 'my-flag');
+      const match = results.find((r) => r.rule === 'require-tags' && r.flag === 'my-flag');
       expect(match).toBeTruthy();
     });
 
     it('warns for empty tags array', () => {
       const config = makeConfig({ 'my-flag': { enabled: true, tags: [] } });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'require-tags' && r.flag === 'my-flag');
+      const match = results.find((r) => r.rule === 'require-tags' && r.flag === 'my-flag');
       expect(match).toBeTruthy();
     });
 
     it('passes when flag has tags', () => {
       const config = makeConfig({ 'my-flag': { enabled: true, tags: ['beta'] } });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'require-tags' && r.flag === 'my-flag');
+      const match = results.find((r) => r.rule === 'require-tags' && r.flag === 'my-flag');
       expect(match).toBeUndefined();
     });
   });
@@ -60,28 +60,30 @@ describe('lint rules', () => {
   describe('max-flags-per-file', () => {
     it('warns when flag count exceeds default max (50)', () => {
       const flags: Record<string, any> = {};
-      for (let i = 0; i < 51; i++) flags[`flag-${i}`] = { enabled: true, description: 'd', tags: ['t'] };
+      for (let i = 0; i < 51; i++)
+        flags[`flag-${i}`] = { enabled: true, description: 'd', tags: ['t'] };
       const config = makeConfig(flags);
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'max-flags-per-file');
+      const match = results.find((r) => r.rule === 'max-flags-per-file');
       expect(match).toBeTruthy();
       expect(match!.message).toContain('51');
     });
 
     it('passes when under max', () => {
-      const config = makeConfig({ 'f': { enabled: true, description: 'd', tags: ['t'] } });
+      const config = makeConfig({ f: { enabled: true, description: 'd', tags: ['t'] } });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'max-flags-per-file')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'max-flags-per-file')).toBeUndefined();
     });
 
     it('respects custom max option', () => {
       const flags: Record<string, any> = {};
-      for (let i = 0; i < 3; i++) flags[`flag-${i}`] = { enabled: true, description: 'd', tags: ['t'] };
+      for (let i = 0; i < 3; i++)
+        flags[`flag-${i}`] = { enabled: true, description: 'd', tags: ['t'] };
       const config = makeConfig(flags);
       const results = lintConfig(config, {
         rules: { 'max-flags-per-file': { severity: 'error', options: { max: 2 } } },
       });
-      const match = results.find(r => r.rule === 'max-flags-per-file');
+      const match = results.find((r) => r.rule === 'max-flags-per-file');
       expect(match).toBeTruthy();
       expect(match!.severity).toBe('error');
     });
@@ -93,7 +95,7 @@ describe('lint rules', () => {
         'full-rollout': { enabled: true, rollout: 100, description: 'd', tags: ['beta'] },
       });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'no-100-rollout-without-tag');
+      const match = results.find((r) => r.rule === 'no-100-rollout-without-tag');
       expect(match).toBeTruthy();
     });
 
@@ -102,7 +104,7 @@ describe('lint rules', () => {
         'full-rollout': { enabled: true, rollout: 100, description: 'd', tags: ['permanent'] },
       });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'no-100-rollout-without-tag')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'no-100-rollout-without-tag')).toBeUndefined();
     });
 
     it('passes when disabled', () => {
@@ -110,23 +112,23 @@ describe('lint rules', () => {
         'full-rollout': { enabled: false, rollout: 100, description: 'd', tags: ['beta'] },
       });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'no-100-rollout-without-tag')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'no-100-rollout-without-tag')).toBeUndefined();
     });
 
     it('passes for non-100 rollout', () => {
       const config = makeConfig({
-        'partial': { enabled: true, rollout: 50, description: 'd', tags: ['beta'] },
+        partial: { enabled: true, rollout: 50, description: 'd', tags: ['beta'] },
       });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'no-100-rollout-without-tag')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'no-100-rollout-without-tag')).toBeUndefined();
     });
   });
 
   describe('naming-convention', () => {
     it('errors for non-kebab-case names', () => {
-      const config = makeConfig({ 'MyFlag': { enabled: true, description: 'd', tags: ['t'] } });
+      const config = makeConfig({ MyFlag: { enabled: true, description: 'd', tags: ['t'] } });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'naming-convention');
+      const match = results.find((r) => r.rule === 'naming-convention');
       expect(match).toBeTruthy();
       expect(match!.severity).toBe('error');
     });
@@ -134,19 +136,19 @@ describe('lint rules', () => {
     it('passes for valid kebab-case', () => {
       const config = makeConfig({ 'my-flag': { enabled: true, description: 'd', tags: ['t'] } });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'naming-convention')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'naming-convention')).toBeUndefined();
     });
 
     it('passes for single character', () => {
-      const config = makeConfig({ 'f': { enabled: true, description: 'd', tags: ['t'] } });
+      const config = makeConfig({ f: { enabled: true, description: 'd', tags: ['t'] } });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'naming-convention')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'naming-convention')).toBeUndefined();
     });
 
     it('errors for names starting with hyphen', () => {
       const config = makeConfig({ '-flag': { enabled: true, description: 'd', tags: ['t'] } });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'naming-convention')).toBeTruthy();
+      expect(results.find((r) => r.rule === 'naming-convention')).toBeTruthy();
     });
   });
 
@@ -154,12 +156,14 @@ describe('lint rules', () => {
     it('warns for rule with empty conditions and no segment', () => {
       const config = makeConfig({
         'my-flag': {
-          enabled: true, description: 'd', tags: ['t'],
+          enabled: true,
+          description: 'd',
+          tags: ['t'],
           rules: [{ conditions: {} }],
         },
       });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'no-empty-rules');
+      const match = results.find((r) => r.rule === 'no-empty-rules');
       expect(match).toBeTruthy();
       expect(match!.message).toContain('rule[0]');
     });
@@ -167,23 +171,27 @@ describe('lint rules', () => {
     it('passes for rule with segment', () => {
       const config = makeConfig({
         'my-flag': {
-          enabled: true, description: 'd', tags: ['t'],
+          enabled: true,
+          description: 'd',
+          tags: ['t'],
           rules: [{ conditions: {}, segment: 'beta-users' }],
         },
       });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'no-empty-rules')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'no-empty-rules')).toBeUndefined();
     });
 
     it('passes for rule with conditions', () => {
       const config = makeConfig({
         'my-flag': {
-          enabled: true, description: 'd', tags: ['t'],
+          enabled: true,
+          description: 'd',
+          tags: ['t'],
           rules: [{ conditions: { plan: 'pro' } }],
         },
       });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'no-empty-rules')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'no-empty-rules')).toBeUndefined();
     });
   });
 
@@ -191,12 +199,14 @@ describe('lint rules', () => {
     it('informs when disabled flag has rules', () => {
       const config = makeConfig({
         'my-flag': {
-          enabled: false, description: 'd', tags: ['t'],
+          enabled: false,
+          description: 'd',
+          tags: ['t'],
           rules: [{ conditions: { plan: 'pro' } }],
         },
       });
       const results = lintConfig(config);
-      const match = results.find(r => r.rule === 'no-disabled-with-rules');
+      const match = results.find((r) => r.rule === 'no-disabled-with-rules');
       expect(match).toBeTruthy();
       expect(match!.severity).toBe('info');
     });
@@ -204,12 +214,14 @@ describe('lint rules', () => {
     it('passes when enabled flag has rules', () => {
       const config = makeConfig({
         'my-flag': {
-          enabled: true, description: 'd', tags: ['t'],
+          enabled: true,
+          description: 'd',
+          tags: ['t'],
           rules: [{ conditions: { plan: 'pro' } }],
         },
       });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'no-disabled-with-rules')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'no-disabled-with-rules')).toBeUndefined();
     });
 
     it('passes when disabled flag has no rules', () => {
@@ -217,7 +229,7 @@ describe('lint rules', () => {
         'my-flag': { enabled: false, description: 'd', tags: ['t'] },
       });
       const results = lintConfig(config);
-      expect(results.find(r => r.rule === 'no-disabled-with-rules')).toBeUndefined();
+      expect(results.find((r) => r.rule === 'no-disabled-with-rules')).toBeUndefined();
     });
   });
 });
@@ -226,7 +238,9 @@ describe('loadLintConfig', () => {
   const tmpFile = join(tmpdir(), `tinyflag-lint-test-${Date.now()}.json`);
 
   afterAll(() => {
-    try { if (existsSync(tmpFile)) unlinkSync(tmpFile); } catch {}
+    try {
+      if (existsSync(tmpFile)) unlinkSync(tmpFile);
+    } catch {}
   });
 
   it('returns empty config when no file exists', () => {
@@ -248,7 +262,9 @@ describe('loadLintConfig', () => {
       const config = loadLintConfig(badFile);
       expect(config).toEqual({});
     } finally {
-      try { unlinkSync(badFile); } catch {}
+      try {
+        unlinkSync(badFile);
+      } catch {}
     }
   });
 });
@@ -259,7 +275,7 @@ describe('lintConfig with overrides', () => {
     const results = lintConfig(config, {
       rules: { 'require-description': 'error' },
     });
-    const match = results.find(r => r.rule === 'require-description');
+    const match = results.find((r) => r.rule === 'require-description');
     expect(match).toBeTruthy();
     expect(match!.severity).toBe('error');
   });
@@ -269,7 +285,7 @@ describe('lintConfig with overrides', () => {
     const results = lintConfig(config, {
       rules: { 'require-description': false },
     });
-    expect(results.find(r => r.rule === 'require-description')).toBeUndefined();
+    expect(results.find((r) => r.rule === 'require-description')).toBeUndefined();
   });
 
   it('supports object-style rule config', () => {
@@ -277,7 +293,7 @@ describe('lintConfig with overrides', () => {
     const results = lintConfig(config, {
       rules: { 'require-description': { severity: 'info' } },
     });
-    const match = results.find(r => r.rule === 'require-description');
+    const match = results.find((r) => r.rule === 'require-description');
     expect(match!.severity).toBe('info');
   });
 });
@@ -324,7 +340,9 @@ describe('formatLintSarif', () => {
     expect(sarif.runs[0].results).toHaveLength(1);
     expect(sarif.runs[0].results[0].ruleId).toBe('naming-convention');
     expect(sarif.runs[0].results[0].level).toBe('error');
-    expect(sarif.runs[0].results[0].locations[0].physicalLocation.artifactLocation.uri).toBe('flags.yml');
+    expect(sarif.runs[0].results[0].locations[0].physicalLocation.artifactLocation.uri).toBe(
+      'flags.yml',
+    );
   });
 
   it('maps severity levels correctly', () => {

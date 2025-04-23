@@ -21,7 +21,14 @@ export interface StaleReport {
  */
 export function scanFlagUsage(
   dir: string,
-  excludeDirs: Set<string> = new Set(['node_modules', 'dist', '.git', 'coverage', '.next', 'build']),
+  excludeDirs: Set<string> = new Set([
+    'node_modules',
+    'dist',
+    '.git',
+    'coverage',
+    '.next',
+    'build',
+  ]),
 ): Map<string, Array<{ file: string; line: number }>> {
   const usages = new Map<string, Array<{ file: string; line: number }>>();
 
@@ -153,7 +160,8 @@ export function formatStaleReport(report: StaleReport): string {
     return '✅ No stale flags detected.';
   }
 
-  const total = report.unusedFlags.length + report.undefinedRefs.length + report.zeroRolloutFlags.length;
+  const total =
+    report.unusedFlags.length + report.undefinedRefs.length + report.zeroRolloutFlags.length;
   lines.push(`Found ${total} issue(s).`);
   return lines.join('\n');
 }

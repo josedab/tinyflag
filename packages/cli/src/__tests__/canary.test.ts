@@ -75,22 +75,26 @@ describe('canary release', () => {
     });
 
     it('detects threshold breach', async () => {
-      const adapter = createMockAdapter(0.10); // 10% error rate
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: adapter,
-        errorThreshold: 0.05,
-      }));
+      const adapter = createMockAdapter(0.1); // 10% error rate
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: adapter,
+          errorThreshold: 0.05,
+        }),
+      );
 
       await ctrl.check();
       expect(ctrl.getState().breachCount).toBe(1);
     });
 
     it('rolls back after confirmation window breaches', async () => {
-      const adapter = createMockAdapter(0.10);
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: adapter,
-        confirmationWindow: 3,
-      }));
+      const adapter = createMockAdapter(0.1);
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: adapter,
+          confirmationWindow: 3,
+        }),
+      );
 
       await ctrl.advance(); // stage 1
       await ctrl.check(); // breach 1
@@ -103,9 +107,11 @@ describe('canary release', () => {
 
     it('resets breach count after successful check', async () => {
       const goodAdapter = createMockAdapter(0.01);
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: goodAdapter,
-      }));
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: goodAdapter,
+        }),
+      );
 
       // Manually set breach count
       await ctrl.check();
@@ -122,11 +128,14 @@ describe('canary release', () => {
 
     it('calls update callback on rollback', async () => {
       const updateFn = vi.fn();
-      const adapter = createMockAdapter(0.10);
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: adapter,
-        confirmationWindow: 1,
-      }), updateFn);
+      const adapter = createMockAdapter(0.1);
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: adapter,
+          confirmationWindow: 1,
+        }),
+        updateFn,
+      );
 
       await ctrl.advance();
       await ctrl.check(); // single breach → rollback
@@ -155,11 +164,13 @@ describe('canary release', () => {
     });
 
     it('does not advance when not running', async () => {
-      const adapter = createMockAdapter(0.10);
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: adapter,
-        confirmationWindow: 1,
-      }));
+      const adapter = createMockAdapter(0.1);
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: adapter,
+          confirmationWindow: 1,
+        }),
+      );
       await ctrl.advance();
       await ctrl.check(); // rollback
 
@@ -181,11 +192,13 @@ describe('canary release', () => {
     });
 
     it('shows rollback status', async () => {
-      const adapter = createMockAdapter(0.10);
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: adapter,
-        confirmationWindow: 1,
-      }));
+      const adapter = createMockAdapter(0.1);
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: adapter,
+          confirmationWindow: 1,
+        }),
+      );
       await ctrl.advance();
       await ctrl.check();
 
@@ -265,7 +278,14 @@ describe('canary release', () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue({
-          series: [{ pointlist: [[1700000000, 0.01], [1700000060, 0.02]] }],
+          series: [
+            {
+              pointlist: [
+                [1700000000, 0.01],
+                [1700000060, 0.02],
+              ],
+            },
+          ],
         }),
       } as any);
 
@@ -306,7 +326,9 @@ describe('canary release', () => {
     it('throws not-yet-implemented error', async () => {
       const adapter = createCloudWatchAdapter('us-east-1');
       expect(adapter.name).toBe('cloudwatch');
-      await expect(adapter.fetchMetrics('svc', 60)).rejects.toThrow('CloudWatch adapter requires AWS SDK');
+      await expect(adapter.fetchMetrics('svc', 60)).rejects.toThrow(
+        'CloudWatch adapter requires AWS SDK',
+      );
     });
   });
 
@@ -317,12 +339,14 @@ describe('canary release', () => {
 
     it('sends POST to webhook URL on rollback', async () => {
       const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true } as any);
-      const adapter = createMockAdapter(0.10);
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: adapter,
-        confirmationWindow: 1,
-        webhookUrl: 'https://hooks.example.com/notify',
-      }));
+      const adapter = createMockAdapter(0.1);
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: adapter,
+          confirmationWindow: 1,
+          webhookUrl: 'https://hooks.example.com/notify',
+        }),
+      );
 
       await ctrl.advance();
       await ctrl.check(); // triggers rollback
@@ -339,12 +363,14 @@ describe('canary release', () => {
 
     it('silently catches fetch failure on webhook', async () => {
       vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('webhook down'));
-      const adapter = createMockAdapter(0.10);
-      const ctrl = new CanaryController(createConfig({
-        metricsAdapter: adapter,
-        confirmationWindow: 1,
-        webhookUrl: 'https://hooks.example.com/notify',
-      }));
+      const adapter = createMockAdapter(0.1);
+      const ctrl = new CanaryController(
+        createConfig({
+          metricsAdapter: adapter,
+          confirmationWindow: 1,
+          webhookUrl: 'https://hooks.example.com/notify',
+        }),
+      );
 
       await ctrl.advance();
       // Should not throw even though fetch fails

@@ -21,15 +21,20 @@ describe('flag impact analysis', () => {
     mkdirSync(join(tmpDir, 'src', 'pages'), { recursive: true });
     mkdirSync(join(tmpDir, 'src', '__tests__'), { recursive: true });
 
-    writeFileSync(join(tmpDir, 'src', 'components', 'Header.tsx'), `
+    writeFileSync(
+      join(tmpDir, 'src', 'components', 'Header.tsx'),
+      `
 import { useFlag } from 'tinyflag-react';
 const Header = () => {
   const darkMode = isEnabled('dark-mode');
   return <header className={darkMode ? 'dark' : 'light'} />;
 };
-`);
+`,
+    );
 
-    writeFileSync(join(tmpDir, 'src', 'pages', 'index.tsx'), `
+    writeFileSync(
+      join(tmpDir, 'src', 'pages', 'index.tsx'),
+      `
 // tinyflag-uses: dark-mode
 const Home = () => {
   if (isEnabled('dark-mode')) {
@@ -37,18 +42,25 @@ const Home = () => {
   }
   return <div />;
 };
-`);
+`,
+    );
 
-    writeFileSync(join(tmpDir, 'src', '__tests__', 'dark-mode.test.ts'), `
+    writeFileSync(
+      join(tmpDir, 'src', '__tests__', 'dark-mode.test.ts'),
+      `
 it('enables dark mode', () => {
   expect(isEnabled('dark-mode')).toBe(true);
 });
-`);
+`,
+    );
 
-    writeFileSync(join(tmpDir, 'src', 'utils.ts'), `
+    writeFileSync(
+      join(tmpDir, 'src', 'utils.ts'),
+      `
 // No flag references here
 export const formatDate = (d: Date) => d.toISOString();
-`);
+`,
+    );
   });
 
   afterEach(() => {
@@ -131,7 +143,14 @@ export const formatDate = (d: Date) => d.toISOString();
     it('recommends phased rollout for critical risk', () => {
       const strategy = recommendStrategy(
         { level: 'critical', score: 10, factors: [] },
-        { totalFiles: 30, totalReferences: 50, routes: 5, components: 10, tests: 0, rolloutPercentage: 100 },
+        {
+          totalFiles: 30,
+          totalReferences: 50,
+          routes: 5,
+          components: 10,
+          tests: 0,
+          rolloutPercentage: 100,
+        },
       );
       expect(strategy).toContain('1%');
     });
@@ -139,7 +158,14 @@ export const formatDate = (d: Date) => d.toISOString();
     it('recommends direct rollout for low risk', () => {
       const strategy = recommendStrategy(
         { level: 'low', score: 1, factors: [] },
-        { totalFiles: 1, totalReferences: 1, routes: 0, components: 0, tests: 1, rolloutPercentage: 10 },
+        {
+          totalFiles: 1,
+          totalReferences: 1,
+          routes: 0,
+          components: 0,
+          tests: 1,
+          rolloutPercentage: 10,
+        },
       );
       expect(strategy).toContain('Safe');
     });

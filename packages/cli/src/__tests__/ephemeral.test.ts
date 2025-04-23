@@ -88,7 +88,7 @@ describe('ephemeral PR flags', () => {
       const base: FlagConfig = {
         flags: {
           'dark-mode': { enabled: false },
-          'checkout': { enabled: true, rollout: 10 },
+          checkout: { enabled: true, rollout: 10 },
         },
       };
       const overlay = generateOverlayFile('pr-42', [
@@ -101,7 +101,7 @@ describe('ephemeral PR flags', () => {
     });
 
     it('ignores expired overlays', () => {
-      const base: FlagConfig = { flags: { 'test': { enabled: false } } };
+      const base: FlagConfig = { flags: { test: { enabled: false } } };
       const overlay = generateOverlayFile('pr-1', [
         { flag: 'test', enabled: true, scope: 'pr-1', createdAt: '', ttl: 1 },
       ]);
@@ -157,9 +157,11 @@ describe('ephemeral PR flags', () => {
   describe('createOverlayHandler', () => {
     it('createOverlay writes overlay file with correct TTL and overrides', () => {
       const handler = createOverlayHandler(tmpDir, 'flags.yml');
-      const overlay = handler.createOverlay('pr-100', [
-        { flag: 'dark-mode', enabled: true, scope: '', createdAt: '', ttl: 0 },
-      ], 3600);
+      const overlay = handler.createOverlay(
+        'pr-100',
+        [{ flag: 'dark-mode', enabled: true, scope: '', createdAt: '', ttl: 0 }],
+        3600,
+      );
 
       expect(overlay.scope).toBe('pr-100');
       expect(overlay.overrides).toHaveLength(1);

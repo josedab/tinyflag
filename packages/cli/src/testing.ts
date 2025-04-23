@@ -270,10 +270,7 @@ export function runTestSpec(
 /**
  * Discover and run all test specs in a directory.
  */
-export function runTestSpecs(
-  specDir: string,
-  config: FlagConfig,
-): TestRunResult {
+export function runTestSpecs(specDir: string, config: FlagConfig): TestRunResult {
   const startTime = Date.now();
   const specs: SpecResult[] = [];
   const specFiles = findSpecFiles(specDir);
@@ -323,7 +320,12 @@ function findSpecFiles(dir: string): string[] {
         const stat = statSync(fullPath);
         if (stat.isDirectory()) {
           walk(fullPath);
-        } else if (stat.isFile() && (entry.endsWith('.test.yml') || entry.endsWith('.test.yaml') || entry.endsWith('.spec.yml'))) {
+        } else if (
+          stat.isFile() &&
+          (entry.endsWith('.test.yml') ||
+            entry.endsWith('.test.yaml') ||
+            entry.endsWith('.spec.yml'))
+        ) {
           files.push(fullPath);
         }
       } catch {
@@ -361,7 +363,9 @@ export function formatTestResults(result: TestRunResult): string {
   }
 
   const total = result.totalPassed + result.totalFailed + result.totalSkipped;
-  lines.push(`Results: ${result.totalPassed} passed, ${result.totalFailed} failed, ${result.totalSkipped} skipped (${total} total, ${result.duration}ms)`);
+  lines.push(
+    `Results: ${result.totalPassed} passed, ${result.totalFailed} failed, ${result.totalSkipped} skipped (${total} total, ${result.duration}ms)`,
+  );
 
   return lines.join('\n');
 }
@@ -374,22 +378,32 @@ export function formatJUnitXml(result: TestRunResult): string {
   const total = result.totalPassed + result.totalFailed + result.totalSkipped;
 
   lines.push('<?xml version="1.0" encoding="UTF-8"?>');
-  lines.push(`<testsuites tests="${total}" failures="${result.totalFailed}" skipped="${result.totalSkipped}" time="${(result.duration / 1000).toFixed(3)}">`);
+  lines.push(
+    `<testsuites tests="${total}" failures="${result.totalFailed}" skipped="${result.totalSkipped}" time="${(result.duration / 1000).toFixed(3)}">`,
+  );
 
   for (const spec of result.specs) {
     const specTotal = spec.passed + spec.failed + spec.skipped;
-    lines.push(`  <testsuite name="${escapeXml(spec.file)}" tests="${specTotal}" failures="${spec.failed}" skipped="${spec.skipped}" time="${(spec.duration / 1000).toFixed(3)}">`);
+    lines.push(
+      `  <testsuite name="${escapeXml(spec.file)}" tests="${specTotal}" failures="${spec.failed}" skipped="${spec.skipped}" time="${(spec.duration / 1000).toFixed(3)}">`,
+    );
 
     for (const test of spec.tests) {
-      lines.push(`    <testcase name="${escapeXml(test.name)}" time="${(test.duration / 1000).toFixed(3)}">`);
+      lines.push(
+        `    <testcase name="${escapeXml(test.name)}" time="${(test.duration / 1000).toFixed(3)}">`,
+      );
 
       if (test.status === 'skip') {
         lines.push('      <skipped />');
       } else if (test.status === 'fail') {
         for (const a of test.assertions) {
           if (!a.passed) {
-            lines.push(`      <failure message="${escapeXml(a.message || 'assertion failed')}" type="AssertionFailure">`);
-            lines.push(`        Flag: ${escapeXml(a.flag)}, Expected: ${escapeXml(String(a.expected))}, Actual: ${escapeXml(String(a.actual))}`);
+            lines.push(
+              `      <failure message="${escapeXml(a.message || 'assertion failed')}" type="AssertionFailure">`,
+            );
+            lines.push(
+              `        Flag: ${escapeXml(a.flag)}, Expected: ${escapeXml(String(a.expected))}, Actual: ${escapeXml(String(a.actual))}`,
+            );
             lines.push('      </failure>');
           }
         }
