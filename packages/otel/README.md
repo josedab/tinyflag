@@ -1,6 +1,6 @@
 # tinyflag-otel
 
-OpenTelemetry instrumentation for TinyFlag — emit spans and trace baggage for feature flag evaluations.
+OpenTelemetry instrumentation for TinyFlag — emit spans for feature flag evaluations.
 
 ## Installation
 
@@ -14,13 +14,14 @@ npm install tinyflag-otel @opentelemetry/api
 
 ```typescript
 import { TinyFlag } from 'tinyflag';
+import * as otelApi from '@opentelemetry/api';
 import { instrumentTinyFlag } from 'tinyflag-otel';
 
 const tf = new TinyFlag({ source: 'flags.yml' });
 await tf.init();
 
 const instrumentation = instrumentTinyFlag(tf, {
-  injectBaggage: true,       // inject flag decisions into trace baggage
+  otelApi,
   filter: (flag) => true,    // filter which flags create spans
 });
 
@@ -40,6 +41,16 @@ instrumentation.dispose();
 | `feature_flag.enabled` | boolean | Evaluation result |
 | `feature_flag.variant` | string | Selected variant (if any) |
 | `feature_flag.user_id` | string | User ID from context |
+
+## Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `otelApi` | `OtelApi` | required | The `@opentelemetry/api` module |
+| `tracerName` | `string` | `'tinyflag'` | Custom tracer name |
+| `tracerVersion` | `string` | `'0.1.0'` | Tracer version |
+| `spanNamePrefix` | `string` | `'tinyflag.evaluate'` | Custom span name prefix |
+| `filter` | `(flagName: string) => boolean` | all flags | Filter which flags generate spans |
 
 ## Configuration Examples
 

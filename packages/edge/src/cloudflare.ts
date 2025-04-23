@@ -62,13 +62,18 @@ export async function handleRequest(
   // Apply flag headers to origin response
   let response = applyFlagHeaders(originResponse, result);
 
-  // DOM-level A/B testing via HTMLRewriter pattern
-  // Note: Actual HTMLRewriter is a Cloudflare runtime API.
-  // This provides the rewrite rules structure for use with it.
+  // DOM-level A/B testing via HTMLRewriter configuration
+  // NOTE: This does NOT perform actual DOM rewriting. It generates rewrite
+  // rules as a JSON header (`x-tinyflag-rewrites`) that your Cloudflare Worker
+  // can apply using the platform's HTMLRewriter API. Example:
+  //
+  //   const rules = JSON.parse(response.headers.get('x-tinyflag-rewrites') || '[]');
+  //   let rewriter = new HTMLRewriter();
+  //   for (const rule of rules) {
+  //     rewriter = rewriter.on(rule.selector, { element(el) { el.setInnerContent(rule.html, { html: true }); } });
+  //   }
+  //   return rewriter.transform(response);
   if (options.htmlRewriteRules && response.headers.get('content-type')?.includes('text/html')) {
-    // In a real Cloudflare Worker, you'd do:
-    // response = new HTMLRewriter().on(selector, handler).transform(response);
-    // Here we attach the rewrite config as a header for instrumentation
     response.headers.set(
       'x-tinyflag-rewrites',
       JSON.stringify(

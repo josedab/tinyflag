@@ -11,8 +11,14 @@ export function connectAnalytics(instance: TinyFlag, adapter: TinyFlagAnalyticsA
   instance.on('exposure', (event) => {
     try {
       adapter.trackExposure(event);
-    } catch {
-      // Silently ignore adapter errors to avoid breaking flag evaluation
+    } catch (error) {
+      // Log adapter errors in debug mode instead of silently swallowing them
+      if (typeof console !== 'undefined' && console.debug) {
+        console.debug(
+          '[tinyflag-analytics] Adapter error:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
     }
   });
 }

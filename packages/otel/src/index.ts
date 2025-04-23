@@ -1,8 +1,8 @@
 /**
  * tinyflag-otel — OpenTelemetry instrumentation for TinyFlag.
  *
- * Wraps TinyFlag's isEnabled/getVariant with OpenTelemetry span creation,
- * injects flag decisions into trace baggage for downstream correlation.
+ * Wraps TinyFlag's isEnabled/getVariant with OpenTelemetry span creation
+ * for observability and downstream correlation.
  * Designed as an opt-in package with @opentelemetry/api as an optional peer dependency.
  */
 

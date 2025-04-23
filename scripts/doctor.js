@@ -68,6 +68,13 @@ const packages = [
   { name: 'react', dist: 'packages/react/dist/index.js' },
   { name: 'vue', dist: 'packages/vue/dist/index.js' },
   { name: 'svelte', dist: 'packages/svelte/dist/index.js' },
+  { name: 'server', dist: 'packages/server/dist/index.js' },
+  { name: 'middleware', dist: 'packages/middleware/dist/index.js' },
+  { name: 'edge', dist: 'packages/edge/dist/index.js' },
+  { name: 'analytics', dist: 'packages/analytics/dist/index.js' },
+  { name: 'otel', dist: 'packages/otel/dist/index.js' },
+  { name: 'openfeature', dist: 'packages/openfeature/dist/index.js' },
+  { name: 'react-native', dist: 'packages/react-native/dist/index.js' },
 ];
 
 for (const pkg of packages) {
