@@ -8,7 +8,10 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other", "Linters"],
+  "categories": [
+    "Other",
+    "Linters"
+  ],
   "activationEvents": [
     "workspaceContains:**/flags.yml",
     "workspaceContains:**/flags.yaml"
@@ -18,7 +21,10 @@
     "languages": [
       {
         "id": "yaml",
-        "extensions": [".yml", ".yaml"]
+        "extensions": [
+          ".yml",
+          ".yaml"
+        ]
       }
     ],
     "configuration": {
@@ -38,6 +44,7 @@
     "clean": "rm -rf dist"
   },
   "devDependencies": {
+    "@types/node": "^25.6.0",
     "@types/vscode": "^1.85.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0"
