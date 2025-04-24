@@ -60,7 +60,7 @@ check('node_modules present', () => {
   return true;
 });
 
-// Built packages
+// Built packages — only packages with a build script and dist output
 console.log('\nBuilt packages:');
 const packages = [
   { name: 'core', dist: 'packages/core/dist/index.js' },
@@ -75,6 +75,8 @@ const packages = [
   { name: 'otel', dist: 'packages/otel/dist/index.js' },
   { name: 'openfeature', dist: 'packages/openfeature/dist/index.js' },
   { name: 'react-native', dist: 'packages/react-native/dist/index.js' },
+  { name: 'vscode', dist: 'packages/vscode/dist/extension.js' },
+  { name: 'pulumi', dist: 'packages/pulumi/dist/index.js' },
 ];
 
 for (const pkg of packages) {
