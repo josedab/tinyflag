@@ -14,20 +14,42 @@ pnpm -r test
 
 Run `pnpm doctor` to verify your environment is configured correctly. It checks Node.js ≥18, pnpm installation, built packages, git setup, and husky hooks.
 
+No environment variables are required for development. All packages work with default settings out of the box.
+
 ## Project Structure
 
 ```
 packages/
-  core/       → tinyflag (npm) — flag engine, YAML parser, hashing
-  react/      → tinyflag-react — React hooks
-  vue/        → tinyflag-vue — Vue composables
-  svelte/     → tinyflag-svelte — Svelte stores
-  cli/        → tinyflag-cli — CLI tools
-  github-action/ → GitHub Action
-  dashboard/  → Static HTML dashboard
-examples/     → Example apps
-docs/         → Documentation
+  core/              → tinyflag (npm) — flag engine, YAML parser, hashing
+  cli/               → tinyflag-cli — CLI tools (validate, generate, diff, lint, etc.)
+  react/             → tinyflag-react — React hooks
+  vue/               → tinyflag-vue — Vue composables
+  svelte/            → tinyflag-svelte — Svelte stores
+  server/            → tinyflag-server — Server-side evaluation
+  react-native/      → tinyflag-react-native — React Native bindings
+  middleware/        → tinyflag-middleware — HTTP middleware (Express, Fastify, etc.)
+  edge/              → tinyflag-edge — Edge runtime support (Cloudflare Workers, Vercel Edge)
+  analytics/         → tinyflag-analytics — Analytics and event tracking
+  otel/              → tinyflag-otel — OpenTelemetry instrumentation
+  openfeature/       → tinyflag-openfeature — OpenFeature provider
+  vscode/            → tinyflag-vscode — VS Code extension (IntelliSense, diagnostics)
+  jetbrains/         → JetBrains IDE plugin (Gradle-based)
+  pulumi/            → Pulumi provider for TinyFlag
+  terraform-provider/ → Terraform provider (Go-based)
+  github-action/     → GitHub Action for CI/CD integration
+  dashboard/         → Static HTML dashboard
+  playground/        → Interactive flag playground
+sdks/
+  go/                → Go SDK
+  jvm/               → JVM SDK (Kotlin/Java)
+  python/            → Python SDK
+  rust/              → Rust SDK
+examples/            → Example apps
+docs/                → Documentation
+website/             → Docusaurus documentation site
 ```
+
+> **Note:** The `sdks/` and `website/` directories are **not** part of the pnpm workspace. They have separate build workflows — see [Non-Workspace Directories](#non-workspace-directories) below.
 
 ## Making Changes
 
@@ -52,6 +74,7 @@ pnpm changeset
 ```
 
 This will prompt you to:
+
 1. **Select packages** — choose which packages are affected
 2. **Choose bump type** — `major` (breaking changes), `minor` (new features), or `patch` (bug fixes)
 3. **Write a summary** — describe the change for the changelog
@@ -59,6 +82,7 @@ This will prompt you to:
 A `.changeset/*.md` file is created and committed with your PR.
 
 **When to create a changeset:**
+
 - ✅ Bug fixes, new features, breaking changes, dependency updates affecting public API
 - ❌ Documentation-only changes, test changes, internal refactors with no public API impact
 
@@ -108,6 +132,28 @@ The coverage report is generated in `packages/core/coverage/`.
 
 - Use GitHub Issues
 - Include: TinyFlag version, runtime (Node/Bun/Deno/browser), minimal reproduction
+
+## Non-Workspace Directories
+
+The `sdks/` and `website/` directories are **not** included in `pnpm-workspace.yaml`, so `pnpm -r` commands (build, test, lint) do not cover them. They must be built and tested separately:
+
+### SDKs (`sdks/`)
+
+| SDK    | Build                                | Test                                        |
+| ------ | ------------------------------------ | ------------------------------------------- |
+| Go     | `cd sdks/go && go build ./...`       | `cd sdks/go && go test ./...`               |
+| JVM    | `cd sdks/jvm && ./gradlew build`     | `cd sdks/jvm && ./gradlew test`             |
+| Python | `cd sdks/python && pip install -e .` | `cd sdks/python && python -m pytest tests/` |
+| Rust   | `cd sdks/rust && cargo build`        | `cd sdks/rust && cargo test`                |
+
+### Website (`website/`)
+
+```bash
+cd website
+npm install
+npm start        # dev server
+npm run build    # production build
+```
 
 ## Creating a New Framework Integration
 
