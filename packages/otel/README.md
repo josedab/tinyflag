@@ -22,7 +22,7 @@ await tf.init();
 
 const instrumentation = instrumentTinyFlag(tf, {
   otelApi,
-  filter: (flag) => true,    // filter which flags create spans
+  filter: (flag) => true, // filter which flags create spans
 });
 
 // All flag evaluations now emit OTel spans
@@ -34,27 +34,28 @@ instrumentation.dispose();
 
 ## Span Attributes
 
-| Attribute | Type | Description |
-|-----------|------|-------------|
-| `feature_flag.key` | string | Flag name |
-| `feature_flag.provider_name` | string | Always "tinyflag" |
-| `feature_flag.enabled` | boolean | Evaluation result |
-| `feature_flag.variant` | string | Selected variant (if any) |
-| `feature_flag.user_id` | string | User ID from context |
+| Attribute                    | Type    | Description               |
+| ---------------------------- | ------- | ------------------------- |
+| `feature_flag.key`           | string  | Flag name                 |
+| `feature_flag.provider_name` | string  | Always "tinyflag"         |
+| `feature_flag.enabled`       | boolean | Evaluation result         |
+| `feature_flag.variant`       | string  | Selected variant (if any) |
+| `feature_flag.user_id`       | string  | User ID from context      |
 
 ## Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `otelApi` | `OtelApi` | required | The `@opentelemetry/api` module |
-| `tracerName` | `string` | `'tinyflag'` | Custom tracer name |
-| `tracerVersion` | `string` | `'0.1.0'` | Tracer version |
-| `spanNamePrefix` | `string` | `'tinyflag.evaluate'` | Custom span name prefix |
-| `filter` | `(flagName: string) => boolean` | all flags | Filter which flags generate spans |
+| Option           | Type                            | Default               | Description                       |
+| ---------------- | ------------------------------- | --------------------- | --------------------------------- |
+| `otelApi`        | `OtelApi`                       | required              | The `@opentelemetry/api` module   |
+| `tracerName`     | `string`                        | `'tinyflag'`          | Custom tracer name                |
+| `tracerVersion`  | `string`                        | `'0.1.0'`             | Tracer version                    |
+| `spanNamePrefix` | `string`                        | `'tinyflag.evaluate'` | Custom span name prefix           |
+| `filter`         | `(flagName: string) => boolean` | all flags             | Filter which flags generate spans |
 
 ## Configuration Examples
 
 ### Jaeger
+
 ```typescript
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
@@ -64,6 +65,7 @@ provider.register();
 ```
 
 ### Datadog
+
 ```typescript
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
@@ -71,6 +73,7 @@ const exporter = new OTLPTraceExporter({ url: 'http://localhost:4318/v1/traces' 
 ```
 
 ### Honeycomb
+
 ```typescript
 const exporter = new OTLPTraceExporter({
   url: 'https://api.honeycomb.io/v1/traces',

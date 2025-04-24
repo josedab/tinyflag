@@ -19,13 +19,15 @@ const ff = new TinyFlag({ source: './flags.yml' });
 await ff.init();
 
 const app = express();
-app.use(tinyflagExpress({
-  instance: ff,
-  contextFromRequest: (req) => ({
-    userId: req.user?.id,
-    plan: req.user?.plan,
+app.use(
+  tinyflagExpress({
+    instance: ff,
+    contextFromRequest: (req) => ({
+      userId: req.user?.id,
+      plan: req.user?.plan,
+    }),
   }),
-}));
+);
 
 app.get('/', (req, res) => {
   if (req.flags.isEnabled('new-checkout')) {
@@ -62,10 +64,12 @@ const ff = new TinyFlag({ source: './flags.yml' });
 await ff.init();
 
 const app = new Hono();
-app.use(tinyflagHono({
-  instance: ff,
-  contextFromRequest: (c) => ({ userId: c.get('userId') }),
-}));
+app.use(
+  tinyflagHono({
+    instance: ff,
+    contextFromRequest: (c) => ({ userId: c.get('userId') }),
+  }),
+);
 ```
 
 ## OpenTelemetry Tracing
@@ -73,5 +77,5 @@ app.use(tinyflagHono({
 Enable tracing spans for flag evaluation:
 
 ```ts
-tinyflagExpress({ instance: ff, tracing: true })
+tinyflagExpress({ instance: ff, tracing: true });
 ```

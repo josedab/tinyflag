@@ -12,7 +12,11 @@ npm install @react-native-async-storage/async-storage
 ## Quick Start
 
 ```tsx
-import { createOfflineInstance, useBackgroundRefresh, useFlagWithOffline } from 'tinyflag-react-native';
+import {
+  createOfflineInstance,
+  useBackgroundRefresh,
+  useFlagWithOffline,
+} from 'tinyflag-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Create offline-capable instance
@@ -32,7 +36,12 @@ function MyComponent() {
     defaultValue: false,
   });
 
-  return <Text>{enabled ? 'Feature ON' : 'Feature OFF'}{isOffline ? ' (offline)' : ''}</Text>;
+  return (
+    <Text>
+      {enabled ? 'Feature ON' : 'Feature OFF'}
+      {isOffline ? ' (offline)' : ''}
+    </Text>
+  );
 }
 ```
 

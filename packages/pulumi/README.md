@@ -25,11 +25,11 @@ const darkMode = new TinyFlag('dark-mode', {
 
 ## Configuration
 
-| Property    | Type     | Required | Description                      |
-|-------------|----------|----------|----------------------------------|
-| `name`      | string   | yes      | Flag name (kebab-case)           |
-| `enabled`   | boolean  | yes      | Globally enabled                 |
-| `description` | string | no       | Human-readable description       |
-| `rollout`   | number   | no       | Rollout percentage 0-100         |
-| `tags`      | string[] | no       | Categorization tags              |
-| `flagsFile` | string   | no       | Path to flags file (default: flags.yml) |
+| Property      | Type     | Required | Description                             |
+| ------------- | -------- | -------- | --------------------------------------- |
+| `name`        | string   | yes      | Flag name (kebab-case)                  |
+| `enabled`     | boolean  | yes      | Globally enabled                        |
+| `description` | string   | no       | Human-readable description              |
+| `rollout`     | number   | no       | Rollout percentage 0-100                |
+| `tags`        | string[] | no       | Categorization tags                     |
+| `flagsFile`   | string   | no       | Path to flags file (default: flags.yml) |

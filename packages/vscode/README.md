@@ -12,8 +12,8 @@ IntelliSense, hover previews, go-to-definition, CodeLens, and diagnostics for Ti
 
 ## Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
+| Setting              | Default     | Description                                   |
+| -------------------- | ----------- | --------------------------------------------- |
 | `tinyflag.flagsFile` | `flags.yml` | Path to flags file relative to workspace root |
 
 ## Usage

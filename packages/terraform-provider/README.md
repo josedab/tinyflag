@@ -44,10 +44,10 @@ go build -o terraform-provider-tinyflag
 
 ### `tinyflag_flag`
 
-| Attribute     | Type     | Required | Description                    |
-|---------------|----------|----------|--------------------------------|
-| `name`        | string   | yes      | Flag name (kebab-case)         |
-| `enabled`     | bool     | no       | Globally enabled (default: false) |
-| `description` | string   | no       | Human-readable description     |
-| `rollout`     | integer  | no       | Rollout percentage 0-100       |
-| `tags`        | list     | no       | Categorization tags            |
+| Attribute     | Type    | Required | Description                       |
+| ------------- | ------- | -------- | --------------------------------- |
+| `name`        | string  | yes      | Flag name (kebab-case)            |
+| `enabled`     | bool    | no       | Globally enabled (default: false) |
+| `description` | string  | no       | Human-readable description        |
+| `rollout`     | integer | no       | Rollout percentage 0-100          |
+| `tags`        | list    | no       | Categorization tags               |
