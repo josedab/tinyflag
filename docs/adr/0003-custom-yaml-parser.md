@@ -28,12 +28,14 @@ TinyFlag includes a **custom YAML parser** (~334 lines) that supports the subset
 ## Consequences
 
 **Positive:**
+
 - Adds ~3KB to bundle (vs ~60KB for `js-yaml`)
 - No dependency supply chain risk
 - Parser behavior is fully controlled and tested (100% coverage)
 - Can be optimized specifically for the flag file schema
 
 **Negative:**
+
 - Advanced YAML users may be surprised by missing anchor/alias support
 - Must maintain the parser in-house — any YAML edge case bugs are our responsibility
 - Not a general-purpose YAML parser — cannot be extracted as a standalone library without caveats

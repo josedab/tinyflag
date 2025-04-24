@@ -20,12 +20,14 @@ Many teams already manage configuration as code (Kubernetes manifests, Terraform
 TinyFlag stores flag definitions in **YAML or JSON files committed to Git**. The SDK reads these files directly — no server, no database, no API keys.
 
 Flag changes follow the same workflow as code changes:
+
 1. Edit `flags.yml` in a branch
 2. Open a pull request (CI validates the flag file via `tinyflag validate`)
 3. Review the diff (the GitHub Action posts a change summary)
 4. Merge to deploy
 
 The SDK supports three source types to accommodate different deployment models:
+
 - **File path** — for server-side applications with filesystem access
 - **URL** — for CDN-hosted flags, edge runtimes, or browser-based evaluation
 - **Inline object** — for testing, edge workers, and bundled configurations
@@ -33,6 +35,7 @@ The SDK supports three source types to accommodate different deployment models:
 ## Consequences
 
 **Positive:**
+
 - Zero infrastructure to provision or maintain
 - Full audit trail via Git history (who changed what, when, and why)
 - Changes reviewed in PRs with the same rigor as code changes
@@ -40,6 +43,7 @@ The SDK supports three source types to accommodate different deployment models:
 - Free forever — no per-seat or per-evaluation pricing
 
 **Negative:**
+
 - No real-time dashboard for non-technical stakeholders to toggle flags
 - Flag changes require a commit/deploy cycle (minutes, not seconds)
 - No built-in analytics or experimentation dashboard (exposure events must be wired to external analytics)

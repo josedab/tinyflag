@@ -8,16 +8,16 @@
 const ff = new TinyFlag(options: TinyFlagOptions);
 ```
 
-| Option         | Type                     | Default      | Description                                                      |
-| -------------- | ------------------------ | ------------ | ---------------------------------------------------------------- |
-| `source`       | `string \| FlagConfig`   | **required** | File path (.yml/.yaml/.json), URL (http/https), or inline config |
-| `headers`      | `Record<string, string>` | —            | HTTP headers for URL source                                      |
-| `pollInterval` | `number`                 | `60000`      | URL polling interval (ms). Minimum: 5000                         |
-| `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                        |
-| `strict`       | `boolean`                | `false`      | Reject unknown fields                                            |
+| Option         | Type                     | Default      | Description                                                                                                                                                                                                                                                                                                          |
+| -------------- | ------------------------ | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `source`       | `string \| FlagConfig`   | **required** | File path (.yml/.yaml/.json), URL (http/https), or inline config                                                                                                                                                                                                                                                     |
+| `headers`      | `Record<string, string>` | —            | HTTP headers for URL source                                                                                                                                                                                                                                                                                          |
+| `pollInterval` | `number`                 | `60000`      | URL polling interval (ms). Minimum: 5000                                                                                                                                                                                                                                                                             |
+| `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                                                                                                                                                                                                                                                                            |
+| `strict`       | `boolean`                | `false`      | Reject unknown fields                                                                                                                                                                                                                                                                                                |
 | `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId). Uses an in-memory `Set<string>` cache that is unbounded and lives for the instance lifetime — there is no TTL or size limit. For long-lived server processes, be aware the cache grows with each unique `(flag, userId)` pair. Calling `destroy()` clears the cache. |
-| `fetchTimeout` | `number`                 | `5000`       | Timeout in ms for fetching flags from a URL                      |
-| `debug`        | `boolean`                | `false`      | Enable debug logging (also enabled via `DEBUG=tinyflag` env var) |
+| `fetchTimeout` | `number`                 | `5000`       | Timeout in ms for fetching flags from a URL                                                                                                                                                                                                                                                                          |
+| `debug`        | `boolean`                | `false`      | Enable debug logging (also enabled via `DEBUG=tinyflag` env var)                                                                                                                                                                                                                                                     |
 
 ### Methods
 
@@ -90,9 +90,9 @@ flags:
 // raw = { version: 1, flags: { 'new-checkout': { enabled: true, rollout: 50 } } }
 ```
 
-| Parameter | Type     | Description              |
-| --------- | -------- | ------------------------ |
-| `input`   | `string` | YAML string to parse     |
+| Parameter | Type     | Description          |
+| --------- | -------- | -------------------- |
+| `input`   | `string` | YAML string to parse |
 
 **Returns:** `unknown` — the parsed JavaScript value, or `null` if the input is empty.
 
@@ -118,10 +118,10 @@ if (errors.length > 0) {
 const strictErrors = validateConfig(raw, true);
 ```
 
-| Parameter | Type      | Default | Description                            |
-| --------- | --------- | ------- | -------------------------------------- |
+| Parameter | Type      | Default | Description                             |
+| --------- | --------- | ------- | --------------------------------------- |
 | `config`  | `unknown` | —       | Parsed configuration object to validate |
-| `strict`  | `boolean` | `false` | When `true`, rejects unknown fields    |
+| `strict`  | `boolean` | `false` | When `true`, rejects unknown fields     |
 
 **Returns:** `ValidationError[]` — array of validation errors. Empty if valid.
 
@@ -145,12 +145,13 @@ if (errors.length > 0) {
 }
 ```
 
-| Parameter | Type      | Default | Description                            |
-| --------- | --------- | ------- | -------------------------------------- |
-| `raw`     | `unknown` | —       | Parsed configuration object            |
-| `strict`  | `boolean` | `false` | When `true`, rejects unknown fields    |
+| Parameter | Type      | Default | Description                         |
+| --------- | --------- | ------- | ----------------------------------- |
+| `raw`     | `unknown` | —       | Parsed configuration object         |
+| `strict`  | `boolean` | `false` | When `true`, rejects unknown fields |
 
 **Returns:** An object with:
+
 - `config` — `FlagConfig` (typed flag definitions; empty `{ flags: {} }` if errors)
 - `errors` — `ValidationError[]` (fatal validation errors)
 - `warnings` — `ValidationError[]` (non-fatal warnings, e.g., unknown fields in lenient mode)
@@ -173,8 +174,8 @@ setDebug(true);
 setDebug(false);
 ```
 
-| Parameter | Type      | Description                       |
-| --------- | --------- | --------------------------------- |
+| Parameter | Type      | Description                          |
+| --------- | --------- | ------------------------------------ |
 | `enabled` | `boolean` | `true` to enable, `false` to disable |
 
 ---
@@ -275,7 +276,13 @@ Low-level functions used internally by TinyFlag for loading and parsing flag sou
 
 ```typescript
 // Direct file-level import (internal use only)
-import { detectSourceType, parseSource, loadFromFile, loadFromUrl, loadFromInline } from 'tinyflag/dist/loader.js';
+import {
+  detectSourceType,
+  parseSource,
+  loadFromFile,
+  loadFromUrl,
+  loadFromInline,
+} from 'tinyflag/dist/loader.js';
 ```
 
 ### `detectSourceType(source: string | FlagConfig): SourceType`
@@ -283,14 +290,14 @@ import { detectSourceType, parseSource, loadFromFile, loadFromUrl, loadFromInlin
 Determine the source type from a source value.
 
 ```typescript
-detectSourceType('./flags.yml');        // → 'file'
+detectSourceType('./flags.yml'); // → 'file'
 detectSourceType('https://cdn.example.com/flags.json'); // → 'url'
-detectSourceType({ flags: {} });        // → 'inline'
+detectSourceType({ flags: {} }); // → 'inline'
 ```
 
-| Parameter | Type                    | Description      |
-| --------- | ----------------------- | ---------------- |
-| `source`  | `string \| FlagConfig`  | The flag source  |
+| Parameter | Type                   | Description     |
+| --------- | ---------------------- | --------------- |
+| `source`  | `string \| FlagConfig` | The flag source |
 
 **Returns:** `SourceType` — one of `'file'`, `'url'`, or `'inline'`.
 
@@ -311,11 +318,11 @@ const result = parseSource(yamlContent, 'flags.yml', false);
 console.log(result.config.flags['my-flag'].enabled); // true
 ```
 
-| Parameter  | Type      | Description                                |
-| ---------- | --------- | ------------------------------------------ |
-| `content`  | `string`  | Raw YAML or JSON string                    |
-| `filePath` | `string`  | File path (used to detect JSON vs YAML)    |
-| `strict`   | `boolean` | Reject unknown fields when `true`          |
+| Parameter  | Type      | Description                             |
+| ---------- | --------- | --------------------------------------- |
+| `content`  | `string`  | Raw YAML or JSON string                 |
+| `filePath` | `string`  | File path (used to detect JSON vs YAML) |
+| `strict`   | `boolean` | Reject unknown fields when `true`       |
 
 **Returns:** `LoadResult` — `{ config: FlagConfig, warnings: ValidationError[] }`. Throws on parse or validation errors.
 
@@ -330,10 +337,10 @@ const result = await loadFromFile('./flags.yml', false);
 console.log(Object.keys(result.config.flags));
 ```
 
-| Parameter  | Type      | Description                            |
-| ---------- | --------- | -------------------------------------- |
-| `filePath` | `string`  | Path to the flags file                 |
-| `strict`   | `boolean` | Reject unknown fields when `true`      |
+| Parameter  | Type      | Description                       |
+| ---------- | --------- | --------------------------------- |
+| `filePath` | `string`  | Path to the flags file            |
+| `strict`   | `boolean` | Reject unknown fields when `true` |
 
 **Returns:** `Promise<LoadResult>`. Throws if the file is not found, unreadable, or invalid.
 
@@ -360,14 +367,14 @@ if (updated.notModified) {
 }
 ```
 
-| Parameter      | Type                        | Default | Description                          |
-| -------------- | --------------------------- | ------- | ------------------------------------ |
-| `url`          | `string`                    | —       | URL to fetch flags from              |
-| `strict`       | `boolean`                   | —       | Reject unknown fields when `true`    |
-| `headers`      | `Record<string, string>`    | —       | Custom HTTP headers                  |
-| `etag`         | `string`                    | —       | ETag from previous response          |
-| `lastModified` | `string`                    | —       | Last-Modified from previous response |
-| `fetchTimeout` | `number`                    | `5000`  | Timeout in milliseconds              |
+| Parameter      | Type                     | Default | Description                          |
+| -------------- | ------------------------ | ------- | ------------------------------------ |
+| `url`          | `string`                 | —       | URL to fetch flags from              |
+| `strict`       | `boolean`                | —       | Reject unknown fields when `true`    |
+| `headers`      | `Record<string, string>` | —       | Custom HTTP headers                  |
+| `etag`         | `string`                 | —       | ETag from previous response          |
+| `lastModified` | `string`                 | —       | Last-Modified from previous response |
+| `fetchTimeout` | `number`                 | `5000`  | Timeout in milliseconds              |
 
 **Returns:** `Promise<LoadResult & { etag?: string; lastModified?: string; notModified?: boolean }>`. Throws on network or validation errors.
 
@@ -378,19 +385,22 @@ if (updated.notModified) {
 Validate and load flags from an inline object. Useful for serverless/edge environments.
 
 ```typescript
-const result = loadFromInline({
-  version: 1,
-  flags: {
-    'my-flag': { enabled: true, rollout: 50 },
+const result = loadFromInline(
+  {
+    version: 1,
+    flags: {
+      'my-flag': { enabled: true, rollout: 50 },
+    },
   },
-}, false);
+  false,
+);
 console.log(result.config.flags);
 ```
 
-| Parameter | Type         | Description                         |
-| --------- | ------------ | ----------------------------------- |
-| `source`  | `FlagConfig` | Inline flag configuration object    |
-| `strict`  | `boolean`    | Reject unknown fields when `true`   |
+| Parameter | Type         | Description                       |
+| --------- | ------------ | --------------------------------- |
+| `source`  | `FlagConfig` | Inline flag configuration object  |
+| `strict`  | `boolean`    | Reject unknown fields when `true` |
 
 **Returns:** `LoadResult` — `{ config: FlagConfig, warnings: ValidationError[] }`. Throws on validation errors.
 

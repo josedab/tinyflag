@@ -40,6 +40,7 @@ Build configuration: minified, sourcemapped, ES2020 target.
 ## Consequences
 
 **Positive:**
+
 - Works in all JavaScript environments without consumer configuration
 - ESM consumers get tree-shaking (unused exports are eliminated by bundlers)
 - TypeScript consumers get proper type resolution in both module systems
@@ -47,6 +48,7 @@ Build configuration: minified, sourcemapped, ES2020 target.
 - < 8KB gzipped (enforced in CI for core package)
 
 **Negative:**
+
 - Dual output doubles the package size on disk (mitigated by minification)
 - `.d.cts` files are an additional artifact to maintain
 - `tsup` is a dev dependency — its esbuild version must be kept current

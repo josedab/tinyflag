@@ -12,8 +12,8 @@ npx tinyflag <command>
 
 ## Global Options
 
-| Option   | Description                                          |
-| -------- | ---------------------------------------------------- |
+| Option   | Description                                           |
+| -------- | ----------------------------------------------------- |
 | `--json` | Output structured JSON instead of human-readable text |
 
 The `--json` flag works with all commands (`validate`, `generate`, `diff`) and is useful for CI/CD pipelines and scripting.

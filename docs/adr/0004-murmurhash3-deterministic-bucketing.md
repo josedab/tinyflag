@@ -27,6 +27,7 @@ TinyFlag uses **MurmurHash3 (32-bit)** with a custom pure-TypeScript implementat
 ## Consequences
 
 **Positive:**
+
 - Deterministic across all runtimes (pure integer arithmetic, no floating point)
 - Excellent distribution uniformity for short string keys
 - ~200 bytes in the bundle
@@ -34,6 +35,7 @@ TinyFlag uses **MurmurHash3 (32-bit)** with a custom pure-TypeScript implementat
 - No external dependency
 
 **Negative:**
+
 - MurmurHash3 is not cryptographically secure (not needed for bucketing, but worth noting)
 - 32-bit output limits to ~4 billion unique buckets (sufficient for `% 100` rollout and typical variant counts)
 - Algorithm is permanently frozen — if a distribution flaw is discovered, it cannot be fixed without a major version bump and migration tooling

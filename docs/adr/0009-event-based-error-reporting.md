@@ -32,10 +32,19 @@ Error codes are defined as a TypeScript union type (`TinyFlagErrorCode`) enablin
 
 ```typescript
 type TinyFlagErrorCode =
-  | 'FLAG_NOT_FOUND' | 'INVALID_FLAG_NAME' | 'LOAD_ERROR'
-  | 'UNKNOWN_FIELD' | 'INSECURE_SOURCE' | 'POLL_INTERVAL_CLAMPED'
-  | 'LISTENER_ERROR' | 'CIRCULAR_DEPENDENCY' | 'PERSONA_NOT_FOUND'
-  | 'SUNSET_FLAG' | 'PARSE_ERROR' | 'FETCH_ERROR' | 'WS_ERROR';
+  | 'FLAG_NOT_FOUND'
+  | 'INVALID_FLAG_NAME'
+  | 'LOAD_ERROR'
+  | 'UNKNOWN_FIELD'
+  | 'INSECURE_SOURCE'
+  | 'POLL_INTERVAL_CLAMPED'
+  | 'LISTENER_ERROR'
+  | 'CIRCULAR_DEPENDENCY'
+  | 'PERSONA_NOT_FOUND'
+  | 'SUNSET_FLAG'
+  | 'PARSE_ERROR'
+  | 'FETCH_ERROR'
+  | 'WS_ERROR';
 ```
 
 The event emitter itself is safe: listener errors are caught and re-emitted as `LISTENER_ERROR` events, preventing cascading failures.
@@ -43,6 +52,7 @@ The event emitter itself is safe: listener errors are caught and re-emitted as `
 ## Consequences
 
 **Positive:**
+
 - Non-fatal issues don't crash the application
 - Errors are structured and machine-readable (code + message + flag name)
 - Users can programmatically route errors (e.g., `LOAD_ERROR` → alerting, `FLAG_NOT_FOUND` → logging)
@@ -50,6 +60,7 @@ The event emitter itself is safe: listener errors are caught and re-emitted as `
 - Multiple consumers can listen to the same error stream
 
 **Negative:**
+
 - If no error listener is attached, errors are silently dropped
 - Developers must explicitly opt in to error monitoring
 - Event-based errors don't appear in standard `try/catch` flows

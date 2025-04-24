@@ -14,6 +14,7 @@ TinyFlag supports React, Vue, and Svelte through framework-specific bindings tha
 - Clean up listeners on component unmount
 
 Options considered:
+
 1. **All-in-one package** — `tinyflag` exports React hooks, Vue composables, and Svelte stores
 2. **Subpath exports** — `tinyflag/react`, `tinyflag/vue`, `tinyflag/svelte`
 3. **Separate packages** — `tinyflag-react`, `tinyflag-vue`, `tinyflag-svelte`
@@ -24,23 +25,25 @@ Framework bindings are published as **separate npm packages** (`tinyflag-react`,
 
 Each binding follows a consistent API pattern:
 
-| Concept | React | Vue | Svelte |
-|---------|-------|-----|--------|
-| Initialize | `<TinyFlagProvider>` | `provideTinyFlag()` | `createTinyFlag()` |
-| Boolean flag | `useFlag(name)` | `useFlag(name)` → `Ref` | `flag(name)` → `Readable` |
-| Variant | `useVariant(name)` | `useVariant(name)` → `Ref` | `variant(name)` → `Readable` |
-| Instance access | `useTinyFlagInstance()` | `useTinyFlagInstance()` | `useTinyFlagInstance()` |
-| SSR | `instance` prop | `instance` option | `instance` option |
+| Concept         | React                   | Vue                        | Svelte                       |
+| --------------- | ----------------------- | -------------------------- | ---------------------------- |
+| Initialize      | `<TinyFlagProvider>`    | `provideTinyFlag()`        | `createTinyFlag()`           |
+| Boolean flag    | `useFlag(name)`         | `useFlag(name)` → `Ref`    | `flag(name)` → `Readable`    |
+| Variant         | `useVariant(name)`      | `useVariant(name)` → `Ref` | `variant(name)` → `Readable` |
+| Instance access | `useTinyFlagInstance()` | `useTinyFlagInstance()`    | `useTinyFlagInstance()`      |
+| SSR             | `instance` prop         | `instance` option          | `instance` option            |
 
 ## Consequences
 
 **Positive:**
+
 - Consumers only install the framework they use — no unused framework code in the bundle
 - Each binding can version independently (a React-specific fix doesn't bump Vue)
 - `peerDependencies` ensure consumers manage their framework version
 - Clear separation of concerns: core evaluates, bindings integrate
 
 **Negative:**
+
 - More packages to maintain and publish (3 instead of 1)
 - API must be kept consistent across bindings (manual effort, no code generation)
 - Contributors adding a new binding must follow the established pattern (documented in CONTRIBUTING.md)

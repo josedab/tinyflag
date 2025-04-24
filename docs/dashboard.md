@@ -41,6 +41,7 @@ https://your-dashboard.example.com/?url=https://raw.githubusercontent.com/your-o
 ```
 
 **Requirements:**
+
 - The URL must point to a valid YAML or JSON flag file.
 - URL-encode the value if it contains special characters (e.g., `&`, `=`).
 - The remote server must allow CORS requests from the dashboard origin.

@@ -16,6 +16,7 @@ TinyFlag must run in multiple JavaScript runtimes:
 - **Vercel Edge Runtime** — subset of Node.js APIs
 
 The core SDK must be **bundlable for all these runtimes** from a single package. Statically importing `import fs from 'fs'` at the module level would:
+
 - Crash in browsers and edge runtimes (module not available)
 - Prevent bundlers from tree-shaking the fs dependency
 - Make the core package Node.js-only
@@ -32,7 +33,9 @@ async function loadFromFile(filePath: string, strict: boolean): Promise<LoadResu
     content = await fs.promises.readFile(filePath, 'utf-8');
   } catch (error) {
     if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      throw new Error('File source is not supported in this runtime. Use a URL or inline object instead.');
+      throw new Error(
+        'File source is not supported in this runtime. Use a URL or inline object instead.',
+      );
     }
     throw error;
   }
@@ -45,12 +48,14 @@ Similarly, the signing (`crypto`) and sync (`fs`) modules use static Node.js imp
 ## Consequences
 
 **Positive:**
+
 - Single package works in Node.js, Bun, Deno, browsers, and edge runtimes
 - Bundlers can tree-shake `fs` calls when consumers use URL or inline sources
 - Clear error messages guide users toward the right source type for their runtime
 - No conditional `require()` that would break ESM consumers
 
 **Negative:**
+
 - Dynamic `import()` is asynchronous — `loadFromFile` must be `async` even though reading a file could be synchronous
 - Some bundlers may emit warnings about dynamic imports (mitigated by the try/catch)
 - File watching (`fs.watch`) silently fails in unsupported runtimes rather than producing an error

@@ -229,9 +229,9 @@ Rules are evaluated top-to-bottom — **the first matching rule wins**. If a fla
 
 ```yaml
 rules:
-  - conditions: { plan: enterprise }  # Checked first
+  - conditions: { plan: enterprise } # Checked first
     enabled: true
-  - conditions: { plan: pro }         # Checked second
+  - conditions: { plan: pro } # Checked second
     enabled: true
     rollout: 50
 ```

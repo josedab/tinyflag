@@ -143,14 +143,14 @@ const ff = new TinyFlag({ source: './flags.yml', strict: true });
 
 In strict mode, validation errors cause `init()` (or `reload()`) to fail instead of emitting warnings. The following table summarizes the differences:
 
-| Validation Check                          | Default (lenient)         | Strict mode              |
-| ----------------------------------------- | ------------------------- | ------------------------ |
-| Unknown root-level fields (e.g., `meta:`) | Warning (field ignored)   | **Error** (load fails)   |
-| Unknown flag fields (e.g., `priority:`)   | Warning (field ignored)   | **Error** (load fails)   |
-| Invalid flag names (non-kebab-case)        | Error (load fails)        | Error (load fails)       |
-| Missing `enabled` field                    | Error (load fails)        | Error (load fails)       |
-| Invalid rollout range (not 0-100)          | Error (load fails)        | Error (load fails)       |
-| All variant weights are zero               | Error (load fails)        | Error (load fails)       |
+| Validation Check                          | Default (lenient)       | Strict mode            |
+| ----------------------------------------- | ----------------------- | ---------------------- |
+| Unknown root-level fields (e.g., `meta:`) | Warning (field ignored) | **Error** (load fails) |
+| Unknown flag fields (e.g., `priority:`)   | Warning (field ignored) | **Error** (load fails) |
+| Invalid flag names (non-kebab-case)       | Error (load fails)      | Error (load fails)     |
+| Missing `enabled` field                   | Error (load fails)      | Error (load fails)     |
+| Invalid rollout range (not 0-100)         | Error (load fails)      | Error (load fails)     |
+| All variant weights are zero              | Error (load fails)      | Error (load fails)     |
 
 **When to use strict mode:**
 

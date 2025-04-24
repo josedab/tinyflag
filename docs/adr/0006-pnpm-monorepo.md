@@ -15,6 +15,7 @@ TinyFlag ships multiple packages: core SDK, framework bindings (React, Vue, Svel
 - Release workflow (Changesets)
 
 Options considered:
+
 1. **Separate repositories** — maximum isolation but painful cross-package development
 2. **Single package** — simplest but forces consumers to install unnecessary framework bindings
 3. **Monorepo with fixed versioning** — all packages share one version number (Lerna-style)
@@ -32,6 +33,7 @@ TinyFlag uses a **pnpm workspace monorepo** with **independently versioned packa
 ## Consequences
 
 **Positive:**
+
 - Consumers install only what they need (`tinyflag` + `tinyflag-react`, not `tinyflag-vue`)
 - Breaking changes in one binding don't force version bumps in others
 - Shared dev tooling reduces configuration drift
@@ -39,6 +41,7 @@ TinyFlag uses a **pnpm workspace monorepo** with **independently versioned packa
 - Single CI pipeline tests all packages together
 
 **Negative:**
+
 - Workspace setup has complexity (pnpm-workspace.yaml, per-package tsconfig, per-package tsup config)
 - Changesets workflow requires contributors to run `pnpm changeset` for user-facing changes
 - Cross-package type changes require coordinated releases

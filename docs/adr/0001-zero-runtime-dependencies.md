@@ -29,12 +29,14 @@ All tooling dependencies (`tsup`, `vitest`, `typescript`) are `devDependencies` 
 ## Consequences
 
 **Positive:**
+
 - Core bundle is < 8KB gzipped (enforced in CI)
 - Zero supply chain attack surface at runtime
 - No version conflict risk for consumers
 - SDK can be audited as a self-contained unit
 
 **Negative:**
+
 - Custom YAML parser doesn't support anchors, aliases, or custom tags (acceptable — flag files don't need them)
 - Custom hashing must be proven equivalent to reference implementations (verified via test vectors)
 - New capabilities (e.g., cryptographic signing) must use Node.js built-ins rather than popular libraries
