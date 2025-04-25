@@ -106,7 +106,7 @@ flags:
           country: { $in: [US, CA] }
         rollout: 50
       - conditions:
-          email: "*@company.com"
+          email: '*@company.com'
         enabled: true
 ```
 
@@ -175,14 +175,16 @@ await ff.init();
 
 const app = express();
 
-app.use(tinyflagExpress({
-  instance: ff,
-  contextFromRequest: (req) => ({
-    userId: req.user?.id,
-    plan: req.user?.plan,
-    country: req.headers['cf-ipcountry'],
+app.use(
+  tinyflagExpress({
+    instance: ff,
+    contextFromRequest: (req) => ({
+      userId: req.user?.id,
+      plan: req.user?.plan,
+      country: req.headers['cf-ipcountry'],
+    }),
   }),
-}));
+);
 
 app.get('/api/dashboard', (req, res) => {
   if (req.flags.isEnabled('new-dashboard')) {

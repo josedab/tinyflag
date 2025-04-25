@@ -32,23 +32,24 @@ That's it. No server, no API keys, no dashboard. Define flags in YAML, commit to
 
 ## Feature Comparison
 
-| Capability | LaunchDarkly | Unleash | GrowthBook | **TinyFlag** |
-|-----------|-------------|---------|------------|-------------|
-| Requires server | ✅ SaaS | ✅ Self-host | ✅ Self-host | **❌ No** |
-| Git-native flags | ❌ | ❌ | ❌ | **✅** |
-| Zero dependencies | ❌ | ❌ | ❌ | **✅** |
-| Bundle size | ~50KB | ~30KB | ~20KB | **< 8KB** |
-| Edge/serverless | Partial | ❌ | Partial | **✅** |
-| A/B testing | ✅ | ✅ | ✅ | **✅** |
-| Targeting rules | ✅ | ✅ | ✅ | **✅** |
-| React/Vue/Svelte | ✅ | ✅ | React only | **✅** |
-| SSR support | ✅ | ❌ | ✅ | **✅** |
-| OpenFeature | ✅ | ✅ | ✅ | **✅** |
-| Free forever | ❌ | Free tier | Free tier | **✅** |
+| Capability        | LaunchDarkly | Unleash      | GrowthBook   | **TinyFlag** |
+| ----------------- | ------------ | ------------ | ------------ | ------------ |
+| Requires server   | ✅ SaaS      | ✅ Self-host | ✅ Self-host | **❌ No**    |
+| Git-native flags  | ❌           | ❌           | ❌           | **✅**       |
+| Zero dependencies | ❌           | ❌           | ❌           | **✅**       |
+| Bundle size       | ~50KB        | ~30KB        | ~20KB        | **< 8KB**    |
+| Edge/serverless   | Partial      | ❌           | Partial      | **✅**       |
+| A/B testing       | ✅           | ✅           | ✅           | **✅**       |
+| Targeting rules   | ✅           | ✅           | ✅           | **✅**       |
+| React/Vue/Svelte  | ✅           | ✅           | React only   | **✅**       |
+| SSR support       | ✅           | ❌           | ✅           | **✅**       |
+| OpenFeature       | ✅           | ✅           | ✅           | **✅**       |
+| Free forever      | ❌           | Free tier    | Free tier    | **✅**       |
 
 ## When TinyFlag is the Right Choice
 
 ✅ **Choose TinyFlag when:**
+
 - You want feature flags without infrastructure complexity
 - Your team already uses Git for configuration management
 - You need flags in edge/serverless runtimes where SDK size matters
@@ -59,6 +60,7 @@ That's it. No server, no API keys, no dashboard. Define flags in YAML, commit to
 ## When to Consider Alternatives
 
 ⚠️ **Consider a SaaS solution when:**
+
 - Non-technical stakeholders need a visual dashboard to toggle flags in real-time
 - You need sub-second flag propagation without a deploy cycle
 - You need built-in experimentation analytics and statistical significance calculations
@@ -68,14 +70,14 @@ That's it. No server, no API keys, no dashboard. Define flags in YAML, commit to
 
 TinyFlag is designed for hot-path evaluation:
 
-| Benchmark | Result |
-|-----------|--------|
-| `isEnabled()` | **0.0025ms** per call (400K evals/sec) |
-| `getVariant()` | **0.0024ms** per call |
-| `evaluateFlag()` (raw) | **0.001ms** per call (1M evals/sec) |
-| SDK init (100 flags) | **< 1ms** |
-| Bundle size (gzipped) | **< 8KB** |
-| Runtime dependencies | **0** |
+| Benchmark              | Result                                 |
+| ---------------------- | -------------------------------------- |
+| `isEnabled()`          | **0.0025ms** per call (400K evals/sec) |
+| `getVariant()`         | **0.0024ms** per call                  |
+| `evaluateFlag()` (raw) | **0.001ms** per call (1M evals/sec)    |
+| SDK init (100 flags)   | **< 1ms**                              |
+| Bundle size (gzipped)  | **< 8KB**                              |
+| Runtime dependencies   | **0**                                  |
 
 Benchmarks run on Node.js 22, Apple M-series. See `packages/core/src/__tests__/benchmark.test.ts` for methodology.
 

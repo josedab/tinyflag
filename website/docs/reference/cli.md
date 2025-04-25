@@ -28,11 +28,11 @@ Validate a flag file against the schema.
 npx tinyflag validate <file> [options]
 ```
 
-| Option     | Description                                                |
-| ---------- | ---------------------------------------------------------- |
-| `--strict` | Reject unknown fields as errors                            |
-| `--watch`  | Re-validate automatically when the file changes            |
-| `--json`   | Output structured JSON                                     |
+| Option     | Description                                     |
+| ---------- | ----------------------------------------------- |
+| `--strict` | Reject unknown fields as errors                 |
+| `--watch`  | Re-validate automatically when the file changes |
+| `--json`   | Output structured JSON                          |
 
 **Exit codes:** `0` on success, `1` on failure.
 
@@ -64,10 +64,10 @@ Generate TypeScript type definitions from a flag file.
 npx tinyflag generate <file> [options]
 ```
 
-| Option     | Description                           |
-| ---------- | ------------------------------------- |
-| `-o`       | Output file path (default: stdout)    |
-| `--json`   | Output structured JSON                |
+| Option   | Description                        |
+| -------- | ---------------------------------- |
+| `-o`     | Output file path (default: stdout) |
+| `--json` | Output structured JSON             |
 
 ### Examples
 
@@ -94,10 +94,10 @@ Show flag changes between two git refs.
 npx tinyflag diff <ref1>..<ref2> [options]
 ```
 
-| Option     | Description                                    |
-| ---------- | ---------------------------------------------- |
-| `--file`   | Path to flags file (default: `flags.yml`)      |
-| `--json`   | Output structured JSON                         |
+| Option   | Description                               |
+| -------- | ----------------------------------------- |
+| `--file` | Path to flags file (default: `flags.yml`) |
+| `--json` | Output structured JSON                    |
 
 ### Examples
 

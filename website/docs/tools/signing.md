@@ -44,7 +44,7 @@ import { verifyFile } from 'tinyflag';
 
 // Strict mode: throws if signature is missing or invalid
 const result = verifyFile('./flags.yml', ['./keys/tinyflag.pub']);
-console.log(result.valid);    // true
+console.log(result.valid); // true
 console.log(result.keyIndex); // 0 (which key matched)
 
 // Lenient mode: returns warnings instead of throwing
@@ -57,10 +57,7 @@ console.log(lenient.warnings); // ['No signature file found for ./flags.yml']
 Pass multiple public keys to support key rotation. The SDK tries each key in order:
 
 ```typescript
-const result = verifyContent(content, signatureBase64, [
-  currentPublicKey,
-  previousPublicKey,
-]);
+const result = verifyContent(content, signatureBase64, [currentPublicKey, previousPublicKey]);
 // result.keyIndex tells you which key matched
 ```
 

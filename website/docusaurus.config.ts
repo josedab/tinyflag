@@ -46,8 +46,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl:
-            'https://github.com/josedab/tinyflag/tree/main/website/',
+          editUrl: 'https://github.com/josedab/tinyflag/tree/main/website/',
         },
         blog: false,
         theme: {

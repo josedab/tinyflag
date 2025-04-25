@@ -113,15 +113,15 @@ Flag definitions live in YAML/JSON files committed to Git. This means:
 
 For detailed rationale behind each design choice, see the [ADRs](https://github.com/josedab/tinyflag/tree/main/docs/adr):
 
-| ADR | Decision |
-|-----|----------|
-| [ADR-0001](https://github.com/josedab/tinyflag/blob/main/docs/adr/0001-zero-runtime-dependencies.md) | Zero Runtime Dependencies |
-| [ADR-0002](https://github.com/josedab/tinyflag/blob/main/docs/adr/0002-file-driven-git-native-storage.md) | File-Driven, Git-Native Storage |
-| [ADR-0003](https://github.com/josedab/tinyflag/blob/main/docs/adr/0003-custom-yaml-parser.md) | Custom YAML Parser |
-| [ADR-0004](https://github.com/josedab/tinyflag/blob/main/docs/adr/0004-murmurhash3-deterministic-bucketing.md) | MurmurHash3 Deterministic Bucketing |
-| [ADR-0005](https://github.com/josedab/tinyflag/blob/main/docs/adr/0005-evaluation-never-throws.md) | Evaluation Never Throws |
-| [ADR-0006](https://github.com/josedab/tinyflag/blob/main/docs/adr/0006-pnpm-monorepo.md) | pnpm Monorepo |
-| [ADR-0007](https://github.com/josedab/tinyflag/blob/main/docs/adr/0007-dual-esm-cjs-output.md) | Dual ESM/CJS Output |
+| ADR                                                                                                             | Decision                                |
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [ADR-0001](https://github.com/josedab/tinyflag/blob/main/docs/adr/0001-zero-runtime-dependencies.md)            | Zero Runtime Dependencies               |
+| [ADR-0002](https://github.com/josedab/tinyflag/blob/main/docs/adr/0002-file-driven-git-native-storage.md)       | File-Driven, Git-Native Storage         |
+| [ADR-0003](https://github.com/josedab/tinyflag/blob/main/docs/adr/0003-custom-yaml-parser.md)                   | Custom YAML Parser                      |
+| [ADR-0004](https://github.com/josedab/tinyflag/blob/main/docs/adr/0004-murmurhash3-deterministic-bucketing.md)  | MurmurHash3 Deterministic Bucketing     |
+| [ADR-0005](https://github.com/josedab/tinyflag/blob/main/docs/adr/0005-evaluation-never-throws.md)              | Evaluation Never Throws                 |
+| [ADR-0006](https://github.com/josedab/tinyflag/blob/main/docs/adr/0006-pnpm-monorepo.md)                        | pnpm Monorepo                           |
+| [ADR-0007](https://github.com/josedab/tinyflag/blob/main/docs/adr/0007-dual-esm-cjs-output.md)                  | Dual ESM/CJS Output                     |
 | [ADR-0008](https://github.com/josedab/tinyflag/blob/main/docs/adr/0008-framework-bindings-separate-packages.md) | Framework Bindings as Separate Packages |
-| [ADR-0009](https://github.com/josedab/tinyflag/blob/main/docs/adr/0009-event-based-error-reporting.md) | Event-Based Error Reporting |
-| [ADR-0010](https://github.com/josedab/tinyflag/blob/main/docs/adr/0010-dynamic-fs-import-universal-runtime.md) | Dynamic fs Import |
+| [ADR-0009](https://github.com/josedab/tinyflag/blob/main/docs/adr/0009-event-based-error-reporting.md)          | Event-Based Error Reporting             |
+| [ADR-0010](https://github.com/josedab/tinyflag/blob/main/docs/adr/0010-dynamic-fs-import-universal-runtime.md)  | Dynamic fs Import                       |

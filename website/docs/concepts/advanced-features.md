@@ -15,8 +15,8 @@ Load flags from multiple sources — perfect for base + environment overlays:
 ```typescript
 const ff = new TinyFlag({
   source: [
-    './flags.base.yml',          // Base flags
-    './flags.production.yml',     // Environment overrides
+    './flags.base.yml', // Base flags
+    './flags.production.yml', // Environment overrides
   ],
 });
 await ff.init();
@@ -28,7 +28,7 @@ Later sources override earlier ones. Conflict warnings are emitted via the `erro
 import { mergeFlagConfigs } from 'tinyflag';
 
 const { config, warnings } = mergeFlagConfigs([baseConfig, overlayConfig]);
-warnings.forEach(w => console.warn(`${w.flag}.${w.field}: ${w.message}`));
+warnings.forEach((w) => console.warn(`${w.flag}.${w.field}: ${w.message}`));
 ```
 
 ## Scheduled Flags
@@ -40,8 +40,8 @@ flags:
   black-friday-sale:
     enabled: true
     schedule:
-      enableAt: "2026-11-27T00:00:00-05:00"
-      disableAt: "2026-11-30T23:59:59-05:00"
+      enableAt: '2026-11-27T00:00:00-05:00'
+      disableAt: '2026-11-30T23:59:59-05:00'
 ```
 
 Schedules use ISO 8601 with timezone offset. The flag evaluates as disabled outside the scheduled window.
@@ -56,15 +56,15 @@ flags:
     enabled: true
     lifecycle:
       state: sunset
-      sunsetAt: "2026-06-01"
+      sunsetAt: '2026-06-01'
 ```
 
-| State      | Behavior |
-|------------|----------|
+| State      | Behavior                                          |
+| ---------- | ------------------------------------------------- |
 | `draft`    | Evaluates as `false` unless debug mode is enabled |
-| `active`   | Normal evaluation |
-| `sunset`   | Normal evaluation + emits `SUNSET_FLAG` warning |
-| `archived` | Always evaluates as `false` |
+| `active`   | Normal evaluation                                 |
+| `sunset`   | Normal evaluation + emits `SUNSET_FLAG` warning   |
+| `archived` | Always evaluates as `false`                       |
 
 ## Prerequisite Flags
 
@@ -77,7 +77,7 @@ flags:
   checkout-v2:
     enabled: true
     requires:
-      - payments-v2  # Only enabled if payments-v2 is also enabled
+      - payments-v2 # Only enabled if payments-v2 is also enabled
 ```
 
 Circular dependencies are detected at load time and emitted as `CIRCULAR_DEPENDENCY` errors:
@@ -97,12 +97,12 @@ Define reusable targeting conditions:
 segments:
   internal-users:
     conditions:
-      email: "*@company.com"
+      email: '*@company.com'
   beta-testers:
     conditions:
       plan: pro
     extends:
-      - internal-users  # Inherits conditions
+      - internal-users # Inherits conditions
 
 flags:
   new-feature:
@@ -121,11 +121,11 @@ Define named context presets for testing and evaluation:
 ```yaml
 personas:
   pro-user:
-    userId: "user-pro"
+    userId: 'user-pro'
     plan: pro
     country: US
   free-user:
-    userId: "user-free"
+    userId: 'user-free'
     plan: free
 
 flags:
@@ -140,7 +140,7 @@ flags:
 
 ```typescript
 // Evaluate with a persona
-ff.evaluateWithPersona('premium-feature', 'pro-user');  // true
+ff.evaluateWithPersona('premium-feature', 'pro-user'); // true
 ff.evaluateWithPersona('premium-feature', 'free-user'); // false
 
 // Get all personas
@@ -163,8 +163,8 @@ flags:
       type: ramp
       start: 5
       end: 100
-      startAt: "2026-05-01T00:00:00Z"
-      endAt: "2026-05-14T00:00:00Z"
+      startAt: '2026-05-01T00:00:00Z'
+      endAt: '2026-05-14T00:00:00Z'
 ```
 
 ### Ring (Deployment Rings)
@@ -234,8 +234,8 @@ Configure retry behavior for URL source fetches with exponential backoff:
 ```typescript
 const ff = new TinyFlag({
   source: 'https://cdn.example.com/flags.json',
-  retries: 3,       // Retry up to 3 times on transient errors
-  retryDelay: 1000,  // Base delay: 1s, then 2s, 4s (with jitter)
+  retries: 3, // Retry up to 3 times on transient errors
+  retryDelay: 1000, // Base delay: 1s, then 2s, 4s (with jitter)
 });
 ```
 
@@ -253,7 +253,7 @@ const ff = await createMockTinyFlag({
   flags: {
     'feature-a': true,
     'feature-b': false,
-    'experiment': {
+    experiment: {
       enabled: true,
       variants: [
         { name: 'control', weight: 50 },

@@ -45,10 +45,10 @@ Each entry contains:
 
 ```typescript
 interface ReplayLogEntry {
-  timestamp: string;       // ISO 8601
-  flag: string;            // Flag name
-  context: UserContext;     // User context at evaluation time
-  result: boolean;         // Original evaluation result
+  timestamp: string; // ISO 8601
+  flag: string; // Flag name
+  context: UserContext; // User context at evaluation time
+  result: boolean; // Original evaluation result
   variant?: string | null; // Variant assignment
   flagFileCommit?: string; // Git commit hash
 }

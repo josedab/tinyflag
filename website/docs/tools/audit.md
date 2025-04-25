@@ -18,10 +18,7 @@ const ff = new TinyFlag({ source: './flags.yml' });
 await ff.init();
 
 const disconnect = connectAudit(ff, {
-  sinks: [
-    createFileSink('./audit.jsonl'),
-    createConsoleSink(),
-  ],
+  sinks: [createFileSink('./audit.jsonl'), createConsoleSink()],
   source: 'production',
   actor: 'deploy-pipeline',
 });

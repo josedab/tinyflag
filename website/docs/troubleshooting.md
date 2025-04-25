@@ -19,6 +19,7 @@ ff.on('error', (e) => console.warn(`[TinyFlag] ${e.code}: ${e.message}`));
 **Cause:** You called `isEnabled()` or `getVariant()` with a flag name that doesn't exist.
 
 **Solutions:**
+
 - Check for typos in the flag name
 - Ensure the flag is defined in your `flags.yml`
 - Verify that `ff.init()` has completed before evaluating flags
@@ -28,6 +29,7 @@ ff.on('error', (e) => console.warn(`[TinyFlag] ${e.code}: ${e.message}`));
 **Cause:** TinyFlag could not load or parse the flag source.
 
 **Solutions:**
+
 - **File source:** Verify the file path exists and is readable
 - **URL source:** Confirm the endpoint returns valid YAML or JSON
 - **YAML syntax:** Validate with `npx tinyflag validate flags.yml`

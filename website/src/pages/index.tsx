@@ -72,7 +72,8 @@ function CopyButton({ text }: { text: string }) {
       onClick={handleCopy}
       title="Click to copy"
       aria-label={`Copy "${text}" to clipboard`}
-      type="button">
+      type="button"
+    >
       <span className="install-command__prefix">$ </span>
       <span>{text}</span>
       <span className="install-command__icon">{copied ? ' ✓' : ' 📋'}</span>
@@ -122,7 +123,8 @@ function HeroSection() {
           <Link
             className="button button--outline button--lg"
             style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.4)' }}
-            href="https://github.com/josedab/tinyflag">
+            href="https://github.com/josedab/tinyflag"
+          >
             GitHub ⭐
           </Link>
         </div>
@@ -281,7 +283,13 @@ function FrameworksSection() {
         <Heading as="h2" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
           Works With Your Stack
         </Heading>
-        <p style={{ textAlign: 'center', color: 'var(--ifm-color-emphasis-600)', marginBottom: '2rem' }}>
+        <p
+          style={{
+            textAlign: 'center',
+            color: 'var(--ifm-color-emphasis-600)',
+            marginBottom: '2rem',
+          }}
+        >
           First-class bindings with SSR support
         </p>
         <div className="frameworks-grid">
@@ -301,7 +309,8 @@ export default function Home(): ReactNode {
   return (
     <Layout
       title="Feature flags that fit in your pocket"
-      description="Serverless, file-driven, zero-dependency feature flag SDK for JavaScript and TypeScript. Define flags in YAML, commit to Git, evaluate everywhere.">
+      description="Serverless, file-driven, zero-dependency feature flag SDK for JavaScript and TypeScript. Define flags in YAML, commit to Git, evaluate everywhere."
+    >
       <HeroSection />
       <main>
         <FeaturesSection />

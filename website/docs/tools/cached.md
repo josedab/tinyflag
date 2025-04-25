@@ -11,6 +11,7 @@ description: Client with real-time updates via WebSocket push or HTTP polling.
 ## When to Use
 
 Use `CachedTinyFlag` instead of `TinyFlag` when:
+
 - You run a centralized TinyFlag server and want clients to receive flag updates in real-time
 - You need WebSocket-based push updates for instant flag propagation
 - You want automatic fallback from WebSocket to polling
@@ -24,10 +25,10 @@ import { CachedTinyFlag } from 'tinyflag';
 
 const client = new CachedTinyFlag({
   serverUrl: 'http://localhost:3939',
-  mode: 'push',           // 'push' (WebSocket) or 'poll' (HTTP)
-  pollInterval: 30_000,   // Polling interval (ms), for poll mode
-  autoReconnect: true,    // Reconnect WebSocket on disconnect
-  pollingFallback: true,  // Fall back to polling if WebSocket fails
+  mode: 'push', // 'push' (WebSocket) or 'poll' (HTTP)
+  pollInterval: 30_000, // Polling interval (ms), for poll mode
+  autoReconnect: true, // Reconnect WebSocket on disconnect
+  pollingFallback: true, // Fall back to polling if WebSocket fails
   headers: {
     Authorization: 'Bearer <token>',
   },
@@ -42,9 +43,9 @@ The API matches `TinyFlag`:
 
 ```typescript
 client.isEnabled('new-checkout', { userId: 'user-1' }); // boolean
-client.getVariant('experiment', { userId: 'user-1' });   // string | null
-client.getFlags();                                        // all flag definitions
-client.isConnected();                                     // connection status
+client.getVariant('experiment', { userId: 'user-1' }); // string | null
+client.getFlags(); // all flag definitions
+client.isConnected(); // connection status
 ```
 
 ## Events
@@ -61,14 +62,14 @@ client.on('error', (event) => {
 
 ## Options
 
-| Option            | Type                     | Default  | Description                           |
-| ----------------- | ------------------------ | -------- | ------------------------------------- |
-| `serverUrl`       | `string`                 | required | TinyFlag server URL                   |
-| `mode`            | `'push' \| 'poll'`       | `'push'` | Connection mode                       |
-| `pollInterval`    | `number`                 | `30000`  | Polling interval (ms)                 |
-| `autoReconnect`   | `boolean`                | `true`   | Auto-reconnect WebSocket              |
-| `pollingFallback` | `boolean`                | `true`   | Fall back to polling on WS failure    |
-| `headers`         | `Record<string, string>` | —        | Custom HTTP headers                   |
+| Option            | Type                     | Default  | Description                        |
+| ----------------- | ------------------------ | -------- | ---------------------------------- |
+| `serverUrl`       | `string`                 | required | TinyFlag server URL                |
+| `mode`            | `'push' \| 'poll'`       | `'push'` | Connection mode                    |
+| `pollInterval`    | `number`                 | `30000`  | Polling interval (ms)              |
+| `autoReconnect`   | `boolean`                | `true`   | Auto-reconnect WebSocket           |
+| `pollingFallback` | `boolean`                | `true`   | Fall back to polling on WS failure |
+| `headers`         | `Record<string, string>` | —        | Custom HTTP headers                |
 
 ## Cleanup
 

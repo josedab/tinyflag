@@ -14,18 +14,18 @@ description: Complete API reference for the TinyFlag SDK.
 const ff = new TinyFlag(options: TinyFlagOptions);
 ```
 
-| Option         | Type                     | Default      | Description                                                      |
-| -------------- | ------------------------ | ------------ | ---------------------------------------------------------------- |
-| `source`       | `string \| FlagConfig \| Array` | **required** | File path, URL, inline config, or array for multi-source merging |
-| `headers`      | `Record<string, string>` | —            | HTTP headers for URL source                                      |
-| `pollInterval` | `number`                 | `60000`      | URL polling interval (ms). Minimum: 5000                         |
-| `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                        |
-| `strict`       | `boolean`                | `false`      | Reject unknown fields                                            |
-| `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId)                   |
-| `fetchTimeout` | `number`                 | `5000`       | Timeout in ms for fetching flags from a URL                      |
-| `retries`      | `number`                 | `0`          | Number of retries for URL fetches on transient errors (429, 5xx) |
-| `retryDelay`   | `number`                 | `1000`       | Base delay in ms between retries (exponential backoff with jitter)|
-| `debug`        | `boolean`                | `false`      | Enable debug logging                                             |
+| Option         | Type                            | Default      | Description                                                        |
+| -------------- | ------------------------------- | ------------ | ------------------------------------------------------------------ |
+| `source`       | `string \| FlagConfig \| Array` | **required** | File path, URL, inline config, or array for multi-source merging   |
+| `headers`      | `Record<string, string>`        | —            | HTTP headers for URL source                                        |
+| `pollInterval` | `number`                        | `60000`      | URL polling interval (ms). Minimum: 5000                           |
+| `watch`        | `boolean`                       | `true`       | Watch file for changes (file source only)                          |
+| `strict`       | `boolean`                       | `false`      | Reject unknown fields                                              |
+| `deduplicate`  | `boolean`                       | `true`       | Deduplicate exposure events per (flag, userId)                     |
+| `fetchTimeout` | `number`                        | `5000`       | Timeout in ms for fetching flags from a URL                        |
+| `retries`      | `number`                        | `0`          | Number of retries for URL fetches on transient errors (429, 5xx)   |
+| `retryDelay`   | `number`                        | `1000`       | Base delay in ms between retries (exponential backoff with jitter) |
+| `debug`        | `boolean`                       | `false`      | Enable debug logging                                               |
 
 ### Methods
 
@@ -88,6 +88,7 @@ const pricing = ff.getConfig<{ discount: number }>('pricing-experiment');
 #### `destroy(): void`
 
 Clean up all resources:
+
 - Stops the polling timer (URL source)
 - Closes the file watcher (file source)
 - Removes all event listeners
@@ -174,7 +175,7 @@ Emitted when flag definitions change (via reload, file watcher, or URL polling).
 interface ChangeEvent {
   flag: string;
   previous: FlagDefinition | undefined; // undefined = flag was added
-  current: FlagDefinition | undefined;  // undefined = flag was removed
+  current: FlagDefinition | undefined; // undefined = flag was removed
   timestamp: number;
 }
 ```

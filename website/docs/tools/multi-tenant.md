@@ -24,33 +24,39 @@ tenants:
     description: Enterprise customer
     flags:
       new-dashboard:
-        rollout: 100        # Full rollout for ACME
+        rollout: 100 # Full rollout for ACME
       advanced-analytics:
-        enabled: true        # Enabled for ACME
+        enabled: true # Enabled for ACME
   startup-inc:
     description: Free tier customer
     flags:
       new-dashboard:
-        rollout: 0           # Disabled for this tenant
+        rollout: 0 # Disabled for this tenant
 ```
 
 ## Evaluating Tenant Flags
 
 ```typescript
-import {
-  resolveTenantFlags,
-  evaluateTenantFlag,
-  evaluateTenantVariant,
-} from 'tinyflag';
+import { resolveTenantFlags, evaluateTenantFlag, evaluateTenantVariant } from 'tinyflag';
 
 // Resolve all flags for a tenant (merges global + tenant overrides)
 const flags = resolveTenantFlags(config, 'acme-corp');
 
 // Evaluate a flag for a specific tenant and user
-const enabled = evaluateTenantFlag(config, 'advanced-analytics', { tenantId: 'acme-corp' }, { userId: 'user-1' });
+const enabled = evaluateTenantFlag(
+  config,
+  'advanced-analytics',
+  { tenantId: 'acme-corp' },
+  { userId: 'user-1' },
+);
 
 // Evaluate variants for a tenant
-const { variant } = evaluateTenantVariant(config, 'experiment', { tenantId: 'acme-corp' }, { userId: 'user-1' });
+const { variant } = evaluateTenantVariant(
+  config,
+  'experiment',
+  { tenantId: 'acme-corp' },
+  { userId: 'user-1' },
+);
 ```
 
 ## Listing and Comparing Tenants

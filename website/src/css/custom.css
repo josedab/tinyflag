@@ -84,7 +84,9 @@
   gap: 0.5rem;
   margin: 1.5rem 0;
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 }
 
 .install-command:hover {
@@ -126,7 +128,9 @@
   border-radius: 12px;
   background: var(--ifm-card-background-color);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .feature-card:hover {
@@ -230,7 +234,9 @@
   font-size: 1rem;
   color: var(--ifm-font-color-base);
   text-decoration: none;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
 }
 
 .framework-badge:hover {

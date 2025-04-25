@@ -15,14 +15,12 @@ Download flag config from a remote URL to a local file:
 ```typescript
 import { pullFlags } from 'tinyflag';
 
-const result = await pullFlags(
-  'https://cdn.example.com/flags.yml',
-  './flags.yml',
-  { headers: { Authorization: 'Bearer <token>' } },
-);
+const result = await pullFlags('https://cdn.example.com/flags.yml', './flags.yml', {
+  headers: { Authorization: 'Bearer <token>' },
+});
 
 console.log(result.status); // 'created' | 'updated' | 'not-modified'
-console.log(result.etag);   // ETag for subsequent conditional fetches
+console.log(result.etag); // ETag for subsequent conditional fetches
 ```
 
 Pull uses ETag-based conditional requests automatically. On subsequent pulls, if the remote file hasn't changed, you get `'not-modified'` with no file write.
@@ -40,11 +38,9 @@ Upload a local flag file to a remote endpoint:
 ```typescript
 import { pushFlags } from 'tinyflag';
 
-const result = await pushFlags(
-  'https://api.example.com/flags',
-  './flags.yml',
-  { headers: { Authorization: 'Bearer <token>' } },
-);
+const result = await pushFlags('https://api.example.com/flags', './flags.yml', {
+  headers: { Authorization: 'Bearer <token>' },
+});
 
 console.log(result.status); // 'pushed' | 'conflict'
 ```

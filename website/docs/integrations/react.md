@@ -102,5 +102,5 @@ try {
 
 <TinyFlagProvider instance={ff} context={{ userId: '123' }}>
   <App />
-</TinyFlagProvider>
+</TinyFlagProvider>;
 ```

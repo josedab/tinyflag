@@ -7,7 +7,12 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Core Concepts',
-      items: ['concepts/flag-format', 'concepts/targeting-rules', 'concepts/evaluation', 'concepts/advanced-features'],
+      items: [
+        'concepts/flag-format',
+        'concepts/targeting-rules',
+        'concepts/evaluation',
+        'concepts/advanced-features',
+      ],
     },
     {
       type: 'category',
@@ -22,7 +27,14 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Advanced',
-      items: ['tools/audit', 'tools/multi-tenant', 'tools/signing', 'tools/sync', 'tools/replay', 'tools/cached'],
+      items: [
+        'tools/audit',
+        'tools/multi-tenant',
+        'tools/signing',
+        'tools/sync',
+        'tools/replay',
+        'tools/cached',
+      ],
     },
     {
       type: 'category',

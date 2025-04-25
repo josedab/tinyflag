@@ -38,18 +38,18 @@ const variant = useVariant('new-checkout');
 
 Call in a parent component's `setup()`. Makes TinyFlag available to all children via Vue's provide/inject.
 
-| Option         | Type                     | Required | Default | Description                         |
-| -------------- | ------------------------ | -------- | ------- | ----------------------------------- |
-| `source`       | `string \| FlagConfig`   | Yes      | —       | Flag source (file path, URL, inline)|
-| `context`      | `UserContext`            | No       | —       | User context for evaluation         |
-| `headers`      | `Record<string, string>` | No       | —       | HTTP headers for URL source         |
-| `pollInterval` | `number`                 | No       | `60000` | URL polling interval (ms). Min: 5000|
-| `watch`        | `boolean`                | No       | `true`  | File watching (file source only)    |
-| `strict`       | `boolean`                | No       | `false` | Strict validation                   |
-| `deduplicate`  | `boolean`                | No       | `true`  | Deduplicate exposure events         |
-| `fetchTimeout` | `number`                 | No       | `5000`  | URL fetch timeout (ms)              |
-| `debug`        | `boolean`                | No       | `false` | Enable debug logging                |
-| `instance`     | `TinyFlag`               | No       | —       | Pre-initialized instance (SSR/Nuxt) |
+| Option         | Type                     | Required | Default | Description                          |
+| -------------- | ------------------------ | -------- | ------- | ------------------------------------ |
+| `source`       | `string \| FlagConfig`   | Yes      | —       | Flag source (file path, URL, inline) |
+| `context`      | `UserContext`            | No       | —       | User context for evaluation          |
+| `headers`      | `Record<string, string>` | No       | —       | HTTP headers for URL source          |
+| `pollInterval` | `number`                 | No       | `60000` | URL polling interval (ms). Min: 5000 |
+| `watch`        | `boolean`                | No       | `true`  | File watching (file source only)     |
+| `strict`       | `boolean`                | No       | `false` | Strict validation                    |
+| `deduplicate`  | `boolean`                | No       | `true`  | Deduplicate exposure events          |
+| `fetchTimeout` | `number`                 | No       | `5000`  | URL fetch timeout (ms)               |
+| `debug`        | `boolean`                | No       | `false` | Enable debug logging                 |
+| `instance`     | `TinyFlag`               | No       | —       | Pre-initialized instance (SSR/Nuxt)  |
 
 ### `useFlag(flagName: string): Ref<boolean>`
 
