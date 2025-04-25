@@ -1,0 +1,19 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/analytics" },
+    { "path": "packages/cli" },
+    { "path": "packages/core" },
+    { "path": "packages/edge" },
+    { "path": "packages/middleware" },
+    { "path": "packages/openfeature" },
+    { "path": "packages/otel" },
+    { "path": "packages/pulumi" },
+    { "path": "packages/react" },
+    { "path": "packages/react-native" },
+    { "path": "packages/server" },
+    { "path": "packages/svelte" },
+    { "path": "packages/vscode" },
+    { "path": "packages/vue" }
+  ]
+}
