@@ -4,5 +4,14 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts', 'src/**/*.vue'],
+      exclude: ['src/index.ts', 'src/types.ts', 'src/__tests__/**'],
+      thresholds: {
+        lines: 90,
+        branches: 85,
+      },
+    },
   },
 });
