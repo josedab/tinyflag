@@ -1,5 +1,6 @@
 import type { TinyFlagMiddlewareOptions, EvaluatedFlags } from './index.js';
 import { evaluateForContext } from './index.js';
+import type { IncomingMessage, ServerResponse } from 'http';
 
 /**
  * Express middleware that attaches `req.flags` with pre-evaluated flags.
@@ -25,9 +26,9 @@ import { evaluateForContext } from './index.js';
  * ```
  */
 export function tinyflagExpress(options: TinyFlagMiddlewareOptions) {
-  return (req: any, _res: any, next: (...args: any[]) => void) => {
+  return (req: IncomingMessage & Record<string, unknown>, _res: ServerResponse, next: (...args: unknown[]) => void) => {
     const context = options.contextFromRequest?.(req);
-    req.flags = evaluateForContext(options.instance, context, options.tracing);
+    (req as IncomingMessage & { flags: EvaluatedFlags }).flags = evaluateForContext(options.instance, context, options.tracing);
     next();
   };
 }

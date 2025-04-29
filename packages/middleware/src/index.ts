@@ -49,10 +49,11 @@ export function evaluateForContext(
   };
 }
 
-function traceSpan(name: string, flagName: string, durationMs: number): void {
+function traceSpan(name: string, flagName: string, _durationMs: number): void {
   try {
     // OpenTelemetry trace API (if available)
-    const otel = (globalThis as any).__OTEL_TRACER__;
+    const g = globalThis as Record<string, unknown>;
+    const otel = g.__OTEL_TRACER__ as { startSpan?: (name: string, opts: Record<string, unknown>) => { end(): void } | undefined } | undefined;
     if (otel?.startSpan) {
       const span = otel.startSpan(name, { attributes: { 'tinyflag.flag': flagName } });
       span?.end();

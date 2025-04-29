@@ -1,6 +1,13 @@
 import type { TinyFlagMiddlewareOptions, EvaluatedFlags } from './index.js';
 import { evaluateForContext } from './index.js';
 
+/** Minimal Hono context interface needed for middleware. */
+interface HonoContext {
+  set(key: string, value: unknown): void;
+  get(key: string): unknown;
+  [key: string]: unknown;
+}
+
 /**
  * Hono middleware that attaches flags to the context.
  *
@@ -16,7 +23,7 @@ import { evaluateForContext } from './index.js';
  * const app = new Hono();
  * app.use(tinyflagHono({
  *   instance: ff,
- *   contextFromRequest: (c) => ({ userId: (c as any).get('userId') }),
+ *   contextFromRequest: (c) => ({ userId: (c as HonoContext).get('userId') as string }),
  * }));
  *
  * app.get('/', (c) => {
@@ -26,7 +33,7 @@ import { evaluateForContext } from './index.js';
  * ```
  */
 export function tinyflagHono(options: TinyFlagMiddlewareOptions) {
-  return async (c: any, next: () => Promise<void>) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     const context = options.contextFromRequest?.(c);
     c.set('flags', evaluateForContext(options.instance, context, options.tracing));
     await next();
