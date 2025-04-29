@@ -116,9 +116,37 @@ pnpm -r test
 # Core tests with coverage
 cd packages/core && pnpm test:coverage
 
+# Watch mode (all packages)
+pnpm test:watch
+
 # Single file
 cd packages/core && npx vitest run src/__tests__/evaluator.test.ts
 ```
+
+## Working on a Single Package
+
+Use `pnpm --filter` to run scripts in a specific package without `cd`:
+
+```bash
+# Build a single package
+pnpm --filter tinyflag build
+pnpm --filter tinyflag-react build
+
+# Test a single package
+pnpm --filter tinyflag test
+pnpm --filter tinyflag-cli test
+
+# Watch tests in a single package
+pnpm --filter tinyflag-react test:watch
+
+# Type-check a single package
+pnpm --filter tinyflag-server lint
+
+# Build a package and all its workspace dependencies
+pnpm --filter tinyflag-react... build
+```
+
+> **Tip:** The filter name matches the `"name"` field in each package's `package.json` (e.g., `tinyflag`, `tinyflag-react`, `tinyflag-cli`). Use `...` suffix to include dependencies.
 
 CI enforces ≥90% line and patch coverage via [Codecov](https://codecov.io/). To check coverage locally before pushing:
 
