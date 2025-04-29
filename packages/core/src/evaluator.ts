@@ -1,14 +1,18 @@
-import type {
-  FlagDefinition,
-  FlagConfig,
-  Rule,
-  UserContext,
-  RolloutStrategy,
-  SegmentDefinition,
-} from './types.js';
+import type { FlagDefinition, UserContext, SegmentDefinition } from './types.js';
 import type { TinyFlagErrorCode } from './types.js';
-import { rolloutBucket, selectVariant, murmurhash3 } from './hash.js';
+import { rolloutBucket, selectVariant } from './hash.js';
 import { isDebug } from './debug.js';
+import { matchRule } from './operators.js';
+import { resolveRolloutPercentage, applySchedule } from './rollout.js';
+import {
+  checkPrerequisites,
+  detectCircularDependencies,
+  buildDependencyTree,
+} from './prerequisites.js';
+
+// Re-export sub-modules for public API compatibility
+export { matchRule } from './operators.js';
+export { detectCircularDependencies, buildDependencyTree } from './prerequisites.js';
 
 /** Warnings collected during evaluation (e.g., sunset warnings). */
 export type EvaluationWarning = { code: TinyFlagErrorCode; message: string; flagName: string };
@@ -28,338 +32,6 @@ export function getEvaluationWarnings(): EvaluationWarning[] {
 export interface EvaluationEnv {
   readonly allFlags: Record<string, FlagDefinition>;
   readonly segments: Record<string, SegmentDefinition>;
-}
-
-/**
- * Resolve a rollout field (number or strategy) to an effective percentage.
- * Returns a number 0–100 or undefined if not applicable.
- */
-function resolveRolloutPercentage(
-  rollout: number | RolloutStrategy | undefined,
-  context: UserContext | undefined,
-  now: number = Date.now(),
-): number | undefined {
-  if (rollout === undefined) return undefined;
-
-  // Simple number
-  if (typeof rollout === 'number') return rollout;
-
-  // Advanced strategies
-  switch (rollout.type) {
-    case 'ramp': {
-      const startTime = new Date(rollout.startAt).getTime();
-      const endTime = new Date(rollout.endAt).getTime();
-      if (isNaN(startTime) || isNaN(endTime) || startTime >= endTime) return rollout.start;
-      if (now <= startTime) return rollout.start;
-      if (now >= endTime) return rollout.end;
-      const progress = (now - startTime) / (endTime - startTime);
-      return Math.round(rollout.start + (rollout.end - rollout.start) * progress);
-    }
-
-    case 'ring': {
-      if (!context) return 0;
-      for (const ring of rollout.rings) {
-        if (ring.conditions) {
-          const match = Object.entries(ring.conditions).every(([field, expected]) =>
-            matchCondition(context[field], expected),
-          );
-          if (match) return ring.percentage;
-        }
-      }
-      // Check for a catch-all ring (no conditions)
-      const catchAll = rollout.rings.find((r) => !r.conditions);
-      return catchAll?.percentage ?? 0;
-    }
-
-    case 'cohort': {
-      const cohortValue = context?.[rollout.field];
-      if (cohortValue === undefined || cohortValue === null) return undefined;
-      // Use cohort field value as hash seed for cohort stability
-      const cohortSeed = murmurhash3(String(cohortValue), 0xdeadbeef);
-      const bucket = cohortSeed % 100;
-      return bucket < rollout.percentage ? 100 : 0;
-    }
-
-    default:
-      return undefined;
-  }
-}
-
-/**
- * Evaluate whether a single condition matches the user context.
- */
-function matchCondition(contextValue: unknown, expected: unknown): boolean {
-  if (contextValue === undefined || contextValue === null) {
-    return false;
-  }
-
-  // Operator objects: { $gt, $gte, $lt, $lte, $in, $not }
-  if (typeof expected === 'object' && expected !== null && !Array.isArray(expected)) {
-    const ops = expected as Record<string, unknown>;
-
-    if ('$in' in ops) {
-      const list = ops.$in;
-      if (!Array.isArray(list)) return false;
-      if (list.length === 0) return false;
-      return list.includes(contextValue);
-    }
-
-    if ('$not' in ops) {
-      return !matchCondition(contextValue, ops.$not);
-    }
-
-    // Numeric comparisons
-    if ('$gt' in ops || '$gte' in ops || '$lt' in ops || '$lte' in ops) {
-      if (typeof contextValue !== 'number') return false;
-      const cv = contextValue as number;
-
-      if ('$gt' in ops) {
-        if (typeof ops.$gt !== 'number' || !(cv > ops.$gt)) return false;
-      }
-      if ('$gte' in ops) {
-        if (typeof ops.$gte !== 'number' || !(cv >= ops.$gte)) return false;
-      }
-      if ('$lt' in ops) {
-        if (typeof ops.$lt !== 'number' || !(cv < ops.$lt)) return false;
-      }
-      if ('$lte' in ops) {
-        if (typeof ops.$lte !== 'number' || !(cv <= ops.$lte)) return false;
-      }
-      return true;
-    }
-
-    return false;
-  }
-
-  // Glob pattern matching (string values containing *)
-  if (typeof expected === 'string' && expected.includes('*')) {
-    if (typeof contextValue !== 'string') return false;
-    return globMatch(expected, contextValue);
-  }
-
-  // Strict equality
-  return contextValue === expected;
-}
-
-const globCache = new Map<string, RegExp>();
-
-/**
- * Simple glob matching: only the * wildcard is supported.
- * Caches compiled regex patterns to avoid recompilation.
- */
-function globMatch(pattern: string, value: string): boolean {
-  let regex = globCache.get(pattern);
-  if (!regex) {
-    const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-    regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
-    if (globCache.size > 1000) globCache.clear();
-    globCache.set(pattern, regex);
-  }
-  return regex.test(value);
-}
-
-/**
- * Evaluate whether all conditions in a rule match the user context.
- * Uses AND logic — all conditions must match for the rule to apply.
- * If the rule references a named segment, resolves segment conditions first.
- *
- * @param rule - The targeting rule to evaluate.
- * @param context - The user context to match against.
- * @param segments - Optional named segment definitions for segment reference resolution. Falls back to module-level context if not provided.
- * @returns `true` if all conditions in the rule match the context.
- */
-export function matchRule(
-  rule: Rule,
-  context: UserContext,
-  segments?: Record<string, SegmentDefinition>,
-): boolean {
-  const resolvedSegments = segments ?? currentSegments;
-  let conditions = rule.conditions;
-
-  // Resolve segment reference
-  if (rule.segment && resolvedSegments[rule.segment]) {
-    const segConditions = resolveSegmentConditions(rule.segment, resolvedSegments);
-    conditions = { ...segConditions, ...conditions };
-  }
-
-  const entries = Object.entries(conditions);
-
-  // Empty conditions = always matches (vacuous truth)
-  if (entries.length === 0) return true;
-
-  for (const [field, expected] of entries) {
-    const contextValue = context[field];
-    if (!matchCondition(contextValue, expected)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * Check if a flag's schedule overrides its enabled state at the current time.
- * Returns the effective enabled state after applying schedule.
- */
-function applySchedule(flag: FlagDefinition, now: number = Date.now()): boolean {
-  if (!flag.schedule) return flag.enabled;
-
-  const { enableAt, disableAt } = flag.schedule;
-
-  if (enableAt) {
-    const enableTime = new Date(enableAt).getTime();
-    if (!isNaN(enableTime) && now < enableTime) return false;
-  }
-
-  if (disableAt) {
-    const disableTime = new Date(disableAt).getTime();
-    if (!isNaN(disableTime) && now >= disableTime) return false;
-  }
-
-  return flag.enabled;
-}
-
-/**
- * Recursively check if all prerequisite flags are enabled.
- * Uses a visiting set to detect circular dependencies at evaluation time.
- */
-function checkPrerequisites(
-  flagName: string,
-  allFlags: Record<string, FlagDefinition>,
-  context: UserContext | undefined,
-  visiting: Set<string>,
-  cache: Map<string, boolean>,
-  segments?: Record<string, SegmentDefinition>,
-): boolean {
-  if (cache.has(flagName)) return cache.get(flagName)!;
-  if (visiting.has(flagName)) return false; // circular dependency
-
-  const flag = allFlags[flagName];
-  if (!flag) return false;
-
-  visiting.add(flagName);
-
-  if (flag.requires && flag.requires.length > 0) {
-    for (const reqName of flag.requires) {
-      if (!checkPrerequisites(reqName, allFlags, context, visiting, cache, segments)) {
-        visiting.delete(flagName);
-        cache.set(flagName, false);
-        return false;
-      }
-      // Check if the prerequisite itself evaluates as enabled
-      const reqFlag = allFlags[reqName];
-      if (!reqFlag || !evaluateFlagCore(reqName, reqFlag, context, segments)) {
-        visiting.delete(flagName);
-        cache.set(flagName, false);
-        return false;
-      }
-    }
-  }
-
-  visiting.delete(flagName);
-  cache.set(flagName, true);
-  return true;
-}
-
-/**
- * Detect circular dependencies in flag prerequisite chains using depth-first search.
- * Returns an array of cycle paths. An empty array means no cycles exist.
- *
- * @param flags - Map of all flag definitions to check for circular `requires` references.
- * @returns Array of cycle paths, where each path is an array of flag names forming the cycle (e.g., `['a', 'b', 'a']`).
- *
- * @example
- * ```ts
- * const cycles = detectCircularDependencies(ff.getFlags());
- * if (cycles.length > 0) {
- *   console.warn('Circular dependencies:', cycles);
- * }
- * ```
- */
-export function detectCircularDependencies(flags: Record<string, FlagDefinition>): string[][] {
-  const cycles: string[][] = [];
-  const visited = new Set<string>();
-  const inStack = new Set<string>();
-  const path: string[] = [];
-
-  function dfs(name: string): void {
-    if (inStack.has(name)) {
-      const cycleStart = path.indexOf(name);
-      cycles.push([...path.slice(cycleStart), name]);
-      return;
-    }
-    if (visited.has(name)) return;
-
-    visited.add(name);
-    inStack.add(name);
-    path.push(name);
-
-    const flag = flags[name];
-    if (flag?.requires) {
-      for (const req of flag.requires) {
-        dfs(req);
-      }
-    }
-
-    path.pop();
-    inStack.delete(name);
-  }
-
-  for (const name of Object.keys(flags)) {
-    dfs(name);
-  }
-
-  return cycles;
-}
-
-/**
- * Build a human-readable ASCII dependency tree for a flag's prerequisite chain.
- *
- * @param flagName - The root flag to build the tree for.
- * @param flags - Map of all flag definitions.
- * @param indent - Internal: current indentation prefix. Defaults to `''`.
- * @param visited - Internal: set of visited flag names for circular detection. Defaults to empty set.
- * @returns Multi-line string showing the dependency tree with status icons (✅ enabled, ❌ disabled, ⚠️ missing).
- *
- * @example
- * ```ts
- * console.log(buildDependencyTree('checkout-v2', ff.getFlags()));
- * // checkout-v2 ✅
- * // └── payments-v2 ✅
- * ```
- */
-export function buildDependencyTree(
-  flagName: string,
-  flags: Record<string, FlagDefinition>,
-  indent: string = '',
-  visited: Set<string> = new Set(),
-): string {
-  const lines: string[] = [];
-  const flag = flags[flagName];
-  const status = flag ? (flag.enabled ? '✅' : '❌') : '⚠️';
-  lines.push(`${indent}${flagName} ${status}`);
-
-  if (visited.has(flagName)) {
-    lines.push(`${indent}  ↻ (circular)`);
-    return lines.join('\n');
-  }
-  visited.add(flagName);
-
-  if (flag?.requires && flag.requires.length > 0) {
-    for (let i = 0; i < flag.requires.length; i++) {
-      const req = flag.requires[i];
-      const isLast = i === flag.requires.length - 1;
-      const prefix = isLast ? '└── ' : '├── ';
-      const childIndent = indent + (isLast ? '    ' : '│   ');
-      const subtree = buildDependencyTree(req, flags, '', new Set(visited));
-      const subtreeLines = subtree.split('\n');
-      lines.push(`${indent}${prefix}${subtreeLines[0]}`);
-      for (let j = 1; j < subtreeLines.length; j++) {
-        lines.push(`${childIndent}${subtreeLines[j]}`);
-      }
-    }
-  }
-
-  return lines.join('\n');
 }
 
 /** Core evaluation logic without prerequisite checking (used internally). */
@@ -416,33 +88,6 @@ export function setEvaluationContext(
 }
 
 /**
- * Resolve all conditions for a segment, including inherited conditions.
- * Uses a visited set to prevent circular resolution.
- */
-function resolveSegmentConditions(
-  segmentName: string,
-  segments: Record<string, SegmentDefinition>,
-  visited: Set<string> = new Set(),
-): Record<string, unknown> {
-  if (visited.has(segmentName)) return {};
-  visited.add(segmentName);
-
-  const segment = segments[segmentName];
-  if (!segment) return {};
-
-  let conditions = { ...segment.conditions };
-
-  if (segment.extends) {
-    for (const parent of segment.extends) {
-      const parentConditions = resolveSegmentConditions(parent, segments, visited);
-      conditions = { ...parentConditions, ...conditions };
-    }
-  }
-
-  return conditions;
-}
-
-/**
  * Core flag evaluation: determines if a flag is enabled for a given context.
  * Never throws — returns `false` for any error case.
  *
@@ -483,7 +128,9 @@ export function evaluateFlag(
   // Step 1: Check prerequisites
   if (flag.requires && flag.requires.length > 0) {
     const cache = new Map<string, boolean>();
-    if (!checkPrerequisites(flagName, allFlags, context, new Set(), cache, segments)) {
+    if (
+      !checkPrerequisites(flagName, allFlags, context, new Set(), cache, segments, evaluateFlagCore)
+    ) {
       return false;
     }
   }
@@ -554,7 +201,9 @@ export function evaluateVariant(
   // Check prerequisites
   if (flag.requires && flag.requires.length > 0) {
     const cache = new Map<string, boolean>();
-    if (!checkPrerequisites(flagName, allFlags, context, new Set(), cache, segments)) {
+    if (
+      !checkPrerequisites(flagName, allFlags, context, new Set(), cache, segments, evaluateFlagCore)
+    ) {
       return { variant: null, enabled: false };
     }
   }
