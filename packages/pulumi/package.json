@@ -7,6 +7,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
     "clean": "rm -rf dist"
   },
   "keywords": [
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@pulumi/pulumi": "^3.0.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   }
 }
