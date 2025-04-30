@@ -50,7 +50,9 @@ export class TinyFlag {
   private watcher?: { close(): void };
   private etag?: string;
   private lastModified?: string;
-  private exposureCache = new Set<string>();
+  private exposureCache = new Map<string, true>();
+  private static readonly EXPOSURE_CACHE_MAX = 10_000;
+  private static readonly EXPOSURE_CACHE_EVICT = 2_000; // evict oldest 20% at capacity
   private overrides = new Map<string, boolean | string>();
   private evalEnv: EvaluationEnv = { allFlags: {}, segments: {} };
 
@@ -515,9 +517,22 @@ export class TinyFlag {
     const deduplicate = this.options.deduplicate !== false;
     if (deduplicate) {
       const cacheKey = `${flagName}:${context.userId}`;
-      if (this.exposureCache.has(cacheKey)) return;
-      if (this.exposureCache.size >= 10_000) this.exposureCache.clear();
-      this.exposureCache.add(cacheKey);
+      if (this.exposureCache.has(cacheKey)) {
+        // Move to end for LRU freshness
+        this.exposureCache.delete(cacheKey);
+        this.exposureCache.set(cacheKey, true);
+        return;
+      }
+      if (this.exposureCache.size >= TinyFlag.EXPOSURE_CACHE_MAX) {
+        // Evict oldest entries (first keys in Map insertion order)
+        let evicted = 0;
+        for (const key of this.exposureCache.keys()) {
+          if (evicted >= TinyFlag.EXPOSURE_CACHE_EVICT) break;
+          this.exposureCache.delete(key);
+          evicted++;
+        }
+      }
+      this.exposureCache.set(cacheKey, true);
     }
 
     const event: ExposureEvent = {
