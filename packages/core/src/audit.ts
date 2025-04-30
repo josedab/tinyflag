@@ -1,5 +1,14 @@
 import type { ChangeEvent, FlagDefinition } from './types.js';
 import type { TinyFlag } from './tinyflag.js';
+import { debug } from './debug.js';
+
+interface OtelLogger {
+  emit(record: {
+    severityText: string;
+    body: string;
+    attributes: Record<string, string | number | undefined>;
+  }): void;
+}
 
 /** Structured audit event for flag state changes. */
 export interface AuditEvent {
@@ -53,12 +62,12 @@ export function connectAudit(instance: TinyFlag, options: AuditOptions): () => v
       try {
         const result = sink.write(auditEvent);
         if (result && typeof (result as Promise<void>).catch === 'function') {
-          (result as Promise<void>).catch(() => {
-            // Async sink errors must not break flag evaluation
+          (result as Promise<void>).catch((e) => {
+            debug('audit sink error:', { sink: sink.name, error: String(e) });
           });
         }
-      } catch {
-        // Sync sink errors must not break flag evaluation
+      } catch (e) {
+        debug('audit sink error:', { sink: sink.name, error: String(e) });
       }
     }
   };
@@ -70,7 +79,9 @@ export function connectAudit(instance: TinyFlag, options: AuditOptions): () => v
     for (const sink of options.sinks) {
       try {
         sink.close?.();
-      } catch {}
+      } catch (e) {
+        debug('audit sink close error:', { sink: sink.name, error: String(e) });
+      }
     }
   };
 }
@@ -87,10 +98,10 @@ export function createFileSink(filePath: string): AuditSink {
     const lines = buffer.join('');
     buffer = [];
     try {
-      const { appendFileSync } = await import('fs');
-      appendFileSync(filePath, lines, 'utf-8');
-    } catch {
-      // Silently drop if file system not available
+      const { writeFile } = await import('fs/promises');
+      await writeFile(filePath, lines, { flag: 'a', encoding: 'utf-8' });
+    } catch (e) {
+      debug('audit file sink error:', { error: String(e) });
     }
   };
 
@@ -127,8 +138,8 @@ export function createWebhookSink(url: string, headers?: Record<string, string>)
           body: JSON.stringify(event),
           signal: AbortSignal.timeout(5000),
         });
-      } catch {
-        // Best-effort delivery
+      } catch (e) {
+        debug('audit webhook sink error:', { error: String(e) });
       }
     },
   };
@@ -153,7 +164,9 @@ export function createOtelSink(): AuditSink {
     name: 'otel',
     write(event: AuditEvent) {
       try {
-        const otel = (globalThis as any).__OTEL_LOGGER__;
+        const otel = (globalThis as Record<string, unknown>).__OTEL_LOGGER__ as
+          | OtelLogger
+          | undefined;
         if (otel?.emit) {
           otel.emit({
             severityText: 'INFO',
@@ -167,8 +180,8 @@ export function createOtelSink(): AuditSink {
             },
           });
         }
-      } catch {
-        // OTel is optional
+      } catch (e) {
+        debug('audit otel sink error:', { error: String(e) });
       }
     },
   };
