@@ -40,7 +40,7 @@ export function tinyflagFastify(
 
   fastify.addHook('onRequest', (request: IncomingMessage & Record<string, unknown>, _reply: unknown, hookDone: () => void) => {
     const context = options.contextFromRequest?.(request);
-    (request as IncomingMessage & Record<string, unknown>).flags = evaluateForContext(options.instance, context, options.tracing);
+    (request as IncomingMessage & Record<string, unknown>).flags = evaluateForContext(options.instance, context, options.tracing, options.otelTrace);
     hookDone();
   });
 

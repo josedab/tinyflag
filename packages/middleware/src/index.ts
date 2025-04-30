@@ -1,5 +1,15 @@
 import type { TinyFlag, UserContext } from 'tinyflag';
 
+/** Minimal OTel tracer interface matching @opentelemetry/api. */
+interface OtelTracer {
+  startSpan(name: string, opts?: { attributes?: Record<string, string> }): { end(): void } | undefined;
+}
+
+/** Minimal OTel trace API surface. */
+interface OtelTraceApi {
+  getTracer(name: string, version?: string): OtelTracer;
+}
+
 export interface TinyFlagMiddlewareOptions {
   /** TinyFlag instance. */
   instance: TinyFlag;
@@ -7,6 +17,8 @@ export interface TinyFlagMiddlewareOptions {
   contextFromRequest?: (req: unknown) => UserContext | undefined;
   /** Enable OpenTelemetry tracing spans. Default: false. */
   tracing?: boolean;
+  /** Optional @opentelemetry/api trace object. If not provided, attempts dynamic import. */
+  otelTrace?: OtelTraceApi;
 }
 
 export interface EvaluatedFlags {
@@ -25,13 +37,14 @@ export function evaluateForContext(
   instance: TinyFlag,
   context?: UserContext,
   tracing?: boolean,
+  otelTrace?: OtelTraceApi,
 ): EvaluatedFlags {
   return {
     isEnabled(flagName: string): boolean {
       const start = tracing ? Date.now() : 0;
       const result = instance.isEnabled(flagName, context);
       if (tracing) {
-        traceSpan('tinyflag.isEnabled', flagName, Date.now() - start);
+        traceSpan('tinyflag.isEnabled', flagName, otelTrace);
       }
       return result;
     },
@@ -39,7 +52,7 @@ export function evaluateForContext(
       const start = tracing ? Date.now() : 0;
       const result = instance.getVariant(flagName, context);
       if (tracing) {
-        traceSpan('tinyflag.getVariant', flagName, Date.now() - start);
+        traceSpan('tinyflag.getVariant', flagName, otelTrace);
       }
       return result;
     },
@@ -49,13 +62,28 @@ export function evaluateForContext(
   };
 }
 
-function traceSpan(name: string, flagName: string, _durationMs: number): void {
+let cachedTracer: OtelTracer | null | undefined;
+
+function getTracer(otelTrace?: OtelTraceApi): OtelTracer | null {
+  if (otelTrace) {
+    return otelTrace.getTracer('tinyflag', '0.1.0');
+  }
+  if (cachedTracer !== undefined) return cachedTracer;
   try {
-    // OpenTelemetry trace API (if available)
-    const g = globalThis as Record<string, unknown>;
-    const otel = g.__OTEL_TRACER__ as { startSpan?: (name: string, opts: Record<string, unknown>) => { end(): void } | undefined } | undefined;
-    if (otel?.startSpan) {
-      const span = otel.startSpan(name, { attributes: { 'tinyflag.flag': flagName } });
+    // Attempt to resolve @opentelemetry/api at runtime
+    const api = require('@opentelemetry/api') as { trace: OtelTraceApi } | undefined;
+    cachedTracer = api?.trace?.getTracer('tinyflag', '0.1.0') ?? null;
+  } catch {
+    cachedTracer = null;
+  }
+  return cachedTracer;
+}
+
+function traceSpan(name: string, flagName: string, otelTrace?: OtelTraceApi): void {
+  try {
+    const tracer = getTracer(otelTrace);
+    if (tracer?.startSpan) {
+      const span = tracer.startSpan(name, { attributes: { 'tinyflag.flag': flagName } });
       span?.end();
     }
   } catch {

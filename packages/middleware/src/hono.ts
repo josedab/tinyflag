@@ -35,7 +35,7 @@ interface HonoContext {
 export function tinyflagHono(options: TinyFlagMiddlewareOptions) {
   return async (c: HonoContext, next: () => Promise<void>) => {
     const context = options.contextFromRequest?.(c);
-    c.set('flags', evaluateForContext(options.instance, context, options.tracing));
+    c.set('flags', evaluateForContext(options.instance, context, options.tracing, options.otelTrace));
     await next();
   };
 }
