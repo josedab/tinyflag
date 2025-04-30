@@ -192,8 +192,10 @@ export class CachedTinyFlag {
   private connectWebSocket(): void {
     try {
       const wsUrl = this.options.serverUrl.replace(/^http/, 'ws');
-      // WebSocket is globally available in modern Node.js and browsers
-      const ws = new (globalThis as any).WebSocket(wsUrl);
+      if (typeof WebSocket === 'undefined') {
+        throw new Error('WebSocket is not available in this environment');
+      }
+      const ws = new WebSocket(wsUrl);
 
       ws.onmessage = (event: { data: string }) => {
         try {
@@ -231,7 +233,7 @@ export class CachedTinyFlag {
         this.emitter.emit('error', { code: 'WS_ERROR', message: 'WebSocket connection error' });
       };
 
-      this.ws = ws;
+      this.ws = ws as unknown as typeof this.ws;
       this.connected = true;
     } catch (error) {
       debug('CachedTinyFlag: WebSocket not available, falling back to polling');
