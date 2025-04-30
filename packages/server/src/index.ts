@@ -10,6 +10,7 @@ const PORT = parseInt(process.env.PORT || '3939', 10);
 const FLAGS_FILE = process.env.FLAGS_FILE || 'flags.yml';
 const GIT_AUTO_PULL = process.env.GIT_AUTO_PULL === 'true';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+const TINYFLAG_TOKEN = process.env.TINYFLAG_TOKEN || '';
 const MAX_BODY_SIZE = 10 * 1024; // 10KB max request body
 const MAX_HISTORY_LIMIT = 500;
 
@@ -63,11 +64,23 @@ function broadcastUpdate(): void {
 function setCors(res: ServerResponse): void {
   res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, If-None-Match');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, If-None-Match, Authorization');
 }
 
 // Webhook subscribers for HTTP push notifications
 const webhookSubscribers = new Set<string>();
+
+/** Verify Bearer token when TINYFLAG_TOKEN is set. Returns true if authorized. */
+function checkAuth(req: IncomingMessage, res: ServerResponse): boolean {
+  if (!TINYFLAG_TOKEN) return true;
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (token === TINYFLAG_TOKEN) return true;
+
+  res.writeHead(401, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Unauthorized' }));
+  return false;
+}
 
 function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   setCors(res);
@@ -79,6 +92,9 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   }
 
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+
+  // Skip auth for health endpoint
+  if (url.pathname !== '/health' && !checkAuth(req, res)) return;
 
   switch (url.pathname) {
     case '/flags':
