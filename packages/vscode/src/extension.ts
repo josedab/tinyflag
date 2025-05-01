@@ -221,18 +221,18 @@ function loadFlags(): void {
       flagsFilePath = filePath;
       const lines = content.split('\n');
 
-      for (const [name, def] of Object.entries(parsed.flags as Record<string, any>)) {
+      for (const [name, def] of Object.entries(parsed.flags as Record<string, Record<string, unknown>>)) {
         const lineIdx = lines.findIndex((l) => new RegExp(`^\\s{2}${name}\\s*:`).test(l));
         flagsMap.set(name, {
           name,
-          enabled: def?.enabled ?? false,
-          description: def?.description,
-          rollout: def?.rollout,
+          enabled: (def?.enabled as boolean) ?? false,
+          description: def?.description as string | undefined,
+          rollout: def?.rollout as number | undefined,
           rulesCount: Array.isArray(def?.rules) ? def.rules.length : 0,
           variants: Array.isArray(def?.variants)
-            ? def.variants.map((v: any) => v?.name).filter(Boolean)
+            ? (def.variants as Record<string, unknown>[]).map((v) => v?.name as string).filter(Boolean)
             : [],
-          tags: def?.tags,
+          tags: def?.tags as string[] | undefined,
           line: lineIdx >= 0 ? lineIdx : 0,
         });
       }
@@ -287,11 +287,11 @@ function updateDiagnostics(document: vscode.TextDocument): void {
 }
 
 // Minimal YAML parser for flag files (key: value extraction)
-function parseSimpleYaml(content: string): Record<string, any> | null {
+function parseSimpleYaml(content: string): Record<string, unknown> | null {
   try {
     const lines = content.split('\n');
-    const result: any = {};
-    const stack: { indent: number; obj: any; key: string }[] = [
+    const result: Record<string, unknown> = {};
+    const stack: { indent: number; obj: Record<string, unknown>; key: string }[] = [
       { indent: -1, obj: result, key: '' },
     ];
 
@@ -315,7 +315,7 @@ function parseSimpleYaml(content: string): Record<string, any> | null {
       const parent = stack[stack.length - 1].obj;
 
       if (value === '' || value === '|' || value === '>') {
-        const child: any = {};
+        const child: Record<string, unknown> = {};
         parent[key] = child;
         stack.push({ indent, obj: child, key });
       } else {
@@ -329,7 +329,7 @@ function parseSimpleYaml(content: string): Record<string, any> | null {
   }
 }
 
-function parseScalarValue(value: string): any {
+function parseScalarValue(value: string): string | number | boolean | null {
   if (value === 'true' || value === 'yes') return true;
   if (value === 'false' || value === 'no') return false;
   if (value === 'null' || value === '~') return null;
