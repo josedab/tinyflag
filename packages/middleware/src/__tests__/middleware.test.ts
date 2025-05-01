@@ -57,53 +57,46 @@ describe('evaluateForContext', () => {
     expect(flags.getVariant('f')).toBe('control');
   });
 
-  it('tracing calls __OTEL_TRACER__ when available', () => {
+  it('tracing calls otelTrace when provided', () => {
     const mockSpan = { end: vi.fn() };
     const mockTracer = { startSpan: vi.fn().mockReturnValue(mockSpan) };
-    (globalThis as any).__OTEL_TRACER__ = mockTracer;
+    const otelTrace = { getTracer: vi.fn().mockReturnValue(mockTracer) };
 
-    try {
-      const instance = createMockInstance();
-      const flags = evaluateForContext(instance, undefined, true);
-      flags.isEnabled('my-flag');
-      expect(mockTracer.startSpan).toHaveBeenCalledWith(
-        'tinyflag.isEnabled',
-        expect.objectContaining({ attributes: { 'tinyflag.flag': 'my-flag' } }),
-      );
-      expect(mockSpan.end).toHaveBeenCalled();
+    const instance = createMockInstance();
+    const flags = evaluateForContext(instance, undefined, true, otelTrace);
+    flags.isEnabled('my-flag');
+    expect(mockTracer.startSpan).toHaveBeenCalledWith(
+      'tinyflag.isEnabled',
+      expect.objectContaining({ attributes: { 'tinyflag.flag': 'my-flag' } }),
+    );
+    expect(mockSpan.end).toHaveBeenCalled();
 
-      mockTracer.startSpan.mockClear();
-      mockSpan.end.mockClear();
-      flags.getVariant('my-flag');
-      expect(mockTracer.startSpan).toHaveBeenCalledWith(
-        'tinyflag.getVariant',
-        expect.objectContaining({ attributes: { 'tinyflag.flag': 'my-flag' } }),
-      );
-    } finally {
-      delete (globalThis as any).__OTEL_TRACER__;
-    }
+    mockTracer.startSpan.mockClear();
+    mockSpan.end.mockClear();
+    flags.getVariant('my-flag');
+    expect(mockTracer.startSpan).toHaveBeenCalledWith(
+      'tinyflag.getVariant',
+      expect.objectContaining({ attributes: { 'tinyflag.flag': 'my-flag' } }),
+    );
   });
 
-  it('traceSpan handles missing __OTEL_TRACER__ gracefully', () => {
-    delete (globalThis as any).__OTEL_TRACER__;
+  it('traceSpan handles missing otelTrace gracefully', () => {
     const instance = createMockInstance();
     const flags = evaluateForContext(instance, undefined, true);
     expect(() => flags.isEnabled('f')).not.toThrow();
   });
 
-  it('traceSpan handles throwing __OTEL_TRACER__ gracefully', () => {
-    (globalThis as any).__OTEL_TRACER__ = {
-      startSpan: () => {
-        throw new Error('boom');
-      },
+  it('traceSpan handles throwing otelTrace gracefully', () => {
+    const otelTrace = {
+      getTracer: () => ({
+        startSpan: () => {
+          throw new Error('boom');
+        },
+      }),
     };
-    try {
-      const instance = createMockInstance();
-      const flags = evaluateForContext(instance, undefined, true);
-      expect(() => flags.isEnabled('f')).not.toThrow();
-    } finally {
-      delete (globalThis as any).__OTEL_TRACER__;
-    }
+    const instance = createMockInstance();
+    const flags = evaluateForContext(instance, undefined, true, otelTrace);
+    expect(() => flags.isEnabled('f')).not.toThrow();
   });
 });
 
