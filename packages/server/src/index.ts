@@ -6,13 +6,30 @@ import { parseYaml, parseFlagConfig } from 'tinyflag';
 import { CollabState, processCollabMessage } from './collab.js';
 import type { CollabResponse } from './collab.js';
 
-const PORT = parseInt(process.env.PORT || '3939', 10);
+/** Options for configuring the TinyFlag server. */
+export interface TinyFlagServerOptions {
+  /** HTTP port. Default: 3939. */
+  port?: number;
+  /** Maximum request body size in bytes. Default: 10240 (10KB). */
+  maxBodySize?: number;
+  /** Maximum number of history entries returned. Default: 50. */
+  defaultHistoryLimit?: number;
+  /** Upper bound for history limit parameter. Default: 500. */
+  maxHistoryLimit?: number;
+}
+
+const serverOptions: Required<TinyFlagServerOptions> = {
+  port: parseInt(process.env.PORT || '3939', 10),
+  maxBodySize: 10 * 1024,
+  defaultHistoryLimit: 50,
+  maxHistoryLimit: 500,
+};
+
+const PORT = serverOptions.port;
 const FLAGS_FILE = process.env.FLAGS_FILE || 'flags.yml';
 const GIT_AUTO_PULL = process.env.GIT_AUTO_PULL === 'true';
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 const TINYFLAG_TOKEN = process.env.TINYFLAG_TOKEN || '';
-const MAX_BODY_SIZE = 10 * 1024; // 10KB max request body
-const MAX_HISTORY_LIMIT = 500;
 
 let currentFlags: Record<string, unknown> = {};
 let currentEtag = '';
@@ -175,14 +192,14 @@ function handleWebhookSubscribe(req: IncomingMessage, res: ServerResponse): void
   let body = '';
   req.on('data', (chunk) => {
     body += chunk;
-    if (body.length > MAX_BODY_SIZE) {
+    if (body.length > serverOptions.maxBodySize) {
       res.writeHead(413, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Request body too large' }));
       req.destroy();
     }
   });
   req.on('end', () => {
-    if (body.length > MAX_BODY_SIZE) return;
+    if (body.length > serverOptions.maxBodySize) return;
     try {
       const { url } = JSON.parse(body);
       if (!url || typeof url !== 'string') {
@@ -211,14 +228,14 @@ function handleWebhookUnsubscribe(req: IncomingMessage, res: ServerResponse): vo
   let body = '';
   req.on('data', (chunk) => {
     body += chunk;
-    if (body.length > MAX_BODY_SIZE) {
+    if (body.length > serverOptions.maxBodySize) {
       res.writeHead(413, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Request body too large' }));
       req.destroy();
     }
   });
   req.on('end', () => {
-    if (body.length > MAX_BODY_SIZE) return;
+    if (body.length > serverOptions.maxBodySize) return;
     try {
       const { url } = JSON.parse(body);
       webhookSubscribers.delete(url);
@@ -257,7 +274,7 @@ function handleCollabPresence(_req: IncomingMessage, res: ServerResponse): void 
 function handleCollabHistory(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const flagName = url.searchParams.get('flag') || undefined;
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), MAX_HISTORY_LIMIT);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || String(serverOptions.defaultHistoryLimit), 10), serverOptions.maxHistoryLimit);
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ operations: collabState.getHistory(flagName, limit) }));
 }
