@@ -79,6 +79,7 @@ export function matchCondition(contextValue: unknown, expected: unknown): boolea
 /**
  * Recursively resolve all conditions for a segment, including inherited conditions.
  * Uses a visited set to prevent circular resolution.
+ * Supports AND/OR composition via segment.operator field.
  */
 export function resolveSegmentConditions(
   segmentName: string,
@@ -94,9 +95,26 @@ export function resolveSegmentConditions(
   let conditions = { ...segment.conditions };
 
   if (segment.extends) {
-    for (const parent of segment.extends) {
-      const parentConditions = resolveSegmentConditions(parent, segments, visited);
-      conditions = { ...parentConditions, ...conditions };
+    const operator = segment.operator || 'AND';
+
+    if (operator === 'AND') {
+      // AND: merge all parent conditions (all must match)
+      for (const parent of segment.extends) {
+        const parentConditions = resolveSegmentConditions(parent, segments, visited);
+        conditions = { ...parentConditions, ...conditions };
+      }
+    } else {
+      // OR: wrap parent conditions in $or array for the matcher
+      const alternatives: Record<string, unknown>[] = [];
+      for (const parent of segment.extends) {
+        const parentConditions = resolveSegmentConditions(parent, segments, new Set(visited));
+        if (Object.keys(parentConditions).length > 0) {
+          alternatives.push(parentConditions);
+        }
+      }
+      if (alternatives.length > 0) {
+        conditions = { ...conditions, $or: alternatives };
+      }
     }
   }
 
@@ -132,6 +150,15 @@ export function matchRule(
   if (entries.length === 0) return true;
 
   for (const [field, expected] of entries) {
+    // Handle $or composition from segment inheritance
+    if (field === '$or' && Array.isArray(expected)) {
+      const anyMatch = (expected as Record<string, unknown>[]).some((altConditions) => {
+        return Object.entries(altConditions).every(([f, e]) => matchCondition(context[f], e));
+      });
+      if (!anyMatch) return false;
+      continue;
+    }
+
     const contextValue = context[field];
     if (!matchCondition(contextValue, expected)) {
       return false;
