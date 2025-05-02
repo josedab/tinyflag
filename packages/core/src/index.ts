@@ -25,7 +25,8 @@ export type {
 } from './types.js';
 export { parseYaml } from './yaml.js';
 export { validateConfig, parseFlagConfig } from './schema.js';
-export { mergeFlagConfigs } from './merge.js';
+export { mergeFlagConfigs, diffEnvConfigs, formatEnvDiff } from './merge.js';
+export type { EnvDiffEntry } from './merge.js';
 export {
   detectCircularDependencies,
   buildDependencyTree,

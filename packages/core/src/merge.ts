@@ -1,4 +1,4 @@
-import type { FlagConfig, FlagDefinition, Variant, MergeWarning } from './types.js';
+import type { FlagConfig, FlagDefinition, Variant, MergeWarning, SegmentDefinition } from './types.js';
 
 /**
  * Deep-merge multiple FlagConfig objects in order (later sources override earlier).
@@ -27,6 +27,8 @@ export function mergeFlagConfigs(configs: FlagConfig[]): {
 
   const warnings: MergeWarning[] = [];
   const merged: Record<string, FlagDefinition> = {};
+  let mergedSegments: Record<string, SegmentDefinition> | undefined;
+  let mergedPersonas: Record<string, Record<string, unknown>> | undefined;
 
   for (const cfg of configs) {
     for (const [name, def] of Object.entries(cfg.flags)) {
@@ -38,12 +40,112 @@ export function mergeFlagConfigs(configs: FlagConfig[]): {
         merged[name] = { ...def };
       }
     }
+
+    // Merge segments
+    if (cfg.segments) {
+      if (!mergedSegments) mergedSegments = {};
+      for (const [name, seg] of Object.entries(cfg.segments)) {
+        if (mergedSegments[name]) {
+          warnings.push({ flag: `segment:${name}`, field: 'conditions', message: 'Segment overridden by environment overlay' });
+        }
+        mergedSegments[name] = { ...seg };
+      }
+    }
+
+    // Merge personas
+    if (cfg.personas) {
+      if (!mergedPersonas) mergedPersonas = {};
+      for (const [name, persona] of Object.entries(cfg.personas)) {
+        mergedPersonas[name] = { ...(mergedPersonas[name] || {}), ...persona };
+      }
+    }
   }
 
-  return {
-    config: { version: configs[configs.length - 1].version ?? 1, flags: merged },
-    warnings,
+  const result: FlagConfig = {
+    version: configs[configs.length - 1].version ?? 1,
+    flags: merged,
   };
+  if (mergedSegments) result.segments = mergedSegments;
+  if (mergedPersonas) result.personas = mergedPersonas;
+
+  return { config: result, warnings };
+}
+
+/** Result of diffing two environment configs. */
+export interface EnvDiffEntry {
+  flag: string;
+  field: string;
+  envA: { name: string; value: unknown };
+  envB: { name: string; value: unknown };
+}
+
+/**
+ * Diff two environment configs to show differences.
+ */
+export function diffEnvConfigs(
+  envAName: string,
+  envAConfig: FlagConfig,
+  envBName: string,
+  envBConfig: FlagConfig,
+): EnvDiffEntry[] {
+  const diffs: EnvDiffEntry[] = [];
+  const allFlags = new Set([...Object.keys(envAConfig.flags), ...Object.keys(envBConfig.flags)]);
+
+  for (const flag of [...allFlags].sort()) {
+    const a = envAConfig.flags[flag];
+    const b = envBConfig.flags[flag];
+
+    if (!a && b) {
+      diffs.push({ flag, field: '(flag)', envA: { name: envAName, value: undefined }, envB: { name: envBName, value: 'defined' } });
+      continue;
+    }
+    if (a && !b) {
+      diffs.push({ flag, field: '(flag)', envA: { name: envAName, value: 'defined' }, envB: { name: envBName, value: undefined } });
+      continue;
+    }
+    if (!a || !b) continue;
+
+    if (a.enabled !== b.enabled) {
+      diffs.push({ flag, field: 'enabled', envA: { name: envAName, value: a.enabled }, envB: { name: envBName, value: b.enabled } });
+    }
+    if (a.rollout !== b.rollout) {
+      diffs.push({ flag, field: 'rollout', envA: { name: envAName, value: a.rollout }, envB: { name: envBName, value: b.rollout } });
+    }
+    if (JSON.stringify(a.rules) !== JSON.stringify(b.rules)) {
+      diffs.push({ flag, field: 'rules', envA: { name: envAName, value: a.rules?.length ?? 0 }, envB: { name: envBName, value: b.rules?.length ?? 0 } });
+    }
+    if (JSON.stringify(a.variants) !== JSON.stringify(b.variants)) {
+      diffs.push({ flag, field: 'variants', envA: { name: envAName, value: a.variants?.length ?? 0 }, envB: { name: envBName, value: b.variants?.length ?? 0 } });
+    }
+  }
+
+  return diffs;
+}
+
+/** Format environment diff as a table. */
+export function formatEnvDiff(diffs: EnvDiffEntry[]): string {
+  if (diffs.length === 0) return '✅ No differences between environments.';
+
+  const lines: string[] = [];
+  const envAName = diffs[0]?.envA.name || 'envA';
+  const envBName = diffs[0]?.envB.name || 'envB';
+  lines.push(`📊 Differences: ${envAName} vs ${envBName}`);
+  lines.push('');
+
+  let currentFlag = '';
+  for (const d of diffs) {
+    if (d.flag !== currentFlag) {
+      currentFlag = d.flag;
+      lines.push(`  ${d.flag}:`);
+    }
+    const aVal = d.envA.value === undefined ? '(not defined)' : String(d.envA.value);
+    const bVal = d.envB.value === undefined ? '(not defined)' : String(d.envB.value);
+    lines.push(`    ${d.field}: ${aVal} → ${bVal}`);
+  }
+
+  lines.push('');
+  lines.push(`Found ${diffs.length} difference(s).`);
+  return lines.join('\n');
 }
 
 function mergeFlagDefinition(
