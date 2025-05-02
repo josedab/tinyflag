@@ -66,3 +66,10 @@ export type {
   TenantDiffEntry,
   TenantIsolationViolation,
 } from './tenant.js';
+export { ExperimentTracker, formatExperimentResults } from './experiment.js';
+export type {
+  ExperimentConfig,
+  ConversionEvent,
+  VariantResult,
+  ExperimentResult,
+} from './types.js';
