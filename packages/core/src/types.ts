@@ -96,6 +96,51 @@ export interface FlagDefinition {
   lifecycle?: FlagLifecycle;
   /** Typed configuration values associated with this flag. */
   config?: Record<string, unknown>;
+  /** Experiment configuration for A/B test analysis. */
+  experiment?: ExperimentConfig;
+}
+
+/** Configuration for an A/B test experiment on a flag. */
+export interface ExperimentConfig {
+  /** Metric name to track for this experiment. */
+  metric: string;
+  /** Minimum sample size per variant before analysis. Default: 100. */
+  minimumSampleSize?: number;
+  /** Confidence level for significance tests (0-1). Default: 0.95. */
+  confidenceLevel?: number;
+  /** Type of statistical test. Default: 'bayesian'. */
+  method?: 'bayesian' | 'frequentist';
+}
+
+/** A recorded conversion event for an experiment. */
+export interface ConversionEvent {
+  flag: string;
+  variant: string;
+  userId: string;
+  value?: number;
+  timestamp: number;
+}
+
+/** Results of an experiment analysis for a single variant. */
+export interface VariantResult {
+  name: string;
+  sampleSize: number;
+  conversions: number;
+  conversionRate: number;
+  confidenceInterval: [number, number];
+  meanValue?: number;
+}
+
+/** Full experiment analysis results. */
+export interface ExperimentResult {
+  flag: string;
+  metric: string;
+  method: 'bayesian' | 'frequentist';
+  variants: VariantResult[];
+  winner: string | null;
+  significant: boolean;
+  confidenceLevel: number;
+  totalSamples: number;
 }
 
 /** A named persona preset defining reusable context for evaluation. */
@@ -109,6 +154,12 @@ export interface SegmentDefinition {
   conditions: Record<string, unknown>;
   /** Other segments this segment extends (inherits conditions from). */
   extends?: readonly string[];
+  /** Logical operator for composing extended segments. Default: 'AND'. */
+  operator?: 'AND' | 'OR';
+  /** Version identifier for segment pinning. */
+  version?: number;
+  /** Human-readable description. */
+  description?: string;
 }
 
 /** Root flag configuration loaded from a source. */
