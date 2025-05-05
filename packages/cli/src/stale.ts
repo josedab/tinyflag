@@ -1,10 +1,23 @@
 import { readdirSync, readFileSync, statSync } from 'fs';
 import { join, extname } from 'path';
+import type { FlagDefinition } from 'tinyflag';
 
-const FLAG_USAGE_PATTERN = /(?:isEnabled|getVariant)\s*\(\s*['"]([a-z0-9-]+)['"]/g;
+const FLAG_USAGE_PATTERN = /(?:isEnabled|getVariant|useFlag|getConfig)\s*\(\s*['"]([a-z0-9-]+)['"]/g;
 const TINYFLAG_IGNORE_PATTERN = /\/\/\s*tinyflag-ignore/;
 
 const SCANNABLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
+
+/** Configuration for staleness rules. */
+export interface StalenessConfig {
+  /** Days without code references before a flag is considered stale. Default: 30. */
+  noReferenceDays?: number;
+  /** Days with zero rollout before a flag is considered stale. Default: 14. */
+  zeroRolloutDays?: number;
+  /** Flag lifecycle states that should be flagged as stale. Default: ['sunset']. */
+  staleLifecycleStates?: string[];
+  /** Exclude flags with these tags from staleness analysis. */
+  excludeTags?: string[];
+}
 
 export interface StaleReport {
   /** Flags defined in config but not referenced in code. */
@@ -13,6 +26,10 @@ export interface StaleReport {
   undefinedRefs: Array<{ flag: string; file: string; line: number }>;
   /** Flags with rollout: 0 that are still enabled. */
   zeroRolloutFlags: string[];
+  /** Flags in sunset state past their sunset date. */
+  pastSunsetFlags?: Array<{ flag: string; sunsetAt: string; daysPast: number }>;
+  /** Flags that are candidates for archival. */
+  archivalCandidates?: Array<{ flag: string; reason: string }>;
 }
 
 /**
@@ -98,14 +115,28 @@ function scanFile(
  * Generate a stale flag report by cross-referencing definitions vs code usage.
  */
 export function generateStaleReport(
-  definedFlags: Record<string, { enabled: boolean; rollout?: number }>,
+  definedFlags: Record<string, { enabled: boolean; rollout?: number | unknown; lifecycle?: { state: string; sunsetAt?: string }; tags?: readonly string[] }>,
   codeUsages: Map<string, Array<{ file: string; line: number }>>,
+  stalenessConfig?: StalenessConfig,
 ): StaleReport {
+  const config = stalenessConfig || {};
+  const excludeTags = new Set(config.excludeTags || []);
   const definedNames = new Set(Object.keys(definedFlags));
   const referencedNames = new Set(codeUsages.keys());
 
+  // Filter out excluded tags
+  const filteredNames = [...definedNames].filter((name) => {
+    const flag = definedFlags[name];
+    if (flag.tags) {
+      for (const tag of flag.tags) {
+        if (excludeTags.has(tag)) return false;
+      }
+    }
+    return true;
+  });
+
   // Flags defined but not used in code
-  const unusedFlags = [...definedNames].filter((name) => !referencedNames.has(name)).sort();
+  const unusedFlags = filteredNames.filter((name) => !referencedNames.has(name)).sort();
 
   // Flags referenced in code but not defined
   const undefinedRefs: Array<{ flag: string; file: string; line: number }> = [];
@@ -119,11 +150,48 @@ export function generateStaleReport(
 
   // Flags with rollout: 0 that are enabled
   const zeroRolloutFlags = Object.entries(definedFlags)
-    .filter(([, def]) => def.enabled && def.rollout === 0)
+    .filter(([name, def]) => {
+      if (!filteredNames.includes(name)) return false;
+      return def.enabled && def.rollout === 0;
+    })
     .map(([name]) => name)
     .sort();
 
-  return { unusedFlags, undefinedRefs, zeroRolloutFlags };
+  // Check for flags past their sunset date
+  const pastSunsetFlags: Array<{ flag: string; sunsetAt: string; daysPast: number }> = [];
+  const archivalCandidates: Array<{ flag: string; reason: string }> = [];
+  const now = Date.now();
+
+  for (const name of filteredNames) {
+    const flag = definedFlags[name];
+
+    if (flag.lifecycle?.state === 'sunset' && flag.lifecycle.sunsetAt) {
+      const sunsetDate = new Date(flag.lifecycle.sunsetAt).getTime();
+      if (!isNaN(sunsetDate) && sunsetDate < now) {
+        const daysPast = Math.floor((now - sunsetDate) / (1000 * 60 * 60 * 24));
+        pastSunsetFlags.push({ flag: name, sunsetAt: flag.lifecycle.sunsetAt, daysPast });
+        archivalCandidates.push({ flag: name, reason: `Sunset ${daysPast} day(s) ago` });
+      }
+    }
+
+    // Archived but still has code references
+    if (flag.lifecycle?.state === 'archived' && referencedNames.has(name)) {
+      archivalCandidates.push({ flag: name, reason: 'Archived but still has code references — run codemod' });
+    }
+
+    // Unused + enabled for a long time = cleanup candidate
+    if (!referencedNames.has(name) && flag.enabled && !flag.lifecycle) {
+      archivalCandidates.push({ flag: name, reason: 'Enabled but not referenced in code' });
+    }
+  }
+
+  return {
+    unusedFlags,
+    undefinedRefs,
+    zeroRolloutFlags,
+    pastSunsetFlags: pastSunsetFlags.length > 0 ? pastSunsetFlags : undefined,
+    archivalCandidates: archivalCandidates.length > 0 ? archivalCandidates : undefined,
+  };
 }
 
 /**
@@ -156,12 +224,29 @@ export function formatStaleReport(report: StaleReport): string {
     lines.push('');
   }
 
+  if (report.pastSunsetFlags && report.pastSunsetFlags.length > 0) {
+    lines.push('🌅 Past sunset flags (sunset date has passed):');
+    for (const item of report.pastSunsetFlags) {
+      lines.push(`  - ${item.flag}: sunset ${item.daysPast} day(s) ago (${item.sunsetAt})`);
+    }
+    lines.push('');
+  }
+
+  if (report.archivalCandidates && report.archivalCandidates.length > 0) {
+    lines.push('📦 Archival candidates:');
+    for (const item of report.archivalCandidates) {
+      lines.push(`  - ${item.flag}: ${item.reason}`);
+    }
+    lines.push('');
+  }
+
   if (lines.length === 0) {
     return '✅ No stale flags detected.';
   }
 
   const total =
-    report.unusedFlags.length + report.undefinedRefs.length + report.zeroRolloutFlags.length;
+    report.unusedFlags.length + report.undefinedRefs.length + report.zeroRolloutFlags.length +
+    (report.pastSunsetFlags?.length || 0) + (report.archivalCandidates?.length || 0);
   lines.push(`Found ${total} issue(s).`);
   return lines.join('\n');
 }
