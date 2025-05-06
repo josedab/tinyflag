@@ -9,6 +9,12 @@ export interface EdgeFlagOptions {
   flagNames?: string[];
   /** Prefix for response headers (default: 'x-tinyflag-'). */
   headerPrefix?: string;
+  /** Enable CDN-aware caching with Vary headers. Default: false. */
+  cdnCaching?: boolean;
+  /** Cache-Control header value for CDN caching. Default: 'public, max-age=60, stale-while-revalidate=300'. */
+  cacheControl?: string;
+  /** Fields to include in Vary header for CDN key variation. */
+  varyFields?: string[];
 }
 
 /** Result of edge flag evaluation. */
@@ -16,6 +22,8 @@ export interface EdgeFlagResult {
   flags: Record<string, { enabled: boolean; variant: string | null }>;
   headers: Record<string, string>;
   context?: UserContext;
+  /** Evaluation time in milliseconds. */
+  evaluationMs?: number;
 }
 
 /**
@@ -23,6 +31,7 @@ export interface EdgeFlagResult {
  * Target: <1ms evaluation overhead per request.
  */
 export function evaluateEdgeFlags(request: Request, options: EdgeFlagOptions): EdgeFlagResult {
+  const start = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const prefix = options.headerPrefix ?? 'x-tinyflag-';
   const context = options.contextFromRequest?.(request) ?? extractContextFromRequest(request);
   const headers: Record<string, string> = {};
@@ -48,7 +57,27 @@ export function evaluateEdgeFlags(request: Request, options: EdgeFlagOptions): E
     }
   }
 
-  return { flags, headers, context };
+  // CDN-aware caching
+  if (options.cdnCaching) {
+    headers['Cache-Control'] = options.cacheControl ?? 'public, max-age=60, stale-while-revalidate=300';
+
+    // Build Vary header based on fields that affect flag evaluation
+    const varyFields = options.varyFields ?? ['x-user-id', 'cookie'];
+    headers['Vary'] = varyFields.join(', ');
+
+    // Add variant assignment as a response header for CDN keying
+    const variantAssignments = Object.entries(flags)
+      .filter(([, r]) => r.variant)
+      .map(([name, r]) => `${name}=${r.variant}`)
+      .join(',');
+    if (variantAssignments) {
+      headers[`${prefix}variants`] = variantAssignments;
+    }
+  }
+
+  const end = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+  return { flags, headers, context, evaluationMs: end - start };
 }
 
 /**

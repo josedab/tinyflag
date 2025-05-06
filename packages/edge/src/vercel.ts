@@ -51,6 +51,13 @@ export function createVercelMiddleware(options: VercelEdgeOptions) {
 
     // No rewrite — pass through with flag headers
     const response = new Response(null, { status: 200, headers: result.headers });
+
+    // Add Vary header for A/B test routing
+    const variantFlags = Object.entries(result.flags).filter(([, r]) => r.variant);
+    if (variantFlags.length > 0) {
+      response.headers.set('Vary', 'cookie, x-user-id');
+    }
+
     return response;
   };
 }
