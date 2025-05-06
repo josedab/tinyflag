@@ -1,13 +1,29 @@
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
+import { parseYaml, parseFlagConfig, diffEnvConfigs, formatEnvDiff } from 'tinyflag';
 import { diffConfigs, formatChanges } from '../diff.js';
+import { loadAndValidateMulti } from './utils.js';
 
 export function handleDiff(args: string[], jsonMode: boolean): void {
+  // Handle environment diff mode: tinyflag diff --env staging --env production --file flags.yml
+  const envNames: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--env' && i + 1 < args.length) {
+      envNames.push(args[i + 1]);
+      i++;
+    }
+  }
+
+  if (envNames.length >= 2) {
+    handleEnvDiff(args, envNames, jsonMode);
+    return;
+  }
+
   const refSpec = args[0];
   if (!refSpec || !refSpec.includes('..')) {
     console.error('Error: Expected ref format: <ref1>..<ref2> (e.g., main..HEAD)\n');
     console.log('Usage: tinyflag diff <ref1>..<ref2> [--file <path>]');
+    console.log('       tinyflag diff --env staging --env production [--file <path>]');
     process.exit(1);
   }
 
@@ -90,4 +106,37 @@ export function handleDiff(args: string[], jsonMode: boolean): void {
   }
 
   console.log(formatChanges(changes, ref1, ref2));
+}
+
+function handleEnvDiff(args: string[], envNames: string[], jsonMode: boolean): void {
+  const fileIdx = args.indexOf('--file');
+  const baseFile = fileIdx !== -1 ? args[fileIdx + 1] : 'flags.yml';
+  const baseName = baseFile.replace(/\.(yml|yaml|json)$/, '');
+  const ext = baseFile.endsWith('.json') ? '.json' : '.yml';
+
+  const configs: Array<{ name: string; config: ReturnType<typeof loadAndValidateMulti> }> = [];
+
+  for (const env of envNames) {
+    const envFile = `${baseName}.${env}${ext}`;
+    const files = [baseFile];
+    if (existsSync(envFile)) {
+      files.push(envFile);
+    }
+    const config = loadAndValidateMulti(files);
+    configs.push({ name: env, config });
+  }
+
+  if (configs.length < 2) {
+    console.error('Error: Need at least 2 environments to diff');
+    process.exit(1);
+  }
+
+  const diffs = diffEnvConfigs(configs[0].name, configs[0].config, configs[1].name, configs[1].config);
+
+  if (jsonMode) {
+    console.log(JSON.stringify({ command: 'env-diff', environments: envNames, diffs }, null, 2));
+    return;
+  }
+
+  console.log(formatEnvDiff(diffs));
 }
