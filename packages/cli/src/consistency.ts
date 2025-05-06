@@ -135,5 +135,27 @@ export function formatConsistencyReport(result: ConsistencyResult): string {
     }
   }
 
+  // Conformance badges
+  lines.push('📋 Conformance Status:');
+  for (const sdk of result.sdksChecked) {
+    const sdkDivergences = result.divergences.filter((d) => d.results[sdk] !== undefined);
+    const passed = sdkDivergences.length === 0;
+    lines.push(`   ${passed ? '✅' : '❌'} ${sdk}: ${passed ? 'PASS' : `${sdkDivergences.length} failures`}`);
+  }
+
   return lines.join('\n');
+}
+
+/** Generate conformance status JSON for CI badges. */
+export function generateConformanceStatus(result: ConsistencyResult): Record<string, { status: 'pass' | 'fail'; divergences: number; total: number }> {
+  const status: Record<string, { status: 'pass' | 'fail'; divergences: number; total: number }> = {};
+  for (const sdk of result.sdksChecked) {
+    const sdkDivergences = result.divergences.filter((d) => d.results[sdk] !== undefined);
+    status[sdk] = {
+      status: sdkDivergences.length === 0 ? 'pass' : 'fail',
+      divergences: sdkDivergences.length,
+      total: result.totalVectors,
+    };
+  }
+  return status;
 }

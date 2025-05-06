@@ -1,4 +1,4 @@
-export { generateTypes } from './generate.js';
+export { generateTypes, generateOpenAPISpec, generateGraphQLSchema, checkGeneratedTypes } from './generate.js';
 export { diffConfigs, formatChanges, formatChangesMarkdown } from './diff.js';
 export { scanFlagUsage, generateStaleReport, formatStaleReport } from './stale.js';
 export {
@@ -42,7 +42,7 @@ export {
   formatCanaryState,
 } from './canary.js';
 export type { FlagChange } from './diff.js';
-export type { StaleReport } from './stale.js';
+export type { StaleReport, StalenessConfig } from './stale.js';
 export type {
   FlagOwnerEntry,
   FlagOwnersConfig,
@@ -72,3 +72,11 @@ export type {
   HealthMetrics,
   MetricsAdapter,
 } from './canary.js';
+export {
+  findFlagReferences,
+  transformFile,
+  runCodemod,
+  checkArchivedFlagRefs,
+  formatCodemodDiff,
+} from './codemod.js';
+export type { FlagCodeReference, CodemodResult, CodemodChange } from './codemod.js';

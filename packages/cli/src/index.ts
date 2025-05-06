@@ -23,6 +23,9 @@ import {
   handleTest,
   handleCanary,
   handleOverlay,
+  handleExperiment,
+  handleCodemod,
+  handleSegments,
 } from './commands/index.js';
 
 const USAGE = `
@@ -30,10 +33,15 @@ Usage: tinyflag <command> [options]
 
 Commands:
   generate <file> [-o <output>]   Generate TypeScript types from a flags file
+  generate <file> --openapi [-o]  Generate OpenAPI 3.1 spec from a flags file
+  generate <file> --graphql [-o]  Generate GraphQL schema from a flags file
+  generate <file> --check -o <f>  Check if generated types are up-to-date (CI)
   validate <file...>              Validate one or more flags files (merged in order)
   validate <file> --watch         Validate and re-validate on file changes
   validate <file> --strict        Validate with strict mode (reject unknown fields)
+  validate <file> --env prod      Validate with environment overlay (base + env file)
   diff <ref1>..<ref2> [--file f]  Show flag changes between git refs
+  diff --env a --env b [--file f] Show differences between environments
   deps <file...>                  Show flag dependency graph
   stale <dir> --flags <file>      Detect stale/unused flags
   sign <file> --key <private-key> Sign a flag file with Ed25519
@@ -59,6 +67,10 @@ Commands:
   overlay apply <file> --dir <d>  Apply flag overlay to base config
   overlay cleanup <dir>           Remove expired overlays
   replay <log> --flags <file>     Replay evaluations (--at timestamp, --html report.html)
+  experiment results <flag>       Show experiment analysis (--flags <file> --data <file>)
+  codemod --flags <file>          Remove dead flag code (--archived --dry-run --ci)
+  segments list <file>            List segment definitions
+  segments impact <seg> --flags f Analyze segment impact on flags
   help                            Show this help message
 
 Options:
@@ -81,7 +93,7 @@ const COMMANDS = [
   'generate', 'validate', 'diff', 'deps', 'stale', 'sign', 'verify', 'keygen',
   'audit', 'pull', 'push', 'inline', 'suggest', 'eval', 'lifecycle',
   'consistency-check', 'lint', 'owners', 'tenant', 'impact', 'test', 'canary',
-  'overlay', 'replay', 'help',
+  'overlay', 'replay', 'experiment', 'codemod', 'segments', 'help',
 ];
 
 function levenshtein(a: string, b: string): number {
@@ -199,6 +211,15 @@ function main(): void {
       break;
     case 'replay':
       handleReplay(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'experiment':
+      handleExperiment(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'codemod':
+      handleCodemod(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'segments':
+      handleSegments(filteredArgs.slice(1), jsonMode);
       break;
     default: {
       console.error(`Unknown command: ${command}\n`);

@@ -20,3 +20,6 @@ export { handleImpact } from './impact.js';
 export { handleTest } from './test.js';
 export { handleCanary } from './canary.js';
 export { handleOverlay } from './overlay.js';
+export { handleExperiment } from './experiment.js';
+export { handleCodemod } from './codemod.js';
+export { handleSegments } from './segments.js';
