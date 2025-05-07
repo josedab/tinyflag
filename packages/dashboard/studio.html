@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🚩 TinyFlag Studio</title>
+    <style>
+      :root {
+        --bg: #fff; --fg: #1a1a2e; --card: #f8f9fa; --border: #e2e8f0;
+        --enabled: #22c55e; --disabled: #ef4444; --accent: #3b82f6;
+        --muted: #64748b; --radius: 8px; --warning: #f59e0b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #0f172a; --fg: #e2e8f0; --card: #1e293b; --border: #334155; --muted: #94a3b8; }
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); }
+      .layout { display: flex; height: 100vh; }
+      .sidebar { width: 280px; border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; flex-shrink: 0; }
+      .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+      .toolbar { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .content { flex: 1; overflow-y: auto; padding: 16px; }
+      .panel-split { display: flex; gap: 16px; height: 100%; }
+      .editor-panel { flex: 2; overflow-y: auto; }
+      .preview-panel { flex: 1; overflow-y: auto; border-left: 1px solid var(--border); padding-left: 16px; }
+      h1 { font-size: 1.3rem; margin-bottom: 16px; }
+      h2 { font-size: 1.1rem; margin-bottom: 12px; color: var(--muted); }
+      .flag-list-item { padding: 10px 12px; border-radius: var(--radius); cursor: pointer; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+      .flag-list-item:hover, .flag-list-item.active { background: var(--card); }
+      .flag-list-item .name { font-family: monospace; font-size: 14px; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+      .dot-on { background: var(--enabled); }
+      .dot-off { background: var(--disabled); }
+      input, select, textarea { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--fg); font-size: 14px; font-family: inherit; }
+      input[type="text"], input[type="number"], textarea { width: 100%; }
+      textarea { font-family: monospace; font-size: 12px; resize: vertical; }
+      button { padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; font-size: 14px; background: var(--card); color: var(--fg); }
+      button:hover { opacity: 0.9; }
+      .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .btn-danger { background: var(--disabled); color: #fff; border-color: var(--disabled); }
+      .btn-sm { padding: 4px 10px; font-size: 12px; }
+      .form-group { margin-bottom: 16px; }
+      .form-group label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+      .badge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+      .badge-on { background: var(--enabled); color: #fff; }
+      .badge-off { background: var(--disabled); color: #fff; }
+      .badge-lifecycle { background: var(--warning); color: #000; }
+      .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+      .toggle input { opacity: 0; width: 0; height: 0; }
+      .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: 24px; transition: .3s; }
+      .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s; }
+      .toggle input:checked + .toggle-slider { background: var(--enabled); }
+      .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+      .slider-row { display: flex; align-items: center; gap: 12px; }
+      .slider-row input[type="range"] { flex: 1; }
+      .slider-value { font-weight: 600; min-width: 40px; text-align: right; }
+      .variant-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; padding: 8px; background: var(--card); border-radius: var(--radius); }
+      .variant-row input { flex: 1; }
+      .rule-row { padding: 12px; background: var(--card); border-radius: var(--radius); margin-bottom: 8px; border: 1px solid var(--border); }
+      .rule-condition { display: flex; gap: 8px; margin-bottom: 4px; align-items: center; }
+      .rule-condition input { flex: 1; }
+      .sim-panel { background: var(--card); border-radius: var(--radius); padding: 16px; margin-top: 16px; border: 1px solid var(--border); }
+      .sim-result { margin-top: 12px; padding: 12px; border-radius: var(--radius); }
+      .sim-enabled { background: #dcfce7; color: #166534; }
+      .sim-disabled { background: #fee2e2; color: #991b1b; }
+      @media (prefers-color-scheme: dark) { .sim-enabled { background: #14532d; color: #bbf7d0; } .sim-disabled { background: #450a0a; color: #fca5a5; } }
+      .yaml-preview { white-space: pre; font-family: monospace; font-size: 12px; line-height: 1.6; padding: 12px; background: var(--card); border-radius: var(--radius); border: 1px solid var(--border); overflow-x: auto; max-height: 60vh; overflow-y: auto; }
+      .tab-bar { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+      .tab { padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; font-size: 13px; color: var(--muted); }
+      .tab.active { border-bottom-color: var(--accent); color: var(--fg); font-weight: 600; }
+      .hidden { display: none; }
+      .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+      .search-input { width: 100%; margin-bottom: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <div class="sidebar">
+        <h1>🚩 Flag Studio</h1>
+        <input type="text" class="search-input" id="search" placeholder="🔍 Search flags..." oninput="renderList()">
+        <div id="flagList"></div>
+        <button class="btn-primary" style="width:100%;margin-top:12px" onclick="createFlag()">+ New Flag</button>
+      </div>
+      <div class="main">
+        <div class="toolbar">
+          <button onclick="loadUrl()">📡 Load URL</button>
+          <label class="btn-sm" style="cursor:pointer">📂 Upload<input type="file" accept=".yml,.yaml,.json" onchange="uploadFile(event)" style="display:none"></label>
+          <button onclick="pasteFlagsPrompt()">📋 Paste YAML</button>
+          <div style="flex:1"></div>
+          <button onclick="downloadYaml()">⬇ Download YAML</button>
+        </div>
+        <div class="content">
+          <div id="emptyState" class="empty-state">
+            <p style="font-size:2rem;margin-bottom:12px">🚩</p>
+            <p>Load a flags file to get started.</p>
+            <p style="margin-top:8px;font-size:13px">Use the toolbar to load from URL, upload a file, or paste YAML.</p>
+          </div>
+          <div id="editorView" class="hidden panel-split">
+            <div class="editor-panel" id="editorPanel"></div>
+            <div class="preview-panel">
+              <div class="tab-bar">
+                <div class="tab active" onclick="switchPreviewTab('yaml', this)">YAML Preview</div>
+                <div class="tab" onclick="switchPreviewTab('simulate', this)">🧪 Simulate</div>
+              </div>
+              <div id="yamlTab"><pre class="yaml-preview" id="yamlPreview"></pre></div>
+              <div id="simulateTab" class="hidden">
+                <div class="sim-panel">
+                  <h2>Test as User</h2>
+                  <div class="form-group">
+                    <label>User ID</label>
+                    <input type="text" id="simUserId" placeholder="user-123" oninput="runSimulation()">
+                  </div>
+                  <div id="simContextFields"></div>
+                  <button class="btn-sm" onclick="addSimField()">+ Add Context Field</button>
+                  <div id="simResult"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      /* Same miniYaml parser from v1 dashboard - inline for zero deps */
+      function miniYaml(s) {
+        if (!s || !s.trim()) return null;
+        s = s.replace(/^\uFEFF/, '').replace(/^---\s*\n/, '');
+        const BT = new Set(['true','yes','on']), BF = new Set(['false','no','off']);
+        function sc(v) { v=v.trim(); if(!v||v==='~'||v==='null') return null; if(BT.has(v.toLowerCase())) return true; if(BF.has(v.toLowerCase())) return false; if((v[0]==='"'&&v.slice(-1)==='"')||(v[0]==="'"&&v.slice(-1)==="'")) return v.slice(1,-1); if(/^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(v)) return Number(v); return v; }
+        function fl(v) { v=v.trim(); if(v[0]==='['&&v.slice(-1)===']'){const i=v.slice(1,-1).trim(); if(!i) return []; return sf(i).map(x=>fl(x.trim()));} if(v[0]==='{'&&v.slice(-1)==='}'){const i=v.slice(1,-1).trim();if(!i) return {};const r={};sf(i).forEach(x=>{const c=x.indexOf(':');if(c>-1) r[x.slice(0,c).trim()]=fl(x.slice(c+1).trim());});return r;} return sc(v); }
+        function sf(s){const it=[];let d=0,c='',sq=false,dq=false;for(const ch of s){if(ch==="'"&&!dq) sq=!sq;else if(ch==='"'&&!sq) dq=!dq;if(!sq&&!dq){if(ch==='['||ch==='{') d++;else if(ch===']'||ch==='}') d--;else if(ch===','&&d===0){it.push(c);c='';continue;}}c+=ch;}if(c.trim()) it.push(c);return it;}
+        function sc2(l){let sq=false,dq=false;for(let i=0;i<l.length;i++){if(l[i]==="'"&&!dq) sq=!sq;else if(l[i]==='"'&&!sq) dq=!dq;else if(l[i]==='#'&&!sq&&!dq) return l.slice(0,i).trimEnd();}return l;}
+        const ln=s.split('\n').map((r,i)=>{const t=r.trimStart();if(!t||t[0]==='#') return null;return{indent:r.length-t.length,content:sc2(t),ln:i+1};}).filter(Boolean);
+        function pb(i,b){if(i>=ln.length) return[null,i];const l=ln[i];if(l.content.startsWith('- ')||l.content==='-') return ps(i,l.indent);if(l.content.includes(':')) return pm(i,l.indent);return[sc(l.content),i+1];}
+        function ps(i,b){const r=[];while(i<ln.length){const l=ln[i];if(l.indent<b||l.indent>b) break;if(l.content.startsWith('- ')){const v=l.content.slice(2).trim();if(!v){if(i+1<ln.length&&ln[i+1].indent>l.indent){const[c,n]=pb(i+1,l.indent);r.push(c);i=n;}else{r.push(null);i++;}}else if(v[0]==='['||v[0]==='{'){r.push(fl(v));i++;}else if(v.includes(': ')||v.endsWith(':')){const tmp=[{indent:l.indent+2,content:v,ln:l.ln}];let j=i+1;while(j<ln.length&&ln[j].indent>l.indent){tmp.push(ln[j]);j++;}const sv=[...ln];ln.splice(0);ln.push(...tmp);const[c]=pm(0,l.indent+2);ln.splice(0);ln.push(...sv);r.push(c);i=j;}else{r.push(sc(v));i++;}}else if(l.content==='-'){if(i+1<ln.length&&ln[i+1].indent>l.indent){const[c,n]=pb(i+1,l.indent);r.push(c);i=n;}else{r.push(null);i++;}}else break;}return[r,i];}
+        function pm(i,b){const r={};while(i<ln.length){const l=ln[i];if(l.indent<b) break;if(l.indent>b){i++;continue;}const ci=l.content.indexOf(':');if(ci===-1){i++;continue;}const k=l.content.slice(0,ci).trim(),af=l.content.slice(ci+1).trim();if(!af){if(i+1<ln.length&&ln[i+1].indent>b){const[c,n]=pb(i+1,b);r[k]=c;i=n;}else{r[k]=null;i++;}}else if(af[0]==='['||af[0]==='{'){r[k]=fl(af);i++;}else{r[k]=sc(af);i++;}}return[r,i];}
+        const[result]=pb(0,ln[0].indent); return result;
+      }
+
+      let flags = {};
+      let selectedFlag = null;
+      let simFields = [];
+
+      function loadUrl() {
+        const url = prompt('Enter flags URL:');
+        if (!url) return;
+        fetch(url).then(r => r.text()).then(t => {
+          parseAndLoad(t, url.includes('.json'));
+        }).catch(e => alert('Failed: ' + e.message));
+      }
+
+      function uploadFile(e) {
+        const f = e.target.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => parseAndLoad(r.result, f.name.endsWith('.json'));
+        r.readAsText(f);
+      }
+
+      function pasteFlagsPrompt() {
+        const text = prompt('Paste YAML or JSON:');
+        if (text) parseAndLoad(text, text.trim()[0] === '{');
+      }
+
+      function parseAndLoad(text, isJson) {
+        try {
+          const raw = isJson ? JSON.parse(text) : miniYaml(text);
+          if (!raw || !raw.flags) throw new Error('Missing "flags" field');
+          flags = raw.flags;
+          selectedFlag = Object.keys(flags)[0] || null;
+          document.getElementById('emptyState').classList.add('hidden');
+          document.getElementById('editorView').classList.remove('hidden');
+          renderList();
+          renderEditor();
+          updateYamlPreview();
+        } catch (e) { alert('Parse error: ' + e.message); }
+      }
+
+      function renderList() {
+        const search = document.getElementById('search').value.toLowerCase();
+        const list = document.getElementById('flagList');
+        const entries = Object.entries(flags).filter(([n]) => !search || n.includes(search));
+        list.innerHTML = entries.map(([name, f]) =>
+          `<div class="flag-list-item ${name === selectedFlag ? 'active' : ''}" onclick="selectFlag('${esc(name)}')">
+            <span class="name">${esc(name)}</span>
+            <span class="dot ${f.enabled ? 'dot-on' : 'dot-off'}"></span>
+          </div>`
+        ).join('');
+      }
+
+      function selectFlag(name) { selectedFlag = name; renderList(); renderEditor(); runSimulation(); }
+
+      function createFlag() {
+        const name = prompt('Flag name (kebab-case):');
+        if (!name || !/^[a-z0-9-]+$/.test(name)) { if (name) alert('Use kebab-case: a-z, 0-9, hyphens'); return; }
+        if (flags[name]) { alert('Flag already exists'); return; }
+        flags[name] = { enabled: false, description: '' };
+        selectedFlag = name;
+        document.getElementById('emptyState').classList.add('hidden');
+        document.getElementById('editorView').classList.remove('hidden');
+        renderList(); renderEditor(); updateYamlPreview();
+      }
+
+      function renderEditor() {
+        const panel = document.getElementById('editorPanel');
+        if (!selectedFlag || !flags[selectedFlag]) {
+          panel.innerHTML = '<div class="empty-state">Select a flag to edit</div>';
+          return;
+        }
+        const f = flags[selectedFlag];
+        const lifecycle = f.lifecycle?.state || 'active';
+        const variants = f.variants || [];
+        const rules = f.rules || [];
+
+        let html = `<h2 style="font-family:monospace;color:var(--fg);font-size:1.2rem;margin-bottom:4px">${esc(selectedFlag)}</h2>`;
+        if (f.lifecycle) html += `<span class="badge badge-lifecycle">${lifecycle}</span>`;
+        html += `
+          <div class="form-group" style="margin-top:16px">
+            <label>Enabled</label>
+            <label class="toggle"><input type="checkbox" ${f.enabled ? 'checked' : ''} onchange="updateField('enabled', this.checked)"><span class="toggle-slider"></span></label>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" value="${esc(f.description || '')}" onchange="updateField('description', this.value)">
+          </div>
+          <div class="form-group">
+            <label>Tags (comma-separated)</label>
+            <input type="text" value="${(f.tags || []).join(', ')}" onchange="updateField('tags', this.value.split(',').map(s=>s.trim()).filter(Boolean))">
+          </div>
+          <div class="form-group">
+            <label>Rollout %</label>
+            <div class="slider-row">
+              <input type="range" min="0" max="100" value="${f.rollout ?? 100}" oninput="updateField('rollout', parseInt(this.value)); this.nextElementSibling.textContent=this.value+'%'">
+              <span class="slider-value">${f.rollout ?? 100}%</span>
+            </div>
+          </div>`;
+
+        // Variants editor
+        html += `<div class="form-group"><label>Variants</label>`;
+        for (let i = 0; i < variants.length; i++) {
+          html += `<div class="variant-row">
+            <input type="text" value="${esc(variants[i].name)}" placeholder="Variant name" onchange="updateVariant(${i}, 'name', this.value)">
+            <input type="number" style="width:80px" value="${variants[i].weight}" min="0" onchange="updateVariant(${i}, 'weight', parseInt(this.value))">
+            <button class="btn-sm btn-danger" onclick="removeVariant(${i})">×</button>
+          </div>`;
+        }
+        html += `<button class="btn-sm" onclick="addVariant()">+ Add Variant</button></div>`;
+
+        // Rules editor
+        html += `<div class="form-group"><label>Targeting Rules</label>`;
+        for (let i = 0; i < rules.length; i++) {
+          const r = rules[i];
+          const conds = Object.entries(r.conditions || {});
+          html += `<div class="rule-row">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+              <strong>Rule ${i + 1}</strong>
+              <button class="btn-sm btn-danger" onclick="removeRule(${i})">× Remove</button>
+            </div>`;
+          for (let j = 0; j < conds.length; j++) {
+            html += `<div class="rule-condition">
+              <input type="text" value="${esc(conds[j][0])}" placeholder="field" onchange="updateRuleCond(${i}, ${j}, 'key', this.value)">
+              <span>=</span>
+              <input type="text" value="${esc(typeof conds[j][1] === 'object' ? JSON.stringify(conds[j][1]) : String(conds[j][1]))}" placeholder="value" onchange="updateRuleCond(${i}, ${j}, 'value', this.value)">
+              <button class="btn-sm" onclick="removeRuleCond(${i}, ${j})">×</button>
+            </div>`;
+          }
+          html += `<button class="btn-sm" onclick="addRuleCond(${i})">+ Condition</button>`;
+          if (r.variant) html += `<div style="margin-top:4px;font-size:12px">→ Force variant: <strong>${esc(r.variant)}</strong></div>`;
+          html += `</div>`;
+        }
+        html += `<button class="btn-sm" onclick="addRule()">+ Add Rule</button></div>`;
+
+        html += `<div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+          <button class="btn-danger" onclick="deleteFlag()">🗑 Delete Flag</button>
+        </div>`;
+
+        panel.innerHTML = html;
+      }
+
+      function updateField(field, value) {
+        if (!selectedFlag) return;
+        if (field === 'rollout' && (value === undefined || value === 100)) { delete flags[selectedFlag].rollout; }
+        else { flags[selectedFlag][field] = value; }
+        renderEditor(); updateYamlPreview(); renderList();
+      }
+
+      function addVariant() {
+        if (!selectedFlag) return;
+        if (!flags[selectedFlag].variants) flags[selectedFlag].variants = [];
+        flags[selectedFlag].variants.push({ name: 'variant-' + (flags[selectedFlag].variants.length + 1), weight: 50 });
+        renderEditor(); updateYamlPreview();
+      }
+
+      function updateVariant(i, field, value) {
+        if (!selectedFlag) return;
+        flags[selectedFlag].variants[i][field] = value;
+        renderEditor(); updateYamlPreview();
+      }
+
+      function removeVariant(i) {
+        if (!selectedFlag) return;
+        flags[selectedFlag].variants.splice(i, 1);
+        if (flags[selectedFlag].variants.length === 0) delete flags[selectedFlag].variants;
+        renderEditor(); updateYamlPreview();
+      }
+
+      function addRule() {
+        if (!selectedFlag) return;
+        if (!flags[selectedFlag].rules) flags[selectedFlag].rules = [];
+        flags[selectedFlag].rules.push({ conditions: { field: 'value' } });
+        renderEditor(); updateYamlPreview();
+      }
+
+      function removeRule(i) {
+        if (!selectedFlag) return;
+        flags[selectedFlag].rules.splice(i, 1);
+        if (flags[selectedFlag].rules.length === 0) delete flags[selectedFlag].rules;
+        renderEditor(); updateYamlPreview();
+      }
+
+      function addRuleCond(ruleIdx) {
+        if (!selectedFlag) return;
+        flags[selectedFlag].rules[ruleIdx].conditions['field'] = 'value';
+        renderEditor(); updateYamlPreview();
+      }
+
+      function updateRuleCond(ruleIdx, condIdx, type, value) {
+        if (!selectedFlag) return;
+        const rule = flags[selectedFlag].rules[ruleIdx];
+        const entries = Object.entries(rule.conditions);
+        if (type === 'key') {
+          const oldKey = entries[condIdx][0];
+          const oldVal = entries[condIdx][1];
+          delete rule.conditions[oldKey];
+          rule.conditions[value] = oldVal;
+        } else {
+          const key = entries[condIdx][0];
+          try { rule.conditions[key] = JSON.parse(value); } catch { rule.conditions[key] = value; }
+        }
+        renderEditor(); updateYamlPreview();
+      }
+
+      function removeRuleCond(ruleIdx, condIdx) {
+        if (!selectedFlag) return;
+        const entries = Object.entries(flags[selectedFlag].rules[ruleIdx].conditions);
+        delete flags[selectedFlag].rules[ruleIdx].conditions[entries[condIdx][0]];
+        renderEditor(); updateYamlPreview();
+      }
+
+      function deleteFlag() {
+        if (!selectedFlag || !confirm(`Delete "${selectedFlag}"?`)) return;
+        delete flags[selectedFlag];
+        const names = Object.keys(flags);
+        selectedFlag = names[0] || null;
+        renderList(); renderEditor(); updateYamlPreview();
+        if (names.length === 0) {
+          document.getElementById('editorView').classList.add('hidden');
+          document.getElementById('emptyState').classList.remove('hidden');
+        }
+      }
+
+      function updateYamlPreview() {
+        const lines = ['version: 1', 'flags:'];
+        for (const [name, f] of Object.entries(flags)) {
+          lines.push(`  ${name}:`);
+          lines.push(`    enabled: ${f.enabled}`);
+          if (f.description) lines.push(`    description: ${f.description}`);
+          if (f.tags && f.tags.length) lines.push(`    tags:\n${f.tags.map(t=>'      - '+t).join('\n')}`);
+          if (f.rollout !== undefined) lines.push(`    rollout: ${f.rollout}`);
+          if (f.rules) {
+            lines.push('    rules:');
+            for (const r of f.rules) {
+              const conds = Object.entries(r.conditions || {});
+              lines.push('      - conditions:');
+              for (const [k,v] of conds) {
+                lines.push(`          ${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+              }
+              if (r.enabled !== undefined) lines.push(`        enabled: ${r.enabled}`);
+              if (r.rollout !== undefined) lines.push(`        rollout: ${r.rollout}`);
+              if (r.variant) lines.push(`        variant: ${r.variant}`);
+            }
+          }
+          if (f.variants) {
+            lines.push('    variants:');
+            for (const v of f.variants) lines.push(`      - name: ${v.name}\n        weight: ${v.weight}`);
+          }
+          if (f.lifecycle) lines.push(`    lifecycle:\n      state: ${f.lifecycle.state}`);
+        }
+        document.getElementById('yamlPreview').textContent = lines.join('\n');
+      }
+
+      function switchPreviewTab(tab, el) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('yamlTab').classList.toggle('hidden', tab !== 'yaml');
+        document.getElementById('simulateTab').classList.toggle('hidden', tab !== 'simulate');
+        if (tab === 'simulate') runSimulation();
+      }
+
+      function addSimField() {
+        simFields.push({ key: '', value: '' });
+        renderSimFields();
+      }
+
+      function renderSimFields() {
+        const container = document.getElementById('simContextFields');
+        container.innerHTML = simFields.map((f, i) =>
+          `<div style="display:flex;gap:8px;margin-bottom:8px">
+            <input type="text" value="${esc(f.key)}" placeholder="key" style="flex:1" onchange="simFields[${i}].key=this.value;runSimulation()">
+            <input type="text" value="${esc(f.value)}" placeholder="value" style="flex:1" onchange="simFields[${i}].value=this.value;runSimulation()">
+            <button class="btn-sm" onclick="simFields.splice(${i},1);renderSimFields();runSimulation()">×</button>
+          </div>`
+        ).join('');
+      }
+
+      function runSimulation() {
+        if (!selectedFlag || !flags[selectedFlag]) return;
+        const f = flags[selectedFlag];
+        const userId = document.getElementById('simUserId')?.value || '';
+        const ctx = {};
+        if (userId) ctx.userId = userId;
+        for (const sf of simFields) { if (sf.key) ctx[sf.key] = sf.value; }
+
+        // Simple local evaluation (matches server logic)
+        let enabled = f.enabled;
+        let matchedRule = null;
+        let variant = null;
+
+        if (!enabled) { showSimResult(false, null, matchedRule, ctx); return; }
+
+        if (f.rules && f.rules.length > 0) {
+          for (const rule of f.rules) {
+            const conds = Object.entries(rule.conditions || {});
+            const match = conds.every(([k, v]) => {
+              const cv = ctx[k];
+              if (typeof v === 'object' && v !== null) {
+                if (v.$in) return Array.isArray(v.$in) && v.$in.includes(cv);
+                if (v.$not) return cv !== v.$not;
+                return String(cv) === String(v);
+              }
+              return String(cv) === String(v);
+            });
+            if (match) { matchedRule = rule; break; }
+          }
+          if (matchedRule) {
+            enabled = matchedRule.enabled !== undefined ? matchedRule.enabled : true;
+            if (matchedRule.variant) variant = matchedRule.variant;
+          }
+        }
+
+        // Rollout check (simplified - deterministic hash)
+        if (enabled && f.rollout !== undefined && userId) {
+          const bucket = simpleHash(selectedFlag + userId) % 100;
+          const rollout = matchedRule?.rollout ?? f.rollout;
+          if (rollout !== undefined) enabled = bucket < rollout;
+        }
+
+        // Variant selection
+        if (enabled && f.variants && f.variants.length > 0 && !variant && userId) {
+          const bucket = simpleHash(selectedFlag + ':variant:' + userId) % 100;
+          const total = f.variants.reduce((s, v) => s + v.weight, 0);
+          let acc = 0;
+          for (const v of f.variants) {
+            acc += (v.weight / total) * 100;
+            if (bucket < acc) { variant = v.name; break; }
+          }
+        }
+
+        showSimResult(enabled, variant, matchedRule, ctx);
+      }
+
+      function simpleHash(str) {
+        let h = 0;
+        for (let i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+        return Math.abs(h);
+      }
+
+      function showSimResult(enabled, variant, rule, ctx) {
+        const el = document.getElementById('simResult');
+        let html = `<div class="sim-result ${enabled ? 'sim-enabled' : 'sim-disabled'}">`;
+        html += `<strong>${enabled ? '✅ ENABLED' : '❌ DISABLED'}</strong>`;
+        if (variant) html += `<br>Variant: <strong>${esc(variant)}</strong>`;
+        if (rule) html += `<br><span style="font-size:12px">Matched rule: ${esc(JSON.stringify(rule.conditions))}</span>`;
+        html += `</div>`;
+        el.innerHTML = html;
+      }
+
+      function downloadYaml() {
+        const text = document.getElementById('yamlPreview')?.textContent;
+        if (!text) return;
+        const blob = new Blob([text + '\n'], { type: 'text/yaml' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'flags.yml';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+      // Auto-load from URL params
+      const p = new URLSearchParams(location.search);
+      if (p.get('url')) {
+        fetch(p.get('url')).then(r => r.text()).then(t => parseAndLoad(t, p.get('url').includes('.json'))).catch(e => console.error(e));
+      }
+    </script>
+  </body>
+</html>
