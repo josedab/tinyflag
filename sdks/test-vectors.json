@@ -1,5 +1,6 @@
 {
-  "description": "Cross-language test vectors",
+  "description": "Cross-language test vectors for TinyFlag SDK conformance",
+  "version": 2,
   "murmurhash3": [
     {
       "key": "",
@@ -459,6 +460,176 @@
         }
       ],
       "expected": "control"
+    }
+  ],
+  "operators": [
+    {
+      "description": "$in operator matches value in array",
+      "condition": { "country": { "$in": ["US", "CA", "UK"] } },
+      "context": { "country": "CA" },
+      "expected": true
+    },
+    {
+      "description": "$in operator rejects value not in array",
+      "condition": { "country": { "$in": ["US", "CA"] } },
+      "context": { "country": "DE" },
+      "expected": false
+    },
+    {
+      "description": "$not operator rejects matching value",
+      "condition": { "plan": { "$not": "free" } },
+      "context": { "plan": "free" },
+      "expected": false
+    },
+    {
+      "description": "$not operator accepts non-matching value",
+      "condition": { "plan": { "$not": "free" } },
+      "context": { "plan": "pro" },
+      "expected": true
+    },
+    {
+      "description": "$gt operator numeric comparison",
+      "condition": { "age": { "$gt": 18 } },
+      "context": { "age": 25 },
+      "expected": true
+    },
+    {
+      "description": "$gt operator fails when equal",
+      "condition": { "age": { "$gt": 18 } },
+      "context": { "age": 18 },
+      "expected": false
+    },
+    {
+      "description": "$gte operator passes when equal",
+      "condition": { "age": { "$gte": 18 } },
+      "context": { "age": 18 },
+      "expected": true
+    },
+    {
+      "description": "$lt operator numeric comparison",
+      "condition": { "score": { "$lt": 100 } },
+      "context": { "score": 50 },
+      "expected": true
+    },
+    {
+      "description": "$lte operator passes when equal",
+      "condition": { "score": { "$lte": 100 } },
+      "context": { "score": 100 },
+      "expected": true
+    },
+    {
+      "description": "glob pattern matching",
+      "condition": { "email": "*@company.com" },
+      "context": { "email": "user@company.com" },
+      "expected": true
+    },
+    {
+      "description": "glob pattern non-match",
+      "condition": { "email": "*@company.com" },
+      "context": { "email": "user@gmail.com" },
+      "expected": false
+    },
+    {
+      "description": "exact string match",
+      "condition": { "plan": "pro" },
+      "context": { "plan": "pro" },
+      "expected": true
+    },
+    {
+      "description": "missing context field does not match",
+      "condition": { "plan": "pro" },
+      "context": { "userId": "user-1" },
+      "expected": false
+    }
+  ],
+  "flagEvaluation": [
+    {
+      "description": "disabled flag returns false",
+      "flag": { "enabled": false },
+      "context": { "userId": "user-1" },
+      "expected": false
+    },
+    {
+      "description": "enabled flag with no rollout returns true",
+      "flag": { "enabled": true },
+      "context": { "userId": "user-1" },
+      "expected": true
+    },
+    {
+      "description": "enabled flag with 0% rollout returns false",
+      "flag": { "enabled": true, "rollout": 0 },
+      "context": { "userId": "user-1" },
+      "expected": false
+    },
+    {
+      "description": "enabled flag with 100% rollout returns true",
+      "flag": { "enabled": true, "rollout": 100 },
+      "context": { "userId": "user-1" },
+      "expected": true
+    },
+    {
+      "description": "archived flag returns false",
+      "flag": { "enabled": true, "lifecycle": { "state": "archived" } },
+      "context": { "userId": "user-1" },
+      "expected": false
+    },
+    {
+      "description": "rule match overrides global enabled",
+      "flag": {
+        "enabled": true,
+        "rules": [
+          { "conditions": { "plan": "pro" }, "enabled": true }
+        ]
+      },
+      "context": { "userId": "user-1", "plan": "pro" },
+      "expected": true
+    },
+    {
+      "description": "rule match can disable flag",
+      "flag": {
+        "enabled": true,
+        "rules": [
+          { "conditions": { "plan": "free" }, "enabled": false }
+        ]
+      },
+      "context": { "userId": "user-1", "plan": "free" },
+      "expected": false
+    },
+    {
+      "description": "rollout boundary at 50% with known bucket",
+      "flag": { "enabled": true, "rollout": 50 },
+      "context": { "userId": "user-3" },
+      "expectedNote": "user-3 bucket is 5, should be true for rollout 50"
+    }
+  ],
+  "variantEvaluation": [
+    {
+      "description": "rule forced variant",
+      "flag": {
+        "enabled": true,
+        "variants": [
+          { "name": "control", "weight": 50 },
+          { "name": "treatment", "weight": 50 }
+        ],
+        "rules": [
+          { "conditions": { "plan": "pro" }, "variant": "treatment" }
+        ]
+      },
+      "context": { "userId": "user-1", "plan": "pro" },
+      "expected": "treatment"
+    },
+    {
+      "description": "three-way variant split",
+      "flag": {
+        "enabled": true,
+        "variants": [
+          { "name": "a", "weight": 33 },
+          { "name": "b", "weight": 33 },
+          { "name": "c", "weight": 34 }
+        ]
+      },
+      "context": { "userId": "user-1" },
+      "expectedNote": "deterministic based on hash"
     }
   ]
 }
