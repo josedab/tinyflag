@@ -1,0 +1,136 @@
+name: 'TinyFlag Lifecycle Automation'
+description: 'Detect stale flags, create sunset PRs, and send webhook notifications'
+inputs:
+  flags-file:
+    description: 'Path to the flags file'
+    required: false
+    default: 'flags.yml'
+  scan-dir:
+    description: 'Directory to scan for flag references'
+    required: false
+    default: 'src'
+  github-token:
+    description: 'GitHub token for creating PRs and issues'
+    required: false
+    default: ${{ github.token }}
+  webhook-url:
+    description: 'Webhook URL for notifications (Slack/Discord compatible)'
+    required: false
+  max-stale-days:
+    description: 'Days without code references before a flag is considered stale'
+    required: false
+    default: '30'
+  auto-create-pr:
+    description: 'Automatically create PRs for stale flags'
+    required: false
+    default: 'true'
+  run-codemod:
+    description: 'Run codemod to remove archived flag references after PR approval'
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install TinyFlag CLI
+      shell: bash
+      run: npx tinyflag-cli@latest --help > /dev/null
+
+    - name: Run stale flag analysis
+      id: stale
+      shell: bash
+      env:
+        FLAGS_FILE: ${{ inputs.flags-file }}
+        SCAN_DIR: ${{ inputs.scan-dir }}
+      run: |
+        STALE_JSON=$(npx tinyflag stale "$SCAN_DIR" --flags "$FLAGS_FILE" --json 2>/dev/null || echo '{}')
+        echo "stale_output<<EOF" >> $GITHUB_OUTPUT
+        echo "$STALE_JSON" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+        # Count issues
+        UNUSED=$(echo "$STALE_JSON" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log((d.unusedFlags||[]).length)" 2>/dev/null || echo "0")
+        ZERO_ROLLOUT=$(echo "$STALE_JSON" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log((d.zeroRolloutFlags||[]).length)" 2>/dev/null || echo "0")
+        PAST_SUNSET=$(echo "$STALE_JSON" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log((d.pastSunsetFlags||[]).length)" 2>/dev/null || echo "0")
+        ARCHIVAL=$(echo "$STALE_JSON" | node -e "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log((d.archivalCandidates||[]).length)" 2>/dev/null || echo "0")
+
+        echo "unused=$UNUSED" >> $GITHUB_OUTPUT
+        echo "zero_rollout=$ZERO_ROLLOUT" >> $GITHUB_OUTPUT
+        echo "past_sunset=$PAST_SUNSET" >> $GITHUB_OUTPUT
+        echo "archival=$ARCHIVAL" >> $GITHUB_OUTPUT
+        TOTAL=$((UNUSED + ZERO_ROLLOUT + PAST_SUNSET + ARCHIVAL))
+        echo "total=$TOTAL" >> $GITHUB_OUTPUT
+
+    - name: Check archived flag references
+      if: inputs.run-codemod == 'true'
+      shell: bash
+      env:
+        FLAGS_FILE: ${{ inputs.flags-file }}
+        SCAN_DIR: ${{ inputs.scan-dir }}
+      run: |
+        npx tinyflag codemod --flags "$FLAGS_FILE" --dir "$SCAN_DIR" --archived --ci --json 2>/dev/null || true
+
+    - name: Create sunset PR for stale flags
+      if: steps.stale.outputs.total != '0' && inputs.auto-create-pr == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        FLAGS_FILE: ${{ inputs.flags-file }}
+      run: |
+        BRANCH_NAME="tinyflag/lifecycle-cleanup-$(date +%Y%m%d)"
+        EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+        if [ -n "$EXISTING_PR" ]; then
+          echo "PR already exists: #$EXISTING_PR"
+          exit 0
+        fi
+
+        echo "📋 Stale flag analysis complete."
+        echo "   Unused flags: ${{ steps.stale.outputs.unused }}"
+        echo "   Zero-rollout: ${{ steps.stale.outputs.zero_rollout }}"
+        echo "   Past sunset: ${{ steps.stale.outputs.past_sunset }}"
+        echo "   Archival candidates: ${{ steps.stale.outputs.archival }}"
+        echo ""
+        echo "To create a cleanup PR, set 'auto-create-pr: true' and provide flag changes."
+
+    - name: Send webhook notification
+      if: steps.stale.outputs.total != '0' && inputs.webhook-url != ''
+      shell: bash
+      env:
+        WEBHOOK_URL: ${{ inputs.webhook-url }}
+      run: |
+        PAYLOAD=$(cat <<EOF
+        {
+          "text": "🚩 TinyFlag Lifecycle Report",
+          "blocks": [
+            {
+              "type": "header",
+              "text": { "type": "plain_text", "text": "🚩 TinyFlag Lifecycle Report" }
+            },
+            {
+              "type": "section",
+              "fields": [
+                { "type": "mrkdwn", "text": "*Unused flags:* ${{ steps.stale.outputs.unused }}" },
+                { "type": "mrkdwn", "text": "*Zero-rollout:* ${{ steps.stale.outputs.zero_rollout }}" },
+                { "type": "mrkdwn", "text": "*Past sunset:* ${{ steps.stale.outputs.past_sunset }}" },
+                { "type": "mrkdwn", "text": "*Archival candidates:* ${{ steps.stale.outputs.archival }}" }
+              ]
+            },
+            {
+              "type": "context",
+              "elements": [
+                { "type": "mrkdwn", "text": "Repository: ${{ github.repository }} | Run: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View>" }
+              ]
+            }
+          ]
+        }
+        EOF
+        )
+
+        curl -s -X POST "$WEBHOOK_URL" \
+          -H "Content-Type: application/json" \
+          -d "$PAYLOAD" || echo "⚠️ Webhook delivery failed"
