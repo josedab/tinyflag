@@ -73,3 +73,114 @@ export type {
   VariantResult,
   ExperimentResult,
 } from './types.js';
+export {
+  RolloutOrchestrator,
+  createPrometheusHealthCheck,
+  createHttpHealthCheck,
+  formatRolloutState,
+  DEFAULT_STAGES,
+} from './progressive.js';
+export type {
+  HealthCheckResult,
+  HealthCheckProvider,
+  PromotionCriteria,
+  RolloutStage,
+  RolloutPipeline,
+  PipelineStatus,
+  RolloutEvent,
+  RolloutState,
+} from './progressive.js';
+export {
+  ComplianceAuditTrail,
+  parseGovernanceConfig,
+  getPermissions,
+  hasPermission,
+  validateApprovalRequest,
+  formatGovernanceReport,
+} from './governance.js';
+export type {
+  GovernanceRole,
+  RolePermissions,
+  GovernanceUser,
+  ApprovalWorkflow,
+  GovernanceConfig,
+  ApprovalRequest,
+  ComplianceAuditEvent,
+} from './governance.js';
+export {
+  suggestRolloutPercentage,
+  detectAnomalies,
+  suggestCleanup,
+  formatRecommendations,
+  formatAnomalies,
+  formatCleanupSuggestions,
+} from './intelligence.js';
+export type {
+  EvalEvent,
+  FlagTimeSeries,
+  RolloutRecommendation,
+  FlagAnomaly,
+  CleanupSuggestion,
+} from './intelligence.js';
+export {
+  welchTTest,
+  chiSquareTest,
+  analyzeMetricImpact,
+  createPrometheusSource,
+  formatImpactAnalysis,
+} from './correlation.js';
+export type {
+  MetricDataPoint,
+  MetricsSource,
+  FlagChangePoint,
+  StatisticalTestResult,
+  ImpactAnalysis,
+} from './correlation.js';
+export {
+  initOptimizerState,
+  recordConversion as recordBanditConversion,
+  updateWeights,
+  getRecommendation,
+  formatOptimizerState,
+} from './bandit.js';
+export type {
+  BetaParams,
+  VariantState,
+  OptimizerState,
+  OptimizerConfig,
+} from './bandit.js';
+export {
+  WebhookEngine,
+  signPayload,
+  verifySignature,
+  createWebhookAdapter,
+  createKafkaAdapter,
+  createSnsAdapter,
+  createPubSubAdapter,
+  connectEventBus,
+} from './webhooks.js';
+export type {
+  WebhookEvent,
+  EventFilter,
+  EventBusAdapter,
+  WebhookEndpoint,
+  DeliveryAttempt,
+  RetryConfig,
+} from './webhooks.js';
+export {
+  generateTestMatrix,
+  comparePerf,
+  generatePerfReport,
+  generateK6Script,
+  generateArtilleryConfig,
+  formatTestMatrix,
+  formatPerfReport,
+} from './perf.js';
+export type {
+  FlagCombination,
+  TestMatrix,
+  MatrixOptions,
+  PerfMetrics,
+  PerfComparison,
+  PerfReport,
+} from './perf.js';
