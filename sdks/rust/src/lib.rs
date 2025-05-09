@@ -20,3 +20,6 @@ pub use types::*;
 mod wasm;
 #[cfg(feature = "wasm")]
 pub use wasm::*;
+
+mod wasi;
+pub use wasi::{wasi_load_config, wasi_is_enabled, wasi_get_variant, wasi_murmurhash3, wasi_rollout_bucket};
