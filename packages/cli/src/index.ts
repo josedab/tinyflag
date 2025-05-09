@@ -26,6 +26,13 @@ import {
   handleExperiment,
   handleCodemod,
   handleSegments,
+  handleRollout,
+  handleGovernance,
+  handleIntel,
+  handleImpactAnalyze,
+  handleOptimize,
+  handleWebhooks,
+  handlePerf,
 } from './commands/index.js';
 
 const USAGE = `
@@ -71,6 +78,31 @@ Commands:
   codemod --flags <file>          Remove dead flag code (--archived --dry-run --ci)
   segments list <file>            List segment definitions
   segments impact <seg> --flags f Analyze segment impact on flags
+  rollout start <flag>           Start progressive rollout pipeline
+  rollout status [flag]          Show rollout status
+  rollout promote <flag>         Promote to next stage (--force to override)
+  rollout rollback <flag>        Rollback to 0%
+  rollout pause <flag>           Pause rollout
+  rollout resume <flag>          Resume paused rollout
+  governance show                Show governance configuration
+  governance check <flag>        Check approval requirements
+  governance audit export        Export compliance audit trail (--format csv/json)
+  governance audit verify        Verify audit trail integrity
+  governance audit log           Show recent audit events
+  intel suggest                  Suggest optimal rollout percentages
+  intel anomalies                Detect flag-correlated anomalies
+  intel cleanup                  Suggest flags for cleanup
+  impact-analyze                 Correlate flag changes with metrics (--flag, --metrics, --window)
+  optimize init <flag>           Initialize bandit optimizer for a flag
+  optimize status [flag]         Show optimizer status
+  optimize update [flag]         Run Thompson Sampling to update weights
+  webhooks add --url <url>       Add a webhook endpoint
+  webhooks remove <id>           Remove a webhook endpoint
+  webhooks list                  List webhook endpoints
+  webhooks test <id>             Test a webhook endpoint
+  perf matrix                    Generate performance test matrix
+  perf generate                  Generate k6/Artillery test scripts
+  perf report                    Generate performance comparison report
   help                            Show this help message
 
 Options:
@@ -93,7 +125,7 @@ const COMMANDS = [
   'generate', 'validate', 'diff', 'deps', 'stale', 'sign', 'verify', 'keygen',
   'audit', 'pull', 'push', 'inline', 'suggest', 'eval', 'lifecycle',
   'consistency-check', 'lint', 'owners', 'tenant', 'impact', 'test', 'canary',
-  'overlay', 'replay', 'experiment', 'codemod', 'segments', 'help',
+  'overlay', 'replay', 'experiment', 'codemod', 'segments', 'rollout', 'governance', 'intel', 'impact-analyze', 'optimize', 'webhooks', 'perf', 'help',
 ];
 
 function levenshtein(a: string, b: string): number {
@@ -220,6 +252,27 @@ function main(): void {
       break;
     case 'segments':
       handleSegments(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'rollout':
+      handleRollout(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'governance':
+      handleGovernance(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'intel':
+      handleIntel(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'impact-analyze':
+      handleImpactAnalyze(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'optimize':
+      handleOptimize(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'webhooks':
+      handleWebhooks(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'perf':
+      handlePerf(filteredArgs.slice(1), jsonMode);
       break;
     default: {
       console.error(`Unknown command: ${command}\n`);
