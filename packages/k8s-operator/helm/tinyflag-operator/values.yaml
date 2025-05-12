@@ -1,0 +1,31 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/josedab/tinyflag-operator
+  pullPolicy: IfNotPresent
+  tag: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+namespace:
+  watch: ""
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+sidecar:
+  image:
+    repository: ghcr.io/josedab/tinyflag-sidecar
+    tag: ""
+  port: 8080
+  resources:
+    limits:
+      cpu: 50m
+      memory: 32Mi
