@@ -364,4 +364,69 @@ describe('Deno handler edge cases', () => {
     expect(response.headers.get('x-tinyflag-test-flag')).toBe('1');
     expect(response.headers.get('x-tinyflag-test-flag-variant')).toBe('new-flow');
   });
+
+  it('passes request object to custom handler', async () => {
+    const instance = createMockInstance();
+    const customHandler = vi.fn((req: Request) => new Response(new URL(req.url).pathname));
+    const handler = createDenoHandler({ instance, handler: customHandler });
+
+    const request = new Request('https://example.com/my-path');
+    const response = await handler(request);
+    expect(await response.text()).toContain('/my-path');
+  });
+});
+
+describe('error-during-evaluation pass-through', () => {
+  it('Vercel middleware throws on evaluation error', async () => {
+    const instance = createMockInstance({
+      getAllFlags: vi.fn().mockImplementation(() => {
+        throw new Error('eval error');
+      }),
+    });
+    const middleware = createVercelMiddleware({ instance });
+    await expect(middleware(new Request('https://example.com'))).rejects.toThrow('eval error');
+  });
+
+  it('Cloudflare handleRequest throws on evaluation error', async () => {
+    const instance = createMockInstance({
+      getAllFlags: vi.fn().mockImplementation(() => {
+        throw new Error('cf eval error');
+      }),
+    });
+    await expect(
+      handleRequest(new Request('https://example.com'), { instance }),
+    ).rejects.toThrow('cf eval error');
+  });
+
+  it('Deno handler throws on evaluation error', async () => {
+    const instance = createMockInstance({
+      getAllFlags: vi.fn().mockImplementation(() => {
+        throw new Error('deno eval error');
+      }),
+    });
+    const handler = createDenoHandler({ instance });
+    await expect(handler(new Request('https://example.com'))).rejects.toThrow('deno eval error');
+  });
+});
+
+describe('missing context headers fallback', () => {
+  it('Vercel evaluates with empty context when no headers', async () => {
+    const instance = createMockInstance();
+    const middleware = createVercelMiddleware({ instance });
+    const response = await middleware(new Request('https://example.com'));
+    expect(response.status).toBe(200);
+  });
+
+  it('Cloudflare evaluates with empty context when no headers', async () => {
+    const instance = createMockInstance();
+    const response = await handleRequest(new Request('https://example.com'), { instance });
+    expect(response.status).toBe(200);
+  });
+
+  it('Deno evaluates with empty context when no headers', async () => {
+    const instance = createMockInstance();
+    const handler = createDenoHandler({ instance });
+    const response = await handler(new Request('https://example.com'));
+    expect(response.status).toBe(200);
+  });
 });
