@@ -549,4 +549,241 @@ describe('CachedTinyFlag', () => {
       client.destroy();
     });
   });
+
+  describe('WebSocket URL protocol replacement', () => {
+    it('replaces http with ws in serverUrl', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(validFlagsPayload()));
+
+      const mockWs = {
+        onmessage: null as any,
+        onclose: null as any,
+        onerror: null as any,
+        close: vi.fn(),
+        send: vi.fn(),
+        readyState: 1,
+      };
+      (globalThis as any).WebSocket = vi.fn(() => mockWs);
+
+      const client = new CachedTinyFlag({ serverUrl: 'http://localhost:3939', mode: 'push' });
+      await client.init();
+
+      expect((globalThis as any).WebSocket).toHaveBeenCalledWith('ws://localhost:3939');
+      client.destroy();
+    });
+
+    it('replaces https with wss in serverUrl', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(validFlagsPayload()));
+
+      const mockWs = {
+        onmessage: null as any,
+        onclose: null as any,
+        onerror: null as any,
+        close: vi.fn(),
+        send: vi.fn(),
+        readyState: 1,
+      };
+      (globalThis as any).WebSocket = vi.fn(() => mockWs);
+
+      const client = new CachedTinyFlag({ serverUrl: 'https://secure.example.com', mode: 'push' });
+      await client.init();
+
+      expect((globalThis as any).WebSocket).toHaveBeenCalledWith('wss://secure.example.com');
+      client.destroy();
+    });
+  });
+
+  describe('WebSocket unavailable global', () => {
+    it('falls back to polling when WebSocket is undefined', async () => {
+      mockFetch.mockResolvedValue(jsonResponse(validFlagsPayload()));
+      delete (globalThis as any).WebSocket;
+
+      const client = new CachedTinyFlag({
+        serverUrl: 'http://localhost:3939',
+        mode: 'push',
+        pollingFallback: true,
+      });
+      await client.init();
+
+      // Should have started polling
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+      client.destroy();
+    });
+  });
+
+  describe('flag change detection', () => {
+    it('emits change only on actual diff', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(validFlagsPayload({ f: { enabled: true } })));
+
+      const mockWs = {
+        onmessage: null as any,
+        onclose: null as any,
+        onerror: null as any,
+        close: vi.fn(),
+        send: vi.fn(),
+        readyState: 1,
+      };
+      (globalThis as any).WebSocket = vi.fn(() => mockWs);
+
+      const changes: any[] = [];
+      const client = new CachedTinyFlag({ serverUrl: 'http://localhost:3939', mode: 'push' });
+      client.on('change', (e) => changes.push(e));
+      await client.init();
+
+      changes.length = 0;
+
+      // Send same flags again — no diff
+      mockWs.onmessage?.({
+        data: JSON.stringify({
+          type: 'flags-updated',
+          flags: { f: { enabled: true } },
+        }),
+      });
+      expect(changes).toHaveLength(0);
+
+      // Now send actual change
+      mockWs.onmessage?.({
+        data: JSON.stringify({
+          type: 'flags-updated',
+          flags: { f: { enabled: false } },
+        }),
+      });
+      expect(changes).toHaveLength(1);
+      expect(changes[0].flag).toBe('f');
+
+      client.destroy();
+    });
+
+    it('emits change when flag is added', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(validFlagsPayload({ f: { enabled: true } })));
+
+      const mockWs = {
+        onmessage: null as any,
+        onclose: null as any,
+        onerror: null as any,
+        close: vi.fn(),
+        send: vi.fn(),
+        readyState: 1,
+      };
+      (globalThis as any).WebSocket = vi.fn(() => mockWs);
+
+      const changes: any[] = [];
+      const client = new CachedTinyFlag({ serverUrl: 'http://localhost:3939', mode: 'push' });
+      client.on('change', (e) => changes.push(e));
+      await client.init();
+
+      changes.length = 0;
+
+      // Add new flag
+      mockWs.onmessage?.({
+        data: JSON.stringify({
+          type: 'flags-updated',
+          flags: { f: { enabled: true }, g: { enabled: true } },
+        }),
+      });
+      expect(changes.some((c) => c.flag === 'g')).toBe(true);
+
+      client.destroy();
+    });
+
+    it('emits change when flag is removed', async () => {
+      mockFetch.mockResolvedValueOnce(
+        jsonResponse(validFlagsPayload({ f: { enabled: true }, g: { enabled: true } })),
+      );
+
+      const mockWs = {
+        onmessage: null as any,
+        onclose: null as any,
+        onerror: null as any,
+        close: vi.fn(),
+        send: vi.fn(),
+        readyState: 1,
+      };
+      (globalThis as any).WebSocket = vi.fn(() => mockWs);
+
+      const changes: any[] = [];
+      const client = new CachedTinyFlag({ serverUrl: 'http://localhost:3939', mode: 'push' });
+      client.on('change', (e) => changes.push(e));
+      await client.init();
+
+      changes.length = 0;
+
+      // Remove a flag
+      mockWs.onmessage?.({
+        data: JSON.stringify({
+          type: 'flags-updated',
+          flags: { f: { enabled: true } },
+        }),
+      });
+      expect(changes.some((c) => c.flag === 'g')).toBe(true);
+
+      client.destroy();
+    });
+  });
+
+  describe('invalid JSON WebSocket messages', () => {
+    it('handles invalid JSON without crashing', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(validFlagsPayload()));
+
+      const mockWs = {
+        onmessage: null as any,
+        onclose: null as any,
+        onerror: null as any,
+        close: vi.fn(),
+        send: vi.fn(),
+        readyState: 1,
+      };
+      (globalThis as any).WebSocket = vi.fn(() => mockWs);
+
+      const client = new CachedTinyFlag({ serverUrl: 'http://localhost:3939', mode: 'push' });
+      await client.init();
+
+      // Send malformed data multiple times
+      mockWs.onmessage?.({ data: '{invalid json' });
+      mockWs.onmessage?.({ data: '' });
+      mockWs.onmessage?.({ data: 'null' });
+
+      // Original flags still intact
+      expect(client.isEnabled('test-flag')).toBe(true);
+      client.destroy();
+    });
+  });
+
+  describe('reconnect delay', () => {
+    it('uses custom reconnectDelay', async () => {
+      mockFetch.mockResolvedValue(jsonResponse(validFlagsPayload()));
+
+      const mockWs = {
+        onmessage: null as any,
+        onclose: null as any,
+        onerror: null as any,
+        close: vi.fn(),
+        send: vi.fn(),
+        readyState: 1,
+      };
+      (globalThis as any).WebSocket = vi.fn(() => mockWs);
+
+      const client = new CachedTinyFlag({
+        serverUrl: 'http://localhost:3939',
+        mode: 'push',
+        autoReconnect: true,
+        pollingFallback: false,
+        reconnectDelay: 2000,
+      });
+      await client.init();
+
+      const firstWs = (globalThis as any).WebSocket.mock.results[0].value;
+      firstWs.onclose?.();
+
+      // Before reconnect delay
+      await vi.advanceTimersByTimeAsync(1500);
+      expect((globalThis as any).WebSocket).toHaveBeenCalledTimes(1);
+
+      // After reconnect delay
+      await vi.advanceTimersByTimeAsync(1000);
+      expect((globalThis as any).WebSocket).toHaveBeenCalledTimes(2);
+
+      client.destroy();
+    });
+  });
 });
