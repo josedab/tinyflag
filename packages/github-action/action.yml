@@ -1,0 +1,58 @@
+name: 'TinyFlag Validate'
+description: 'Validate flags.yml schema and post flag change summary on PRs'
+inputs:
+  flags-file:
+    description: 'Path to the flags file'
+    required: false
+    default: 'flags.yml'
+  github-token:
+    description: 'GitHub token for posting PR comments'
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install TinyFlag CLI
+      shell: bash
+      run: npm install -g tinyflag-cli
+
+    - name: Validate flags file
+      shell: bash
+      run: npx tinyflag validate "${{ inputs.flags-file }}"
+
+    - name: Check for flag changes and comment on PR
+      if: github.event_name == 'pull_request'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        FLAGS_FILE: ${{ inputs.flags-file }}
+      run: |
+        # Get the diff between base and head
+        DIFF_OUTPUT=$(npx tinyflag diff "${{ github.event.pull_request.base.ref }}..HEAD" --file "$FLAGS_FILE" 2>/dev/null || echo "")
+
+        if [ -z "$DIFF_OUTPUT" ] || [ "$DIFF_OUTPUT" = "No flag changes." ]; then
+          echo "No flag changes detected."
+          exit 0
+        fi
+
+        echo "Flag changes detected:"
+        echo "$DIFF_OUTPUT"
+
+        # Post comment on PR
+        COMMENT_BODY=$(cat <<EOF
+        ## 🚩 Flag changes detected
+
+        \`\`\`
+        $DIFF_OUTPUT
+        \`\`\`
+
+        *Posted by [TinyFlag Validate Action](https://github.com/tinyflag/tinyflag)*
+        EOF
+        )
+
+        gh pr comment "${{ github.event.pull_request.number }}" --body "$COMMENT_BODY" || true

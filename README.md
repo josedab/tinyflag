@@ -236,6 +236,94 @@ npx tinyflag validate ./flags.yml
 # Generate TypeScript types
 npx tinyflag generate ./flags.yml
 npx tinyflag generate ./flags.yml -o ./src/flags.d.ts
+
+# Diff flag changes between git refs
+npx tinyflag diff main..HEAD
+npx tinyflag diff main..HEAD --file config/flags.yml
+```
+
+## Framework Integrations
+
+### React
+
+```bash
+npm install tinyflag tinyflag-react
+```
+
+```tsx
+import { TinyFlagProvider, useFlag, useVariant } from 'tinyflag-react';
+
+function App() {
+  return (
+    <TinyFlagProvider source="./flags.yml" context={{ userId: '123' }}>
+      <Dashboard />
+    </TinyFlagProvider>
+  );
+}
+
+function Dashboard() {
+  const showCheckout = useFlag('new-checkout');
+  const theme = useVariant('dark-mode');
+  return showCheckout ? <NewCheckout /> : <OldCheckout />;
+}
+```
+
+### Vue
+
+```bash
+npm install tinyflag tinyflag-vue
+```
+
+```vue
+<script setup>
+import { provideTinyFlag, useFlag, useVariant } from 'tinyflag-vue';
+
+provideTinyFlag({ source: './flags.yml', context: { userId: '123' } });
+
+const showCheckout = useFlag('new-checkout');
+const theme = useVariant('dark-mode');
+</script>
+```
+
+### Svelte
+
+```bash
+npm install tinyflag tinyflag-svelte
+```
+
+```svelte
+<script>
+import { createTinyFlag, flag, variant } from 'tinyflag-svelte';
+
+createTinyFlag({ source: './flags.yml', context: { userId: '123' } });
+
+const showCheckout = flag('new-checkout');
+const theme = variant('dark-mode');
+</script>
+
+{#if $showCheckout}
+  <NewCheckout />
+{/if}
+```
+
+## Dashboard
+
+Open `packages/dashboard/index.html` in a browser or deploy to GitHub Pages. Load flags from a URL, file upload, or paste YAML/JSON directly.
+
+## GitHub Action
+
+```yaml
+# .github/workflows/flags.yml
+name: Validate Flags
+on: [pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./packages/github-action
+        with:
+          flags-file: flags.yml
 ```
 
 ## Flag File Schema
