@@ -196,4 +196,56 @@ describe('evaluateVariant', () => {
     };
     expect(evaluateVariant('f', flag, { userId: '1', plan: 'pro' })).toBe('premium');
   });
+
+  it('falls through to hash variant when rule matches without forced variant', () => {
+    const flag: FlagDefinition = {
+      enabled: true,
+      rules: [{ conditions: { plan: 'pro' } }],
+      variants: [{ name: 'a', weight: 50 }, { name: 'b', weight: 50 }],
+    };
+    const result = evaluateVariant('f', flag, { userId: '1', plan: 'pro' });
+    expect(['a', 'b']).toContain(result);
+  });
+
+  it('returns empty variants list → null', () => {
+    const flag: FlagDefinition = { enabled: true, variants: [] };
+    expect(evaluateVariant('f', flag, { userId: '1' })).toBeNull();
+  });
+});
+
+describe('matchRule edge cases', () => {
+  it('handles $gt operator', () => {
+    const rule: Rule = { conditions: { age: { $gt: 18 } } };
+    expect(matchRule(rule, { age: 19 })).toBe(true);
+    expect(matchRule(rule, { age: 18 })).toBe(false);
+  });
+
+  it('handles $lte operator', () => {
+    const rule: Rule = { conditions: { age: { $lte: 65 } } };
+    expect(matchRule(rule, { age: 65 })).toBe(true);
+    expect(matchRule(rule, { age: 66 })).toBe(false);
+  });
+
+  it('handles combined comparison operators', () => {
+    const rule: Rule = { conditions: { age: { $gte: 18, $lt: 65 } } };
+    expect(matchRule(rule, { age: 30 })).toBe(true);
+    expect(matchRule(rule, { age: 17 })).toBe(false);
+    expect(matchRule(rule, { age: 65 })).toBe(false);
+  });
+
+  it('handles unknown operator object as non-match', () => {
+    const rule: Rule = { conditions: { x: { $unknown: 5 } } };
+    expect(matchRule(rule, { x: 5 })).toBe(false);
+  });
+
+  it('handles glob with special regex chars', () => {
+    const rule: Rule = { conditions: { path: '*/api/v1.*' } };
+    expect(matchRule(rule, { path: '/api/v1.0' })).toBe(true);
+  });
+
+  it('handles $not with glob pattern', () => {
+    const rule: Rule = { conditions: { email: { $not: '*@competitor.com' } } };
+    expect(matchRule(rule, { email: 'alice@company.com' })).toBe(true);
+    expect(matchRule(rule, { email: 'bob@competitor.com' })).toBe(false);
+  });
 });

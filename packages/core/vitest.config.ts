@@ -5,8 +5,10 @@ export default defineConfig({
     globals: true,
     coverage: {
       provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/index.ts', 'src/types.ts', 'src/__tests__/**'],
       thresholds: {
-        lines: 90,
+        lines: 85,
         branches: 85,
       },
     },

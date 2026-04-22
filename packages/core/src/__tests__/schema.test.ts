@@ -128,3 +128,170 @@ describe('parseFlagConfig', () => {
     expect(warnings.some((w) => w.message.includes('Unknown field'))).toBe(true);
   });
 });
+
+describe('validateConfig edge cases', () => {
+  it('rejects non-object config', () => {
+    expect(validateConfig('string').length).toBeGreaterThan(0);
+    expect(validateConfig(42).length).toBeGreaterThan(0);
+    expect(validateConfig([1, 2]).length).toBeGreaterThan(0);
+  });
+
+  it('rejects flags as array', () => {
+    expect(validateConfig({ flags: [1, 2] }).some(e => e.message.includes('object'))).toBe(true);
+  });
+
+  it('rejects flags as null', () => {
+    expect(validateConfig({ flags: null }).some(e => e.message.includes('object'))).toBe(true);
+  });
+
+  it('rejects non-boolean enabled', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: 'yes' } } }).some(e => e.message.includes('boolean')),
+    ).toBe(true);
+  });
+
+  it('rejects non-string description', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, description: 123 } } }).some(e =>
+        e.message.includes('string'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects non-array tags', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, tags: 'beta' } } }).some(e =>
+        e.message.includes('array'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects non-string tag items', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, tags: [123] } } }).some(e =>
+        e.message.includes('string'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects non-integer rollout', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, rollout: 3.5 } } }).some(e =>
+        e.message.includes('integer'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects non-array rules', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, rules: 'rule' } } }).some(e =>
+        e.message.includes('array'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects rule as non-object', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, rules: ['bad'] } } }).some(e =>
+        e.message.includes('object'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects rule conditions as array', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, rules: [{ conditions: [1] }] } } }).some(e =>
+        e.message.includes('object'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects rule with invalid rollout', () => {
+    expect(
+      validateConfig({
+        flags: { f: { enabled: true, rules: [{ conditions: {}, rollout: 200 }] } },
+      }).some(e => e.message.includes('0-100')),
+    ).toBe(true);
+  });
+
+  it('rejects rule with non-string variant', () => {
+    expect(
+      validateConfig({
+        flags: { f: { enabled: true, rules: [{ conditions: {}, variant: 123 }] } },
+      }).some(e => e.message.includes('string')),
+    ).toBe(true);
+  });
+
+  it('rejects rule with non-boolean enabled', () => {
+    expect(
+      validateConfig({
+        flags: { f: { enabled: true, rules: [{ conditions: {}, enabled: 'yes' }] } },
+      }).some(e => e.message.includes('boolean')),
+    ).toBe(true);
+  });
+
+  it('rejects variant as non-object', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, variants: ['bad'] } } }).some(e =>
+        e.message.includes('object'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects variant with negative weight', () => {
+    expect(
+      validateConfig({
+        flags: { f: { enabled: true, variants: [{ name: 'a', weight: -1 }] } },
+      }).some(e => e.message.includes('non-negative')),
+    ).toBe(true);
+  });
+
+  it('rejects non-array variants', () => {
+    expect(
+      validateConfig({ flags: { f: { enabled: true, variants: 'bad' } } }).some(e =>
+        e.message.includes('array'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects flag name exceeding max length', () => {
+    const longName = 'a'.repeat(129);
+    expect(
+      validateConfig({ flags: { [longName]: { enabled: true } } }).some(e =>
+        e.message.includes('max length'),
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects flag definition as non-object', () => {
+    expect(
+      validateConfig({ flags: { f: 'not-object' } }).some(e =>
+        e.message.includes('object'),
+      ),
+    ).toBe(true);
+  });
+
+  it('accepts version 1 explicitly', () => {
+    expect(validateConfig({ version: 1, flags: {} })).toEqual([]);
+  });
+
+  it('parseFlagConfig handles rules and variants correctly', () => {
+    const { config, errors } = parseFlagConfig({
+      flags: {
+        f: {
+          enabled: true,
+          description: 'test',
+          tags: ['beta'],
+          rollout: 50,
+          rules: [{ conditions: { plan: 'pro' }, enabled: true, rollout: 80, variant: 'premium' }],
+          variants: [{ name: 'a', weight: 50 }, { name: 'b', weight: 50 }],
+        },
+      },
+    });
+    expect(errors).toEqual([]);
+    expect(config.flags.f.rules?.[0].variant).toBe('premium');
+    expect(config.flags.f.variants?.[0].name).toBe('a');
+    expect(config.flags.f.description).toBe('test');
+    expect(config.flags.f.tags).toEqual(['beta']);
+  });
+});

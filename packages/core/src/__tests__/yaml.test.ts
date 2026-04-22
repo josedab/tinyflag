@@ -109,4 +109,43 @@ flags:
   it('handles BOM character', () => {
     expect(parseYaml('\uFEFFname: hello')).toEqual({ name: 'hello' });
   });
+
+  it('parses empty sequence items (- without value)', () => {
+    const result = parseYaml('items:\n  -\n  - hello') as Record<string, unknown>;
+    expect(result.items).toEqual([null, 'hello']);
+  });
+
+  it('parses sequence with nested block', () => {
+    const result = parseYaml('items:\n  -\n    name: a\n    value: 1') as Record<string, unknown>;
+    expect(result.items).toEqual([{ name: 'a', value: 1 }]);
+  });
+
+  it('parses nested flow mapping in sequence', () => {
+    const result = parseYaml('rules:\n  - conditions: {plan: pro}\n    enabled: true') as Record<string, unknown>;
+    expect(result.rules).toEqual([{ conditions: { plan: 'pro' }, enabled: true }]);
+  });
+
+  it('parses hex numbers', () => {
+    expect(parseYaml('val: 0xFF')).toEqual({ val: 255 });
+  });
+
+  it('parses octal numbers', () => {
+    expect(parseYaml('val: 0o17')).toEqual({ val: 15 });
+  });
+
+  it('handles nested empty mapping value', () => {
+    const result = parseYaml('outer:\n  inner:') as Record<string, unknown>;
+    expect(result).toEqual({ outer: { inner: null } });
+  });
+
+  it('handles flow sequence inside flow mapping', () => {
+    const result = parseYaml('data: {items: [1, 2, 3]}') as Record<string, unknown>;
+    expect(result).toEqual({ data: { items: [1, 2, 3] } });
+  });
+
+  it('handles deeply nested structures', () => {
+    const yaml = 'a:\n  b:\n    c:\n      d: deep';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(result).toEqual({ a: { b: { c: { d: 'deep' } } } });
+  });
 });
