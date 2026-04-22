@@ -1,10 +1,15 @@
 /**
- * Minimal YAML parser supporting the features needed for flag definition files.
- * Handles: mappings, sequences, scalars, quoted strings, comments,
- * flow sequences/mappings, multiline strings (| and >), booleans, numbers, null.
+ * Built-in YAML parser for TinyFlag flag definition files.
  *
- * This is NOT a full YAML 1.2 implementation — it covers the practical subset
- * used in configuration files.
+ * Supports the YAML features used in configuration files:
+ * mappings, sequences, scalars, quoted strings (single/double), comments,
+ * flow sequences/mappings, multiline strings (| and >), block chomping (|-/>-),
+ * booleans (true/false/yes/no/on/off), numbers (int/float/hex/octal), null (~),
+ * document separators (---/...), and BOM handling.
+ *
+ * Note: Anchors (&), aliases (*), and custom tags (!) are not supported as they
+ * are not needed for flag definition files. If you need these features, use JSON
+ * format instead.
  */
 
 const BOOL_TRUE = new Set(['true', 'yes', 'on']);

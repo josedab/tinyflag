@@ -148,4 +148,71 @@ flags:
     const result = parseYaml(yaml) as Record<string, unknown>;
     expect(result).toEqual({ a: { b: { c: { d: 'deep' } } } });
   });
+
+  it('parses literal block scalar (|)', () => {
+    const yaml = 'desc: |\n  line one\n  line two';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(result.desc).toContain('line one');
+    expect(result.desc).toContain('line two');
+  });
+
+  it('parses folded block scalar (>)', () => {
+    const yaml = 'desc: >\n  folded\n  text';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(typeof result.desc).toBe('string');
+    expect((result.desc as string).trim()).toContain('folded');
+  });
+
+  it('parses chomped literal (|-)', () => {
+    const yaml = 'desc: |-\n  no trailing newline';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect((result.desc as string).endsWith('\n')).toBe(false);
+  });
+
+  it('parses chomped folded (>-)', () => {
+    const yaml = 'desc: >-\n  no trailing\n  newline';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect((result.desc as string).endsWith('\n')).toBe(false);
+  });
+
+  it('handles multiline at end of file', () => {
+    const yaml = 'only: |';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(result.only).toBeDefined();
+  });
+
+  it('handles mapping key with no colon match', () => {
+    const yaml = 'simple-value';
+    const result = parseYaml(yaml);
+    expect(result).toBe('simple-value');
+  });
+
+  it('handles empty flow mapping', () => {
+    expect(parseYaml('data: {}')).toEqual({ data: {} });
+  });
+
+  it('handles empty flow sequence', () => {
+    expect(parseYaml('data: []')).toEqual({ data: [] });
+  });
+
+  it('handles sequence item with bare dash and nested block', () => {
+    const yaml = 'items:\n  -\n    key: val';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(result.items).toEqual([{ key: 'val' }]);
+  });
+
+  it('handles inline mapping in sequence with multiple keys', () => {
+    const yaml = 'items:\n  - name: a\n    weight: 1\n  - name: b\n    weight: 2';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    const items = result.items as Array<Record<string, unknown>>;
+    expect(items).toHaveLength(2);
+    expect(items[0].name).toBe('a');
+    expect(items[1].name).toBe('b');
+  });
+
+  it('handles quoted string with hash inside', () => {
+    const yaml = "val: 'has # hash'";
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(result.val).toBe('has # hash');
+  });
 });
