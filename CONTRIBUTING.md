@@ -5,7 +5,7 @@ Thanks for your interest in contributing to TinyFlag! 🚩
 ## Development Setup
 
 ```bash
-git clone https://github.com/your-org/tinyflag.git
+git clone https://github.com/josedab/tinyflag.git
 cd tinyflag
 pnpm install
 pnpm -r build

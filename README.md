@@ -5,6 +5,7 @@
 Serverless, file-driven, zero-dependency feature flag SDK for JavaScript/TypeScript. Define flags in YAML or JSON, commit to Git, evaluate everywhere — no server, no dashboard, no vendor lock-in.
 
 [![npm version](https://img.shields.io/npm/v/tinyflag)](https://www.npmjs.com/package/tinyflag)
+[![CI](https://github.com/josedab/tinyflag/actions/workflows/ci.yml/badge.svg)](https://github.com/josedab/tinyflag/actions/workflows/ci.yml)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/tinyflag)](https://bundlephobia.com/package/tinyflag)
 [![license](https://img.shields.io/npm/l/tinyflag)](./LICENSE)
 
