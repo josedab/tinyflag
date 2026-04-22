@@ -3,3 +3,6 @@ dist
 *.tgz
 .DS_Store
 coverage
+
+# Internal planning docs
+PRD-*.md
