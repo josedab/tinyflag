@@ -1,0 +1,128 @@
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { dirname } from 'path';
+import { parseYaml, parseFlagConfig } from 'tinyflag';
+import { generateTypes } from './generate.js';
+
+const USAGE = `
+Usage: tinyflag <command> [options]
+
+Commands:
+  generate <file> [-o <output>]  Generate TypeScript types from a flags file
+  validate <file>                Validate a flags file schema
+  help                           Show this help message
+
+Examples:
+  npx tinyflag generate ./flags.yml
+  npx tinyflag generate ./flags.yml -o ./src/flags.d.ts
+  npx tinyflag validate ./flags.yml
+`.trim();
+
+function main(): void {
+  const args = process.argv.slice(2);
+
+  if (args.length === 0 || args[0] === 'help' || args[0] === '--help') {
+    console.log(USAGE);
+    process.exit(0);
+  }
+
+  const command = args[0];
+
+  switch (command) {
+    case 'generate':
+      handleGenerate(args.slice(1));
+      break;
+    case 'validate':
+      handleValidate(args.slice(1));
+      break;
+    default:
+      console.error(`Unknown command: ${command}\n`);
+      console.log(USAGE);
+      process.exit(1);
+  }
+}
+
+function handleGenerate(args: string[]): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag generate <file> [-o <output>]');
+    process.exit(1);
+  }
+
+  const outputIdx = args.indexOf('-o');
+  const outputPath = outputIdx !== -1 ? args[outputIdx + 1] : undefined;
+
+  const config = loadAndValidate(filePath);
+  const types = generateTypes(config);
+
+  if (outputPath) {
+    const dir = dirname(outputPath);
+    if (!existsSync(dir)) {
+      console.error(`Error: Directory "${dir}" does not exist. Create it first.`);
+      process.exit(1);
+    }
+    writeFileSync(outputPath, types, 'utf-8');
+    console.log(`✅ Types written to ${outputPath}`);
+  } else {
+    process.stdout.write(types);
+  }
+}
+
+function handleValidate(args: string[]): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag validate <file>');
+    process.exit(1);
+  }
+
+  loadAndValidate(filePath);
+  console.log(`✅ ${filePath} is valid`);
+}
+
+function loadAndValidate(filePath: string): ReturnType<typeof parseFlagConfig>['config'] {
+  let content: string;
+  try {
+    content = readFileSync(filePath, 'utf-8');
+  } catch (error) {
+    const err = error as NodeJS.ErrnoException;
+    if (err.code === 'ENOENT') {
+      console.error(`Error: File not found: "${filePath}"`);
+    } else if (err.code === 'EACCES') {
+      console.error(`Error: Permission denied: "${filePath}"`);
+    } else {
+      console.error(`Error: ${err.message}`);
+    }
+    process.exit(1);
+  }
+
+  let raw: unknown;
+  if (filePath.endsWith('.json')) {
+    try {
+      raw = JSON.parse(content);
+    } catch (error) {
+      console.error(`❌ Failed to parse JSON: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  } else {
+    try {
+      raw = parseYaml(content);
+    } catch (error) {
+      console.error(`❌ Failed to parse YAML: ${(error as Error).message}`);
+      process.exit(1);
+    }
+  }
+
+  const { config, errors } = parseFlagConfig(raw);
+  if (errors.length > 0) {
+    console.error(`❌ ${filePath} validation failed:`);
+    for (const err of errors) {
+      console.error(`  - ${err.path}: ${err.message}`);
+    }
+    process.exit(1);
+  }
+
+  return config;
+}
+
+main();

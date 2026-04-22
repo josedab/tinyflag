@@ -1,0 +1,53 @@
+{
+  "name": "tinyflag",
+  "version": "0.1.0",
+  "description": "Serverless, file-driven, zero-dependency feature flag SDK for JavaScript/TypeScript",
+  "license": "MIT",
+  "author": "josedab",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "feature-flags",
+    "feature-toggles",
+    "a-b-testing",
+    "rollout",
+    "flags-as-code",
+    "yaml",
+    "serverless",
+    "edge",
+    "zero-dependency"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist",
+    "lint": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

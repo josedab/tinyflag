@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TinyFlag Configuration",
+  "description": "Schema for TinyFlag feature flag definition files",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "enum": [1],
+      "description": "Schema version. Currently only version 1 is supported."
+    },
+    "flags": {
+      "type": "object",
+      "description": "Map of flag names to their definitions.",
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$": {
+          "$ref": "#/definitions/FlagDefinition"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["flags"],
+  "definitions": {
+    "FlagDefinition": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this flag is globally enabled."
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of the flag."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Categorization tags."
+        },
+        "rollout": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage of users to enable for (0-100)."
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Rule" },
+          "description": "Targeting rules evaluated top-to-bottom."
+        },
+        "variants": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Variant" },
+          "description": "A/B test variants with relative weights."
+        }
+      },
+      "required": ["enabled"],
+      "additionalProperties": false
+    },
+    "Rule": {
+      "type": "object",
+      "properties": {
+        "conditions": {
+          "type": "object",
+          "description": "Key-value conditions on UserContext. All must match (AND logic)."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Override enabled state when rule matches."
+        },
+        "rollout": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Override rollout percentage when rule matches."
+        },
+        "variant": {
+          "type": "string",
+          "description": "Force a specific variant when rule matches."
+        }
+      },
+      "required": ["conditions"]
+    },
+    "Variant": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Variant identifier."
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Relative weight for distribution."
+        }
+      },
+      "required": ["name", "weight"]
+    }
+  }
+}

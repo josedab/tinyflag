@@ -1,0 +1,271 @@
+# 🚩 TinyFlag
+
+**Feature flags that fit in your pocket.**
+
+Serverless, file-driven, zero-dependency feature flag SDK for JavaScript/TypeScript. Define flags in YAML or JSON, commit to Git, evaluate everywhere — no server, no dashboard, no vendor lock-in.
+
+[![npm version](https://img.shields.io/npm/v/tinyflag)](https://www.npmjs.com/package/tinyflag)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/tinyflag)](https://bundlephobia.com/package/tinyflag)
+[![license](https://img.shields.io/npm/l/tinyflag)](./LICENSE)
+
+## Why TinyFlag?
+
+| Feature | LaunchDarkly | Unleash | GrowthBook | **TinyFlag** |
+|---------|-------------|---------|------------|-------------|
+| Requires server | ✅ (SaaS) | ✅ | ✅ | ❌ **No** |
+| Git-native flags | ❌ | ❌ | ❌ | ✅ |
+| Zero dependencies | ❌ | ❌ | ❌ | ✅ |
+| Edge/serverless | Partial | ❌ | Partial | ✅ |
+| Bundle size | ~50KB | ~30KB | ~20KB | **< 8KB** |
+| Pricing | $$$$ | Free + paid | Free + paid | **Free forever** |
+
+## Quick Start (< 60 seconds)
+
+### 1. Install
+
+```bash
+npm install tinyflag
+```
+
+### 2. Create `flags.yml`
+
+```yaml
+version: 1
+flags:
+  new-checkout:
+    enabled: true
+    rollout: 50
+  dark-mode:
+    enabled: false
+```
+
+### 3. Use it
+
+```typescript
+import { TinyFlag } from 'tinyflag';
+
+const ff = new TinyFlag({ source: './flags.yml' });
+await ff.init();
+
+if (ff.isEnabled('new-checkout', { userId: user.id })) {
+  showNewCheckout();
+}
+```
+
+That's it. No API keys, no servers, no config files.
+
+## Features
+
+### Percentage Rollouts
+
+Roll out features to a percentage of users with deterministic bucketing:
+
+```yaml
+flags:
+  new-feature:
+    enabled: true
+    rollout: 25  # 25% of users
+```
+
+```typescript
+// Same user always gets the same result
+ff.isEnabled('new-feature', { userId: 'user-123' }); // true or false, consistently
+```
+
+### A/B Testing
+
+Run experiments with weighted variants:
+
+```yaml
+flags:
+  checkout-flow:
+    enabled: true
+    variants:
+      - name: control
+        weight: 50
+      - name: new-flow
+        weight: 50
+```
+
+```typescript
+const variant = ff.getVariant('checkout-flow', { userId: user.id });
+// 'control' or 'new-flow' — deterministic per user
+```
+
+### Targeting Rules
+
+Target specific user segments:
+
+```yaml
+flags:
+  beta-features:
+    enabled: true
+    rules:
+      - conditions:
+          plan: pro
+        enabled: true
+      - conditions:
+          email: '*@company.com'
+        enabled: true
+      - conditions:
+          country: { $in: [US, CA] }
+        rollout: 80
+      - conditions:
+          age: { $gte: 18 }
+        enabled: true
+    rollout: 0  # disabled for everyone else
+```
+
+**Supported operators:**
+
+| Operator | Example | Description |
+|----------|---------|-------------|
+| Equality | `plan: pro` | Exact match |
+| Glob | `email: '*@co.com'` | Wildcard pattern |
+| `$gte`, `$gt`, `$lte`, `$lt` | `age: { $gte: 18 }` | Numeric comparison |
+| `$in` | `country: { $in: [US, CA] }` | List membership |
+| `$not` | `plan: { $not: free }` | Negation |
+
+### Multiple Sources
+
+```typescript
+// File (Node.js, Bun, Deno)
+new TinyFlag({ source: './flags.yml' });
+
+// URL (all runtimes, including browsers and edge)
+new TinyFlag({
+  source: 'https://cdn.example.com/flags.json',
+  headers: { 'Authorization': 'Bearer <token>' },
+});
+
+// Inline (testing, edge workers, bundled configs)
+new TinyFlag({
+  source: {
+    version: 1,
+    flags: { 'my-flag': { enabled: true } },
+  },
+});
+```
+
+### Event Tracking
+
+```typescript
+// Track feature exposures for A/B test analysis
+ff.on('exposure', (event) => {
+  analytics.track('feature_exposure', event);
+  // { flag, variant, enabled, userId, timestamp }
+});
+
+// React to flag changes (hot reload / polling)
+ff.on('change', (event) => {
+  console.log(`Flag ${event.flag} changed`);
+});
+
+// Handle errors gracefully
+ff.on('error', (event) => {
+  console.warn(`TinyFlag: ${event.code} — ${event.message}`);
+});
+```
+
+### TypeScript Types
+
+Generate type-safe flag definitions:
+
+```bash
+npx tinyflag generate ./flags.yml -o ./src/flags.d.ts
+```
+
+```typescript
+// Auto-generated
+export interface TinyFlagDefinitions {
+  'new-checkout': { variants: 'control' | 'new-flow' };
+  'dark-mode': { variants: never };
+}
+```
+
+## API Reference
+
+### `new TinyFlag(options)`
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `source` | `string \| FlagConfig` | **required** | File path, URL, or inline config |
+| `headers` | `Record<string, string>` | `undefined` | HTTP headers for URL source |
+| `pollInterval` | `number` | `60000` | URL polling interval (ms, min: 5000) |
+| `watch` | `boolean` | `true` | Watch file for changes |
+| `strict` | `boolean` | `false` | Reject unknown fields in flag file |
+
+### `ff.init(): Promise<void>`
+
+Load flags from source. Must be called before evaluation.
+
+### `ff.isEnabled(flagName, context?): boolean`
+
+Check if a flag is enabled. Never throws — returns `false` for unknown flags.
+
+### `ff.getVariant(flagName, context?): string | null`
+
+Get the assigned variant. Never throws — returns `null` if no variant applies.
+
+### `ff.on(event, handler): void`
+
+Register an event listener (`'exposure'`, `'change'`, `'error'`).
+
+### `ff.off(event, handler): void`
+
+Remove an event listener.
+
+### `ff.reload(newSource?): Promise<void>`
+
+Manually reload flags from source.
+
+### `ff.getFlags(): Record<string, FlagDefinition>`
+
+Get a snapshot of all current flag definitions.
+
+### `ff.destroy(): void`
+
+Clean up watchers, timers, and listeners.
+
+## CLI
+
+```bash
+# Validate a flags file
+npx tinyflag validate ./flags.yml
+
+# Generate TypeScript types
+npx tinyflag generate ./flags.yml
+npx tinyflag generate ./flags.yml -o ./src/flags.d.ts
+```
+
+## Flag File Schema
+
+See [`flags.schema.json`](./flags.schema.json) for IDE autocompletion. Add to your `flags.yml`:
+
+```yaml
+# yaml-language-server: $schema=./node_modules/tinyflag/flags.schema.json
+version: 1
+flags: ...
+```
+
+## Runtime Support
+
+| Runtime | Support |
+|---------|---------|
+| Node.js 18+ | ✅ File, URL, inline |
+| Bun | ✅ File, URL, inline |
+| Deno | ✅ File, URL, inline |
+| Cloudflare Workers | ✅ URL, inline |
+| Browsers (ES2020+) | ✅ URL, inline |
+
+## Design Principles
+
+1. **Your flag file IS the system** — no server, no dashboard, no database
+2. **Zero dependencies** — just your code and your flags
+3. **Deterministic** — same (flag, userId) → same result. Always.
+4. **Never crashes your app** — evaluation never throws, errors are events
+5. **Git-native** — review flag changes in PRs like any other code
+
+## License
+
+[MIT](./LICENSE)

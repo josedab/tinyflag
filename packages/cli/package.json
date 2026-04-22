@@ -1,0 +1,27 @@
+{
+  "name": "tinyflag-cli",
+  "version": "0.1.0",
+  "description": "CLI tools for TinyFlag feature flag SDK",
+  "license": "MIT",
+  "author": "josedab",
+  "type": "module",
+  "bin": {
+    "tinyflag": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "tinyflag": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsup": "^8.3.0",
+    "vitest": "^2.1.0"
+  }
+}
