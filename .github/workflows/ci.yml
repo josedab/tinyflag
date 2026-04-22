@@ -32,6 +32,10 @@ jobs:
       - name: Test
         run: pnpm -r test
 
+      - name: Test with coverage
+        if: matrix.node-version == 22
+        run: cd packages/core && pnpm test:coverage
+
       - name: Check bundle size
         run: |
           SIZE=$(gzip -c packages/core/dist/index.js | wc -c)
@@ -44,3 +48,39 @@ jobs:
 
       - name: Validate example flags
         run: node packages/cli/dist/index.js validate examples/flags.yml
+
+  test-bun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - name: Test with Bun
+        run: cd packages/core && bun test
+
+  test-deno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v1.x
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - name: Test with Deno
+        run: cd packages/core && deno test --allow-read --allow-env src/__tests__/

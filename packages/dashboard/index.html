@@ -56,7 +56,7 @@ h1{font-size:1.5rem}
   <button onclick="loadFromPaste()" style="margin-bottom:16px" class="upload-btn">Parse Pasted Content</button>
 </div>
 
-<div id="errorBanner" class="error-banner hidden"></div>
+<div id="errorBanner" class="error-banner hidden"><span id="errorText"></span> <button onclick="retryLoad()" class="upload-btn" style="margin-left:8px;padding:4px 12px">Retry</button></div>
 
 <div id="searchSection" class="hidden">
   <div class="search-bar">
@@ -66,6 +66,8 @@ h1{font-size:1.5rem}
       <option value="enabled">Enabled</option>
       <option value="disabled">Disabled</option>
     </select>
+    <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer"><input type="checkbox" id="editMode" onchange="renderFlags()"> Edit mode</label>
+    <button onclick="downloadFlags()" class="upload-btn" id="downloadBtn" style="display:none">⬇ Download YAML</button>
   </div>
 </div>
 
@@ -94,7 +96,7 @@ let allTags = new Set();
 
 function showError(msg) {
   const el = document.getElementById('errorBanner');
-  el.textContent = msg;
+  document.getElementById('errorText').textContent = msg;
   el.classList.remove('hidden');
 }
 function hideError() {
@@ -148,6 +150,8 @@ function renderFlags() {
   if (!flags) return;
   const search = document.getElementById('searchInput').value.toLowerCase();
   const filter = document.getElementById('filterEnabled').value;
+  const editing = document.getElementById('editMode').checked;
+  document.getElementById('downloadBtn').style.display = editing ? 'inline-block' : 'none';
   const entries = Object.entries(flags).filter(([name, f]) => {
     if (search && !name.toLowerCase().includes(search) && !(f.description || '').toLowerCase().includes(search)) return false;
     if (filter === 'enabled' && !f.enabled) return false;
@@ -163,13 +167,15 @@ function renderFlags() {
   }
 
   list.innerHTML = entries.map(([name, f], idx) => {
-    const badge = f.enabled
-      ? '<span class="badge badge-enabled">enabled</span>'
-      : '<span class="badge badge-disabled">disabled</span>';
+    const badge = editing
+      ? `<button onclick="toggleFlag('${esc(name)}')" class="badge ${f.enabled?'badge-enabled':'badge-disabled'}" style="cursor:pointer">${f.enabled?'enabled':'disabled'} ✏️</button>`
+      : (f.enabled ? '<span class="badge badge-enabled">enabled</span>' : '<span class="badge badge-disabled">disabled</span>');
     const desc = f.description ? `<div class="flag-desc">${esc(f.description)}</div>` : '';
     const tags = (f.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
     const rollout = f.rollout !== undefined
-      ? `<span>Rollout: <span class="rollout-bar"><span class="rollout-fill" style="width:${f.rollout}%"></span></span> ${f.rollout}%</span>`
+      ? (editing
+        ? `<span>Rollout: <input type="range" min="0" max="100" value="${f.rollout}" oninput="updateRollout('${esc(name)}',this.value)" style="width:100px;vertical-align:middle"> ${f.rollout}%</span>`
+        : `<span>Rollout: <span class="rollout-bar"><span class="rollout-fill" style="width:${f.rollout}%"></span></span> ${f.rollout}%</span>`)
       : '';
     const rules = f.rules ? `<span>${f.rules.length} rule${f.rules.length !== 1 ? 's' : ''}</span>` : '';
     const variants = f.variants ? `<span>${f.variants.length} variant${f.variants.length !== 1 ? 's' : ''}</span>` : '';
@@ -204,6 +210,48 @@ function renderFlags() {
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function retryLoad() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (url) loadFromUrl();
+}
+
+function toggleFlag(name) {
+  if (flags && flags[name]) {
+    flags[name].enabled = !flags[name].enabled;
+    renderFlags();
+  }
+}
+
+function updateRollout(name, value) {
+  if (flags && flags[name]) {
+    flags[name].rollout = parseInt(value, 10);
+    renderFlags();
+  }
+}
+
+function downloadFlags() {
+  if (!flags) return;
+  const lines = ['version: 1', 'flags:'];
+  for (const [name, f] of Object.entries(flags)) {
+    lines.push(`  ${name}:`);
+    lines.push(`    enabled: ${f.enabled}`);
+    if (f.description) lines.push(`    description: ${f.description}`);
+    if (f.rollout !== undefined) lines.push(`    rollout: ${f.rollout}`);
+    if (f.tags && f.tags.length) lines.push(`    tags: [${f.tags.join(', ')}]`);
+    if (f.rules) lines.push(`    rules: ${JSON.stringify(f.rules)}`);
+    if (f.variants) {
+      lines.push('    variants:');
+      for (const v of f.variants) lines.push(`      - name: ${v.name}\n        weight: ${v.weight}`);
+    }
+  }
+  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/yaml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'flags.yml';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
 // Check URL params for auto-load
 const params = new URLSearchParams(location.search);

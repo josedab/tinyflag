@@ -196,7 +196,7 @@ function handleDiff(args: string[]): void {
   const after = parseFlags(afterContent!, ref2);
   const changes = diffConfigs(before, after);
 
-  console.log(formatChanges(changes));
+  console.log(formatChanges(changes, ref1, ref2));
 }
 
 main();

@@ -96,4 +96,11 @@ describe('selectVariant', () => {
   it('returns the only variant when single entry', () => {
     expect(selectVariant('flag', 'user-1', [{ name: 'only', weight: 1 }])).toBe('only');
   });
+
+  it('all users get first variant when weights are [100, 0] (GAP 6)', () => {
+    const variants = [{ name: 'winner', weight: 100 }, { name: 'loser', weight: 0 }];
+    for (let i = 0; i < 100; i++) {
+      expect(selectVariant('flag', `user-${i}`, variants)).toBe('winner');
+    }
+  });
 });

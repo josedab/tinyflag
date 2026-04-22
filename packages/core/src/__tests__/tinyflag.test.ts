@@ -284,4 +284,105 @@ describe('TinyFlag', () => {
       ff.destroy();
     });
   });
+
+  describe('deduplicate option (GAP 21)', () => {
+    it('emits every exposure when deduplicate is false', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+        deduplicate: false,
+      });
+      await ff.init();
+
+      const exposures: ExposureEvent[] = [];
+      ff.on('exposure', (e) => exposures.push(e));
+
+      ff.isEnabled('f', { userId: 'u1' });
+      ff.isEnabled('f', { userId: 'u1' });
+      ff.isEnabled('f', { userId: 'u1' });
+
+      expect(exposures.length).toBe(3);
+
+      ff.destroy();
+    });
+  });
+
+  describe('change events (GAP 23)', () => {
+    it('emits change event when flag is modified on reload', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+      });
+      await ff.init();
+
+      const changes: ChangeEvent[] = [];
+      ff.on('change', (e) => changes.push(e));
+
+      await ff.reload({ flags: { f: { enabled: false } } });
+
+      expect(changes.length).toBe(1);
+      expect(changes[0].flag).toBe('f');
+      expect(changes[0].previous?.enabled).toBe(true);
+      expect(changes[0].current?.enabled).toBe(false);
+
+      ff.destroy();
+    });
+
+    it('emits change event when flag is added', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+      });
+      await ff.init();
+
+      const changes: ChangeEvent[] = [];
+      ff.on('change', (e) => changes.push(e));
+
+      await ff.reload({ flags: { f: { enabled: true }, g: { enabled: false } } });
+
+      expect(changes.length).toBe(1);
+      expect(changes[0].flag).toBe('g');
+      expect(changes[0].previous).toBeUndefined();
+      expect(changes[0].current?.enabled).toBe(false);
+
+      ff.destroy();
+    });
+
+    it('emits change event when flag is removed', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+      });
+      await ff.init();
+
+      const changes: ChangeEvent[] = [];
+      ff.on('change', (e) => changes.push(e));
+
+      await ff.reload({ flags: {} });
+
+      expect(changes.length).toBe(1);
+      expect(changes[0].flag).toBe('f');
+      expect(changes[0].current).toBeUndefined();
+
+      ff.destroy();
+    });
+
+    it('does not emit when flags are unchanged', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+      });
+      await ff.init();
+
+      const changes: ChangeEvent[] = [];
+      ff.on('change', (e) => changes.push(e));
+
+      await ff.reload({ flags: { f: { enabled: true } } });
+
+      expect(changes.length).toBe(0);
+
+      ff.destroy();
+    });
+  });
+
+  describe('source detection (GAP 10)', () => {
+    it('throws for unrecognized source string', () => {
+      expect(() => new TinyFlag({ source: 'random-string' })).toThrow('Unrecognized source format');
+    });
+  });
 });

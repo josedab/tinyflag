@@ -9,11 +9,17 @@ export interface LoadResult {
   warnings: ValidationError[];
 }
 
+const FILE_EXTENSIONS = ['.yml', '.yaml', '.json'];
+
 /** Detect the source type from the options. */
 export function detectSourceType(source: string | FlagConfig): SourceType {
   if (typeof source !== 'string') return 'inline';
   if (source.startsWith('http://') || source.startsWith('https://')) return 'url';
-  return 'file';
+  if (FILE_EXTENSIONS.some((ext) => source.endsWith(ext))) return 'file';
+  throw new Error(
+    `Unrecognized source format: "${source}". ` +
+    `Expected a file path ending in .yml/.yaml/.json, a URL starting with http(s)://, or an inline object.`,
+  );
 }
 
 /** Parse raw text content (YAML or JSON) into a FlagConfig. */
@@ -84,10 +90,14 @@ export async function loadFromUrl(
   strict: boolean,
   headers?: Record<string, string>,
   etag?: string,
-): Promise<LoadResult & { etag?: string; notModified?: boolean }> {
+  lastModified?: string,
+): Promise<LoadResult & { etag?: string; lastModified?: string; notModified?: boolean }> {
   const requestHeaders: Record<string, string> = { ...headers };
   if (etag) {
     requestHeaders['If-None-Match'] = etag;
+  }
+  if (lastModified) {
+    requestHeaders['If-Modified-Since'] = lastModified;
   }
 
   const controller = new AbortController();
@@ -119,8 +129,9 @@ export async function loadFromUrl(
   const extension = url.includes('.json') ? '.json' : '.yml';
   const result = parseSource(content, `url:${url}${extension.startsWith('.') ? '' : extension}`, strict);
   const newEtag = response.headers.get('etag') ?? undefined;
+  const newLastModified = response.headers.get('last-modified') ?? undefined;
 
-  return { ...result, etag: newEtag };
+  return { ...result, etag: newEtag, lastModified: newLastModified };
 }
 
 /** Load flags from an inline object. */

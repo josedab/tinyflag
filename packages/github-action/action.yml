@@ -12,6 +12,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Fetch full git history for diff
+      shell: bash
+      run: git fetch --unshallow 2>/dev/null || git fetch origin ${{ github.event.pull_request.base.ref }} 2>/dev/null || true
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:

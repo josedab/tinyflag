@@ -65,6 +65,8 @@ export interface TinyFlagOptions {
   watch?: boolean;
   /** Strict mode rejects unknown fields. Default: false (lenient with warnings). */
   strict?: boolean;
+  /** Deduplicate exposure events per (flag, userId) pair. Default: true. */
+  deduplicate?: boolean;
 }
 
 /** Event emitted when a flag is evaluated with a userId. */

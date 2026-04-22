@@ -35,11 +35,12 @@ export class TinyFlag {
     Pick<TinyFlagOptions, 'strict' | 'watch'>
   > & TinyFlagOptions;
   private readonly emitter = new EventEmitter();
-  private readonly sourceType: SourceType;
+  private sourceType: SourceType;
   private initialized = false;
   private pollTimer?: ReturnType<typeof setInterval>;
   private watcher?: { close(): void };
   private etag?: string;
+  private lastModified?: string;
   private exposureCache = new Set<string>();
 
   constructor(options: TinyFlagOptions) {
@@ -135,8 +136,9 @@ export class TinyFlag {
 
     const normalizedContext = normalizeContext(context);
     const variant = evaluateVariant(normalizedName, flag, normalizedContext);
+    const enabled = evaluateFlag(normalizedName, flag, normalizedContext);
 
-    this.trackExposure(normalizedName, flag, flag.enabled, normalizedContext, variant);
+    this.trackExposure(normalizedName, flag, enabled, normalizedContext, variant);
 
     return variant;
   }
@@ -155,6 +157,7 @@ export class TinyFlag {
   async reload(newSource?: string | FlagConfig): Promise<void> {
     if (newSource !== undefined) {
       (this.options as TinyFlagOptions).source = newSource;
+      this.sourceType = detectSourceType(newSource);
     }
     await this.load();
   }
@@ -197,11 +200,13 @@ export class TinyFlag {
             strict,
             this.options.headers,
             this.etag,
+            this.lastModified,
           );
           if (result.notModified) return;
           config = result.config;
           warnings = result.warnings;
           this.etag = result.etag;
+          this.lastModified = result.lastModified;
           break;
         }
         case 'inline': {
@@ -270,9 +275,12 @@ export class TinyFlag {
     if (!context?.userId) return;
     if (!this.emitter.hasListeners('exposure')) return;
 
-    const cacheKey = `${flagName}:${context.userId}`;
-    if (this.exposureCache.has(cacheKey)) return;
-    this.exposureCache.add(cacheKey);
+    const deduplicate = this.options.deduplicate !== false;
+    if (deduplicate) {
+      const cacheKey = `${flagName}:${context.userId}`;
+      if (this.exposureCache.has(cacheKey)) return;
+      this.exposureCache.add(cacheKey);
+    }
 
     const event: ExposureEvent = {
       flag: flagName,

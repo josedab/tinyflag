@@ -61,10 +61,13 @@ function diffFlag(before: FlagDefinition, after: FlagDefinition): string[] {
 }
 
 /** Format changes into a human-readable string. */
-export function formatChanges(changes: FlagChange[]): string {
+export function formatChanges(changes: FlagChange[], fromRef?: string, toRef?: string): string {
   if (changes.length === 0) return 'No flag changes.';
 
-  const lines = ['🚩 Flag changes:'];
+  const header = fromRef && toRef
+    ? `🚩 Flag changes (${fromRef} → ${toRef}):`
+    : '🚩 Flag changes:';
+  const lines = [header];
   for (const change of changes) {
     switch (change.type) {
       case 'added':
