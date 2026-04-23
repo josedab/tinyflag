@@ -40,7 +40,10 @@ export function validateConfig(config: unknown, strict: boolean = false): Valida
   }
 
   if (typeof obj.flags !== 'object' || Array.isArray(obj.flags) || obj.flags === null) {
-    errors.push({ path: 'flags', message: '"flags" must be an object mapping flag names to definitions' });
+    errors.push({
+      path: 'flags',
+      message: '"flags" must be an object mapping flag names to definitions',
+    });
     return errors;
   }
 
@@ -173,7 +176,11 @@ function validateRule(prefix: string, rule: unknown, errors: ValidationError[]):
 
   if (r.conditions === undefined) {
     errors.push({ path: `${prefix}.conditions`, message: 'Rule must have a "conditions" field' });
-  } else if (typeof r.conditions !== 'object' || r.conditions === null || Array.isArray(r.conditions)) {
+  } else if (
+    typeof r.conditions !== 'object' ||
+    r.conditions === null ||
+    Array.isArray(r.conditions)
+  ) {
     errors.push({ path: `${prefix}.conditions`, message: '"conditions" must be an object' });
   }
 
@@ -207,7 +214,10 @@ function validateVariants(prefix: string, variants: unknown[], errors: Validatio
     const variant = v as Record<string, unknown>;
 
     if (typeof variant.name !== 'string' || variant.name === '') {
-      errors.push({ path: `${vPrefix}.name`, message: 'Variant must have a non-empty "name" string' });
+      errors.push({
+        path: `${vPrefix}.name`,
+        message: 'Variant must have a non-empty "name" string',
+      });
     }
 
     if (typeof variant.weight !== 'number' || variant.weight < 0) {
@@ -218,12 +228,18 @@ function validateVariants(prefix: string, variants: unknown[], errors: Validatio
   }
 
   if (variants.length > 0 && allZero) {
-    errors.push({ path: prefix, message: 'All variant weights are zero — at least one must be positive' });
+    errors.push({
+      path: prefix,
+      message: 'All variant weights are zero — at least one must be positive',
+    });
   }
 }
 
 /** Parse and validate a raw config object into a typed FlagConfig. */
-export function parseFlagConfig(raw: unknown, strict: boolean = false): {
+export function parseFlagConfig(
+  raw: unknown,
+  strict: boolean = false,
+): {
   config: FlagConfig;
   errors: ValidationError[];
   warnings: ValidationError[];
@@ -278,10 +294,20 @@ export function parseFlagConfig(raw: unknown, strict: boolean = false): {
 
     // Detect unknown flag fields in lenient mode
     if (!strict) {
-      const knownFields = new Set(['enabled', 'description', 'tags', 'rollout', 'rules', 'variants']);
+      const knownFields = new Set([
+        'enabled',
+        'description',
+        'tags',
+        'rollout',
+        'rules',
+        'variants',
+      ]);
       for (const key of Object.keys(d)) {
         if (!knownFields.has(key)) {
-          warnings.push({ path: `flags.${name}.${key}`, message: `Unknown field "${key}" (ignored)` });
+          warnings.push({
+            path: `flags.${name}.${key}`,
+            message: `Unknown field "${key}" (ignored)`,
+          });
         }
       }
     }

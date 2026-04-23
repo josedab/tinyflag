@@ -18,16 +18,12 @@ export function detectSourceType(source: string | FlagConfig): SourceType {
   if (FILE_EXTENSIONS.some((ext) => source.endsWith(ext))) return 'file';
   throw new Error(
     `Unrecognized source format: "${source}". ` +
-    `Expected a file path ending in .yml/.yaml/.json, a URL starting with http(s)://, or an inline object.`,
+      `Expected a file path ending in .yml/.yaml/.json, a URL starting with http(s)://, or an inline object.`,
   );
 }
 
 /** Parse raw text content (YAML or JSON) into a FlagConfig. */
-export function parseSource(
-  content: string,
-  filePath: string,
-  strict: boolean,
-): LoadResult {
+export function parseSource(content: string, filePath: string, strict: boolean): LoadResult {
   let raw: unknown;
 
   if (filePath.endsWith('.json')) {
@@ -72,8 +68,10 @@ export async function loadFromFile(filePath: string, strict: boolean): Promise<L
     if ((error as NodeJS.ErrnoException).code === 'EACCES') {
       throw new Error(`Permission denied reading flag file: "${filePath}"`);
     }
-    if ((error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND' ||
-        (error as Error).message?.includes('import')) {
+    if (
+      (error as NodeJS.ErrnoException).code === 'ERR_MODULE_NOT_FOUND' ||
+      (error as Error).message?.includes('import')
+    ) {
       throw new Error(
         'File source is not supported in this runtime. Use a URL or inline object instead.',
       );
@@ -127,7 +125,11 @@ export async function loadFromUrl(
 
   const content = await response.text();
   const extension = url.includes('.json') ? '.json' : '.yml';
-  const result = parseSource(content, `url:${url}${extension.startsWith('.') ? '' : extension}`, strict);
+  const result = parseSource(
+    content,
+    `url:${url}${extension.startsWith('.') ? '' : extension}`,
+    strict,
+  );
   const newEtag = response.headers.get('etag') ?? undefined;
   const newLastModified = response.headers.get('last-modified') ?? undefined;
 

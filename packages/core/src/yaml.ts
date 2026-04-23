@@ -186,7 +186,9 @@ function parseSequence(lines: Line[], start: number, baseIndent: number): [unkno
         i++;
       } else if (value.includes(': ') || value.endsWith(':')) {
         // Inline mapping in a sequence item: - key: value
-        const tempLines: Line[] = [{ indent: line.indent + 2, content: value, raw: line.raw, lineNumber: line.lineNumber }];
+        const tempLines: Line[] = [
+          { indent: line.indent + 2, content: value, raw: line.raw, lineNumber: line.lineNumber },
+        ];
         // Collect subsequent indented lines
         let j = i + 1;
         while (j < lines.length && lines[j].indent > line.indent) {
@@ -243,7 +245,13 @@ function parseMapping(
     const key = line.content.slice(0, colonIdx).trim();
     const afterColon = line.content.slice(colonIdx + 1).trim();
 
-    if (afterColon === '' || afterColon === '|' || afterColon === '>' || afterColon === '|-' || afterColon === '>-') {
+    if (
+      afterColon === '' ||
+      afterColon === '|' ||
+      afterColon === '>' ||
+      afterColon === '|-' ||
+      afterColon === '>-'
+    ) {
       // Block value or multiline string
       if (afterColon === '|' || afterColon === '|-' || afterColon === '>' || afterColon === '>-') {
         // Multiline string
@@ -291,10 +299,7 @@ function parseMultilineString(
 
   let text: string;
   if (fold) {
-    text = parts
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    text = parts.join(' ').replace(/\s+/g, ' ').trim();
   } else {
     text = parts.join('\n');
   }

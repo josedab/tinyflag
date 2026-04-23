@@ -31,9 +31,7 @@ const DEFAULT_POLL_INTERVAL = 60_000;
  */
 export class TinyFlag {
   private config: FlagConfig = { flags: {} };
-  private readonly options: Required<
-    Pick<TinyFlagOptions, 'strict' | 'watch'>
-  > & TinyFlagOptions;
+  private readonly options: Required<Pick<TinyFlagOptions, 'strict' | 'watch'>> & TinyFlagOptions;
   private readonly emitter = new EventEmitter();
   private sourceType: SourceType;
   private initialized = false;
