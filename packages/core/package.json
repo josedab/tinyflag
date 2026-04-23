@@ -41,6 +41,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "dev": "vitest --watch",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },

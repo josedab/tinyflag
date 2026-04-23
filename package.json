@@ -9,8 +9,11 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "dev": "pnpm -r --parallel dev",
+    "dev:core": "cd packages/core && vitest --watch",
     "clean": "pnpm -r clean",
     "prepare": "husky"
   },
