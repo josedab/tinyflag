@@ -24,16 +24,19 @@
   ],
   "scripts": {
     "build": "tsup",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "peerDependencies": {
-    "vue": ">=3.3.0",
-    "tinyflag": "workspace:*"
+    "tinyflag": "workspace:*",
+    "vue": ">=3.3.0"
   },
   "devDependencies": {
-    "vue": "^3.5.0",
     "tinyflag": "workspace:*",
+    "tsup": "^8.3.0",
     "typescript": "^5.7.0",
-    "tsup": "^8.3.0"
+    "vitest": "^2.1.0",
+    "vue": "^3.5.0"
   }
 }
