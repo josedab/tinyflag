@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "description": "Vue composables for TinyFlag feature flags",
   "license": "MIT",
+  "keywords": [
+    "feature-flags",
+    "feature-toggles",
+    "vue",
+    "vue-composables",
+    "a-b-testing",
+    "rollout",
+    "flags-as-code"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josedab/tinyflag.git",
+    "directory": "packages/vue"
+  },
+  "homepage": "https://github.com/josedab/tinyflag#readme",
+  "bugs": {
+    "url": "https://github.com/josedab/tinyflag/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -20,7 +38,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",

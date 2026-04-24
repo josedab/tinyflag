@@ -4,6 +4,15 @@
   "description": "Serverless, file-driven, zero-dependency feature flag SDK for JavaScript/TypeScript",
   "license": "MIT",
   "author": "josedab",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josedab/tinyflag.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/josedab/tinyflag#readme",
+  "bugs": {
+    "url": "https://github.com/josedab/tinyflag/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

@@ -3,13 +3,31 @@
   "version": "0.1.0",
   "description": "CLI tools for TinyFlag feature flag SDK",
   "license": "MIT",
+  "keywords": [
+    "feature-flags",
+    "cli",
+    "yaml",
+    "validation",
+    "typescript-codegen",
+    "flags-as-code"
+  ],
   "author": "josedab",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josedab/tinyflag.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/josedab/tinyflag#readme",
+  "bugs": {
+    "url": "https://github.com/josedab/tinyflag/issues"
+  },
   "type": "module",
   "bin": {
     "tinyflag": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",
