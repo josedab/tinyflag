@@ -39,6 +39,14 @@ jobs:
         if: matrix.node-version == 22
         run: cd packages/core && pnpm test:coverage
 
+      - name: Upload coverage to Codecov
+        if: matrix.node-version == 22
+        uses: codecov/codecov-action@v4
+        with:
+          directory: packages/core/coverage
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
+
       - name: Check bundle size
         run: |
           SIZE=$(gzip -c packages/core/dist/index.js | wc -c)
