@@ -50,9 +50,14 @@ export function benchmarkEvaluation(
 
   times.sort((a, b) => a - b);
 
-  const memoryUsage = typeof globalThis !== 'undefined' && 'process' in globalThis
-    ? (globalThis as Record<string, unknown> as { process: { memoryUsage: () => { heapUsed: number } } }).process.memoryUsage().heapUsed / 1024
-    : 0;
+  const memoryUsage =
+    typeof globalThis !== 'undefined' && 'process' in globalThis
+      ? (
+          globalThis as Record<string, unknown> as {
+            process: { memoryUsage: () => { heapUsed: number } };
+          }
+        ).process.memoryUsage().heapUsed / 1024
+      : 0;
 
   return {
     platform: detectPlatform(),
@@ -91,9 +96,18 @@ export function formatBenchmarkResults(results: BenchmarkResult[]): string {
 function detectPlatform(): string {
   if (typeof globalThis !== 'undefined') {
     if ('Deno' in globalThis) return 'Deno Deploy';
-    if ('caches' in globalThis && typeof (globalThis as Record<string, unknown>).caches === 'object') return 'Cloudflare Workers';
+    if (
+      'caches' in globalThis &&
+      typeof (globalThis as Record<string, unknown>).caches === 'object'
+    )
+      return 'Cloudflare Workers';
   }
   const g = globalThis as Record<string, unknown>;
-  if (typeof g.process !== 'undefined' && (g.process as Record<string, unknown>)?.env && ((g.process as Record<string, unknown>).env as Record<string, unknown>)?.VERCEL) return 'Vercel Edge';
+  if (
+    typeof g.process !== 'undefined' &&
+    (g.process as Record<string, unknown>)?.env &&
+    ((g.process as Record<string, unknown>).env as Record<string, unknown>)?.VERCEL
+  )
+    return 'Vercel Edge';
   return 'Node.js';
 }

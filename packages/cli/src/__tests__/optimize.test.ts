@@ -239,14 +239,26 @@ describe('optimizer integration', () => {
     // Record conversions
     let loaded = loadOptimizerStates();
     for (let i = 0; i < 30; i++) {
-      loaded['checkout-test'] = recordBanditConversion(loaded['checkout-test'], 'new-checkout', true);
-      loaded['checkout-test'] = recordBanditConversion(loaded['checkout-test'], 'old-checkout', false);
+      loaded['checkout-test'] = recordBanditConversion(
+        loaded['checkout-test'],
+        'new-checkout',
+        true,
+      );
+      loaded['checkout-test'] = recordBanditConversion(
+        loaded['checkout-test'],
+        'old-checkout',
+        false,
+      );
     }
     saveOptimizerStates(loaded);
 
     // Update weights
     loaded = loadOptimizerStates();
-    loaded['checkout-test'] = updateWeights(loaded['checkout-test'], { winnerThreshold: 0.95 }, 1000);
+    loaded['checkout-test'] = updateWeights(
+      loaded['checkout-test'],
+      { winnerThreshold: 0.95 },
+      1000,
+    );
     saveOptimizerStates(loaded);
 
     // Status

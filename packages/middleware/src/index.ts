@@ -2,7 +2,10 @@ import type { TinyFlag, UserContext } from 'tinyflag';
 
 /** Minimal OTel tracer interface matching @opentelemetry/api. */
 interface OtelTracer {
-  startSpan(name: string, opts?: { attributes?: Record<string, string> }): { end(): void } | undefined;
+  startSpan(
+    name: string,
+    opts?: { attributes?: Record<string, string> },
+  ): { end(): void } | undefined;
 }
 
 /** Minimal OTel trace API surface. */

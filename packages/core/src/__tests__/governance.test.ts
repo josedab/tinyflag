@@ -85,7 +85,12 @@ describe('parseGovernanceConfig', () => {
         { username: 'bob', role: 'viewer' },
       ],
       workflows: [
-        { requiredApprovals: 2, approverRoles: ['admin'], selfApproval: true, flagPatterns: ['prod-*'] },
+        {
+          requiredApprovals: 2,
+          approverRoles: ['admin'],
+          selfApproval: true,
+          flagPatterns: ['prod-*'],
+        },
       ],
       auditRetentionDays: 365,
     };
@@ -210,7 +215,12 @@ describe('validateApprovalRequest', () => {
       defaultRole: 'viewer',
       users: [],
       workflows: [
-        { requiredApprovals: 3, approverRoles: ['admin'], selfApproval: false, flagPatterns: ['critical-*'] },
+        {
+          requiredApprovals: 3,
+          approverRoles: ['admin'],
+          selfApproval: false,
+          flagPatterns: ['critical-*'],
+        },
         { requiredApprovals: 1, approverRoles: ['approver', 'admin'], selfApproval: false },
       ],
       auditRetentionDays: 90,
@@ -243,7 +253,9 @@ describe('ComplianceAuditTrail', () => {
     });
     expect(event.sequence).toBe(1);
     expect(event.hash).toBeTruthy();
-    expect(event.previousHash).toBe('0000000000000000000000000000000000000000000000000000000000000000');
+    expect(event.previousHash).toBe(
+      '0000000000000000000000000000000000000000000000000000000000000000',
+    );
 
     const event2 = trail.append({
       flag: 'my-flag',
@@ -260,7 +272,13 @@ describe('ComplianceAuditTrail', () => {
     const trail = new ComplianceAuditTrail('key');
     trail.append({ flag: 'f1', action: 'created', actor: 'a', actorRole: 'admin', timestamp: 1 });
     trail.append({ flag: 'f2', action: 'updated', actor: 'b', actorRole: 'editor', timestamp: 2 });
-    trail.append({ flag: 'f3', action: 'deleted', actor: 'c', actorRole: 'approver', timestamp: 3 });
+    trail.append({
+      flag: 'f3',
+      action: 'deleted',
+      actor: 'c',
+      actorRole: 'approver',
+      timestamp: 3,
+    });
     const result = trail.verify();
     expect(result.valid).toBe(true);
     expect(result.message).toContain('3 events');
@@ -307,9 +325,27 @@ describe('ComplianceAuditTrail', () => {
 
   it('queries events by filter', () => {
     const trail = new ComplianceAuditTrail('key');
-    trail.append({ flag: 'f1', action: 'created', actor: 'alice', actorRole: 'admin', timestamp: 100 });
-    trail.append({ flag: 'f2', action: 'updated', actor: 'bob', actorRole: 'editor', timestamp: 200 });
-    trail.append({ flag: 'f1', action: 'deleted', actor: 'alice', actorRole: 'admin', timestamp: 300 });
+    trail.append({
+      flag: 'f1',
+      action: 'created',
+      actor: 'alice',
+      actorRole: 'admin',
+      timestamp: 100,
+    });
+    trail.append({
+      flag: 'f2',
+      action: 'updated',
+      actor: 'bob',
+      actorRole: 'editor',
+      timestamp: 200,
+    });
+    trail.append({
+      flag: 'f1',
+      action: 'deleted',
+      actor: 'alice',
+      actorRole: 'admin',
+      timestamp: 300,
+    });
 
     expect(trail.query({ flag: 'f1' })).toHaveLength(2);
     expect(trail.query({ actor: 'bob' })).toHaveLength(1);
@@ -321,7 +357,13 @@ describe('ComplianceAuditTrail', () => {
 
   it('exports CSV', () => {
     const trail = new ComplianceAuditTrail('key');
-    trail.append({ flag: 'f1', action: 'created', actor: 'alice', actorRole: 'admin', timestamp: 1000 });
+    trail.append({
+      flag: 'f1',
+      action: 'created',
+      actor: 'alice',
+      actorRole: 'admin',
+      timestamp: 1000,
+    });
     const csv = trail.exportCsv();
     expect(csv).toContain('sequence,timestamp,flag,action,actor,actorRole,hash');
     expect(csv).toContain('f1');
@@ -330,7 +372,13 @@ describe('ComplianceAuditTrail', () => {
 
   it('exports JSON', () => {
     const trail = new ComplianceAuditTrail('key');
-    trail.append({ flag: 'f1', action: 'created', actor: 'alice', actorRole: 'admin', timestamp: 1000 });
+    trail.append({
+      flag: 'f1',
+      action: 'created',
+      actor: 'alice',
+      actorRole: 'admin',
+      timestamp: 1000,
+    });
     const json = trail.exportJson();
     const parsed = JSON.parse(json);
     expect(parsed).toHaveLength(1);

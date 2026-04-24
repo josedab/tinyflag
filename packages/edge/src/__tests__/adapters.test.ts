@@ -393,9 +393,9 @@ describe('error-during-evaluation pass-through', () => {
         throw new Error('cf eval error');
       }),
     });
-    await expect(
-      handleRequest(new Request('https://example.com'), { instance }),
-    ).rejects.toThrow('cf eval error');
+    await expect(handleRequest(new Request('https://example.com'), { instance })).rejects.toThrow(
+      'cf eval error',
+    );
   });
 
   it('Deno handler throws on evaluation error', async () => {

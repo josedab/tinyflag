@@ -309,37 +309,43 @@ const advancedCapabilities = [
   {
     icon: '🧪',
     title: 'A/B Experiments',
-    description: 'Track conversions, compute confidence intervals, and declare winners with built-in Bayesian and frequentist analysis.',
+    description:
+      'Track conversions, compute confidence intervals, and declare winners with built-in Bayesian and frequentist analysis.',
     to: '/docs/tools/experiments',
   },
   {
     icon: '🚀',
     title: 'Progressive Rollouts',
-    description: 'Multi-stage canary → ring → GA pipelines with health-check gates and automatic rollback.',
+    description:
+      'Multi-stage canary → ring → GA pipelines with health-check gates and automatic rollback.',
     to: '/docs/tools/progressive',
   },
   {
     icon: '🔔',
     title: 'Webhooks & Event Bus',
-    description: 'Push flag changes to Kafka, AWS SNS, Google PubSub, or any HTTP endpoint with HMAC signing.',
+    description:
+      'Push flag changes to Kafka, AWS SNS, Google PubSub, or any HTTP endpoint with HMAC signing.',
     to: '/docs/tools/webhooks',
   },
   {
     icon: '🛡️',
     title: 'Governance & RBAC',
-    description: 'Role-based access control, approval workflows, and tamper-proof audit trails with HMAC hash chains.',
+    description:
+      'Role-based access control, approval workflows, and tamper-proof audit trails with HMAC hash chains.',
     to: '/docs/tools/governance',
   },
   {
     icon: '🧠',
     title: 'Flag Intelligence',
-    description: 'Anomaly detection, rollout recommendations, and automated cleanup suggestions from evaluation data.',
+    description:
+      'Anomaly detection, rollout recommendations, and automated cleanup suggestions from evaluation data.',
     to: '/docs/tools/intelligence',
   },
   {
     icon: '🎰',
     title: 'Bandit Optimizer',
-    description: 'Thompson Sampling multi-armed bandit that auto-tunes variant weights to maximize conversions.',
+    description:
+      'Thompson Sampling multi-armed bandit that auto-tunes variant weights to maximize conversions.',
     to: '/docs/tools/bandit',
   },
 ];
@@ -397,7 +403,8 @@ function ArchitectureSection() {
             margin: '0 auto 2rem',
           }}
         >
-          One core library, four module layers. Import only what you need — tree-shaking drops the rest.
+          One core library, four module layers. Import only what you need — tree-shaking drops the
+          rest.
         </p>
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 1rem' }}>
           <div
@@ -410,10 +417,26 @@ function ArchitectureSection() {
             }}
           >
             {[
-              { label: '⚡ Runtime', items: ['CachedClient', 'Multi-tenant', 'Merge', 'Rollout Strategies'], color: '#3498db' },
-              { label: '🚀 Delivery', items: ['Progressive Rollouts', 'Sync', 'Signing', 'Audit'], color: '#2ecc71' },
-              { label: '📊 Optimization', items: ['Experiments', 'Intelligence', 'Correlation', 'Bandit'], color: '#e67e22' },
-              { label: '🔍 Verification', items: ['Replay', 'Perf Testing', 'Governance', 'Webhooks'], color: '#9b59b6' },
+              {
+                label: '⚡ Runtime',
+                items: ['CachedClient', 'Multi-tenant', 'Merge', 'Rollout Strategies'],
+                color: '#3498db',
+              },
+              {
+                label: '🚀 Delivery',
+                items: ['Progressive Rollouts', 'Sync', 'Signing', 'Audit'],
+                color: '#2ecc71',
+              },
+              {
+                label: '📊 Optimization',
+                items: ['Experiments', 'Intelligence', 'Correlation', 'Bandit'],
+                color: '#e67e22',
+              },
+              {
+                label: '🔍 Verification',
+                items: ['Replay', 'Perf Testing', 'Governance', 'Webhooks'],
+                color: '#9b59b6',
+              },
             ].map((col) => (
               <div key={col.label}>
                 <div

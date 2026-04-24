@@ -19,7 +19,9 @@ export function handleStale(args: string[], jsonMode: boolean): void {
 
   if (!flagsFile) {
     console.error('Error: Missing --flags option\n');
-    console.log('Usage: tinyflag stale [dir] --flags <file> [--ci] [--json] [--no-ref-days N] [--exclude-tags tag1,tag2]');
+    console.log(
+      'Usage: tinyflag stale [dir] --flags <file> [--ci] [--json] [--no-ref-days N] [--exclude-tags tag1,tag2]',
+    );
     process.exit(1);
   }
 
@@ -39,7 +41,9 @@ export function handleStale(args: string[], jsonMode: boolean): void {
 
   if (ciMode) {
     const totalIssues =
-      report.unusedFlags.length + report.undefinedRefs.length + report.zeroRolloutFlags.length +
+      report.unusedFlags.length +
+      report.undefinedRefs.length +
+      report.zeroRolloutFlags.length +
       (report.pastSunsetFlags?.length || 0);
     if (totalIssues > 0) {
       process.exit(1);

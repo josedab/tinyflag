@@ -577,9 +577,7 @@
       "description": "rule match overrides global enabled",
       "flag": {
         "enabled": true,
-        "rules": [
-          { "conditions": { "plan": "pro" }, "enabled": true }
-        ]
+        "rules": [{ "conditions": { "plan": "pro" }, "enabled": true }]
       },
       "context": { "userId": "user-1", "plan": "pro" },
       "expected": true
@@ -588,9 +586,7 @@
       "description": "rule match can disable flag",
       "flag": {
         "enabled": true,
-        "rules": [
-          { "conditions": { "plan": "free" }, "enabled": false }
-        ]
+        "rules": [{ "conditions": { "plan": "free" }, "enabled": false }]
       },
       "context": { "userId": "user-1", "plan": "free" },
       "expected": false
@@ -611,9 +607,7 @@
           { "name": "control", "weight": 50 },
           { "name": "treatment", "weight": 50 }
         ],
-        "rules": [
-          { "conditions": { "plan": "pro" }, "variant": "treatment" }
-        ]
+        "rules": [{ "conditions": { "plan": "pro" }, "variant": "treatment" }]
       },
       "context": { "userId": "user-1", "plan": "pro" },
       "expected": "treatment"

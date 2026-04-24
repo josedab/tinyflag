@@ -125,11 +125,11 @@ Lint flag definitions for best practices and common issues.
 npx tinyflag lint <file> [options]
 ```
 
-| Option             | Description                                    |
-| ------------------ | ---------------------------------------------- |
-| `--format <fmt>`   | Output format: `json` or `sarif`               |
-| `--config <path>`  | Path to lint configuration file                |
-| `--json`           | Output structured JSON                         |
+| Option            | Description                      |
+| ----------------- | -------------------------------- |
+| `--format <fmt>`  | Output format: `json` or `sarif` |
+| `--config <path>` | Path to lint configuration file  |
+| `--json`          | Output structured JSON           |
 
 **Exit codes:** `0` when clean, `1` when errors are found.
 
@@ -148,12 +148,12 @@ Evaluate a flag from the command line — useful for debugging and CI/CD.
 npx tinyflag eval <flag> --file <file> [options]
 ```
 
-| Option              | Description                                         |
-| ------------------- | --------------------------------------------------- |
-| `--file <path>`     | Path to the flags file (**required**)                |
-| `--persona <name>`  | Evaluate using a named persona from the file         |
-| `--context key=val` | Pass context key-value pairs (repeatable)            |
-| `--json`            | Output structured JSON                               |
+| Option              | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `--file <path>`     | Path to the flags file (**required**)        |
+| `--persona <name>`  | Evaluate using a named persona from the file |
+| `--context key=val` | Pass context key-value pairs (repeatable)    |
+| `--json`            | Output structured JSON                       |
 
 ### Examples
 
@@ -171,13 +171,13 @@ Scan source code for unused flag references and identify stale flags.
 npx tinyflag stale [dir] --flags <file> [options]
 ```
 
-| Option                  | Description                                       |
-| ----------------------- | ------------------------------------------------- |
-| `--flags <path>`        | Path to the flags file (**required**)              |
-| `--ci`                  | Exit with code 1 if stale flags found              |
-| `--no-ref-days <n>`     | Days without reference to consider stale           |
-| `--exclude-tags <tags>` | Comma-separated tags to exclude from staleness     |
-| `--json`                | Output structured JSON                             |
+| Option                  | Description                                    |
+| ----------------------- | ---------------------------------------------- |
+| `--flags <path>`        | Path to the flags file (**required**)          |
+| `--ci`                  | Exit with code 1 if stale flags found          |
+| `--no-ref-days <n>`     | Days without reference to consider stale       |
+| `--exclude-tags <tags>` | Comma-separated tags to exclude from staleness |
+| `--json`                | Output structured JSON                         |
 
 ### Examples
 
@@ -195,9 +195,9 @@ Cryptographically sign a flag file with Ed25519.
 npx tinyflag sign <file> --key <private-key-path>
 ```
 
-| Option          | Description                        |
-| --------------- | ---------------------------------- |
-| `--key <path>`  | Path to Ed25519 private key        |
+| Option         | Description                 |
+| -------------- | --------------------------- |
+| `--key <path>` | Path to Ed25519 private key |
 
 Creates a `.sig` file alongside the flag file.
 
@@ -215,11 +215,11 @@ Verify a flag file's signature against one or more public keys.
 npx tinyflag verify <file> --pub <key-path...> [options]
 ```
 
-| Option        | Description                                 |
-| ------------- | ------------------------------------------- |
-| `--pub <path>`| Path(s) to Ed25519 public key(s)            |
-| `--lenient`   | Warn instead of fail on missing signatures  |
-| `--json`      | Output structured JSON                      |
+| Option         | Description                                |
+| -------------- | ------------------------------------------ |
+| `--pub <path>` | Path(s) to Ed25519 public key(s)           |
+| `--lenient`    | Warn instead of fail on missing signatures |
+| `--json`       | Output structured JSON                     |
 
 ### Examples
 
@@ -237,9 +237,9 @@ Generate an Ed25519 key pair for flag signing.
 npx tinyflag keygen [-o <prefix>]
 ```
 
-| Option        | Description                                |
-| ------------- | ------------------------------------------ |
-| `-o <prefix>` | Output file prefix (default: `tinyflag`)   |
+| Option        | Description                              |
+| ------------- | ---------------------------------------- |
+| `-o <prefix>` | Output file prefix (default: `tinyflag`) |
 
 Creates `<prefix>.key` (private) and `<prefix>.pub` (public).
 
@@ -259,11 +259,11 @@ npx tinyflag pull <url> -o <output> [--force]
 npx tinyflag push <url> <file> [--force]
 ```
 
-| Option     | Description                          |
-| ---------- | ------------------------------------ |
-| `-o <path>`| Output path for pull (default: `flags.yml`) |
-| `--force`  | Skip ETag caching / overwrite        |
-| `--json`   | Output structured JSON               |
+| Option      | Description                                 |
+| ----------- | ------------------------------------------- |
+| `-o <path>` | Output path for pull (default: `flags.yml`) |
+| `--force`   | Skip ETag caching / overwrite               |
+| `--json`    | Output structured JSON                      |
 
 ### Examples
 

@@ -1,66 +1,87 @@
 import { describe, it, expect } from 'vitest';
-import {
-  validateRolloutStrategy,
-  validateRule,
-} from '../validators.js';
+import { validateRolloutStrategy, validateRule } from '../validators.js';
 import type { ValidationError } from '../types.js';
 
 describe('validateRolloutStrategy – ring', () => {
   it('accepts valid ring config', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'ring',
-      rings: [
-        { name: 'canary', percentage: 1 },
-        { name: 'ga', percentage: 100 },
-      ],
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'ring',
+        rings: [
+          { name: 'canary', percentage: 1 },
+          { name: 'ga', percentage: 100 },
+        ],
+      },
+      errors,
+    );
     expect(errors).toEqual([]);
   });
 
   it('rejects non-array rings', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'ring',
-      rings: 'not-an-array',
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'ring',
+        rings: 'not-an-array',
+      },
+      errors,
+    );
     expect(errors).toHaveLength(1);
     expect(errors[0].message).toContain('array');
   });
 
   it('rejects ring entry missing name', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'ring',
-      rings: [{ percentage: 10 }],
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'ring',
+        rings: [{ percentage: 10 }],
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"name"'))).toBe(true);
   });
 
   it('rejects ring entry missing percentage', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'ring',
-      rings: [{ name: 'canary' }],
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'ring',
+        rings: [{ name: 'canary' }],
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"percentage"'))).toBe(true);
   });
 
   it('rejects ring entry with non-string name', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'ring',
-      rings: [{ name: 123, percentage: 10 }],
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'ring',
+        rings: [{ name: 123, percentage: 10 }],
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"name"'))).toBe(true);
   });
 
   it('rejects ring entry with non-number percentage', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'ring',
-      rings: [{ name: 'canary', percentage: 'ten' }],
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'ring',
+        rings: [{ name: 'canary', percentage: 'ten' }],
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"percentage"'))).toBe(true);
   });
 });
@@ -68,49 +89,69 @@ describe('validateRolloutStrategy – ring', () => {
 describe('validateRolloutStrategy – cohort', () => {
   it('accepts valid cohort config', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'cohort',
-      field: 'companyId',
-      percentage: 25,
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'cohort',
+        field: 'companyId',
+        percentage: 25,
+      },
+      errors,
+    );
     expect(errors).toEqual([]);
   });
 
   it('rejects cohort missing field', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'cohort',
-      percentage: 25,
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'cohort',
+        percentage: 25,
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"field"'))).toBe(true);
   });
 
   it('rejects cohort missing percentage', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'cohort',
-      field: 'companyId',
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'cohort',
+        field: 'companyId',
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"percentage"'))).toBe(true);
   });
 
   it('rejects cohort with non-string field', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'cohort',
-      field: 42,
-      percentage: 25,
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'cohort',
+        field: 42,
+        percentage: 25,
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"field"'))).toBe(true);
   });
 
   it('rejects cohort with non-number percentage', () => {
     const errors: ValidationError[] = [];
-    validateRolloutStrategy('flags.f', {
-      type: 'cohort',
-      field: 'companyId',
-      percentage: 'all',
-    }, errors);
+    validateRolloutStrategy(
+      'flags.f',
+      {
+        type: 'cohort',
+        field: 'companyId',
+        percentage: 'all',
+      },
+      errors,
+    );
     expect(errors.some((e) => e.message.includes('"percentage"'))).toBe(true);
   });
 });

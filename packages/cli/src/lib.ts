@@ -1,4 +1,9 @@
-export { generateTypes, generateOpenAPISpec, generateGraphQLSchema, checkGeneratedTypes } from './generate.js';
+export {
+  generateTypes,
+  generateOpenAPISpec,
+  generateGraphQLSchema,
+  checkGeneratedTypes,
+} from './generate.js';
 export { diffConfigs, formatChanges, formatChangesMarkdown } from './diff.js';
 export { scanFlagUsage, generateStaleReport, formatStaleReport } from './stale.js';
 export {

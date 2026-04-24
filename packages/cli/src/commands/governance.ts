@@ -14,7 +14,9 @@ const DEFAULT_HMAC_KEY = 'tinyflag-audit-key';
 
 function loadGovernanceConfig(filePath: string): GovernanceConfig {
   if (!existsSync(filePath)) {
-    throw new Error(`Governance config not found: ${filePath}. Create governance.yml to get started.`);
+    throw new Error(
+      `Governance config not found: ${filePath}. Create governance.yml to get started.`,
+    );
   }
   const content = readFileSync(filePath, 'utf8');
   const raw = parseYaml(content) as Record<string, unknown>;
@@ -59,7 +61,8 @@ Options:
   }
 
   const configIdx = args.indexOf('--config');
-  const configFile = configIdx >= 0 && args[configIdx + 1] ? args[configIdx + 1] : DEFAULT_GOVERNANCE_FILE;
+  const configFile =
+    configIdx >= 0 && args[configIdx + 1] ? args[configIdx + 1] : DEFAULT_GOVERNANCE_FILE;
 
   const auditIdx = args.indexOf('--audit-file');
   const auditFile = auditIdx >= 0 && args[auditIdx + 1] ? args[auditIdx + 1] : DEFAULT_AUDIT_FILE;
@@ -98,7 +101,9 @@ function handleGovernanceShow(configFile: string, jsonMode: boolean): void {
 function handleGovernanceCheck(args: string[], configFile: string, jsonMode: boolean): void {
   const flagName = args[0];
   if (!flagName) {
-    console.error('Usage: tinyflag governance check <flag> --author <user> --approvers user1,user2');
+    console.error(
+      'Usage: tinyflag governance check <flag> --author <user> --approvers user1,user2',
+    );
     process.exit(1);
   }
 
@@ -106,7 +111,8 @@ function handleGovernanceCheck(args: string[], configFile: string, jsonMode: boo
   const author = authorIdx >= 0 && args[authorIdx + 1] ? args[authorIdx + 1] : 'unknown';
 
   const approversIdx = args.indexOf('--approvers');
-  const approverNames = approversIdx >= 0 && args[approversIdx + 1] ? args[approversIdx + 1].split(',') : [];
+  const approverNames =
+    approversIdx >= 0 && args[approversIdx + 1] ? args[approversIdx + 1].split(',') : [];
 
   try {
     const config = loadGovernanceConfig(configFile);
@@ -118,7 +124,11 @@ function handleGovernanceCheck(args: string[], configFile: string, jsonMode: boo
       author,
       approvals: approverNames.map((name) => {
         const user = config.users.find((u) => u.username === name);
-        return { user: name, role: (user?.role ?? 'viewer') as GovernanceRole, timestamp: Date.now() };
+        return {
+          user: name,
+          role: (user?.role ?? 'viewer') as GovernanceRole,
+          timestamp: Date.now(),
+        };
       }),
       status: 'pending',
       createdAt: Date.now(),
@@ -130,9 +140,13 @@ function handleGovernanceCheck(args: string[], configFile: string, jsonMode: boo
       console.log(JSON.stringify({ flag: flagName, ...result }, null, 2));
     } else {
       if (result.met) {
-        console.log(`✅ Approval requirements met for "${flagName}" (${result.received}/${result.required})`);
+        console.log(
+          `✅ Approval requirements met for "${flagName}" (${result.received}/${result.required})`,
+        );
       } else {
-        console.log(`❌ Missing approvals for "${flagName}": need ${result.missing} more (${result.received}/${result.required})`);
+        console.log(
+          `❌ Missing approvals for "${flagName}": need ${result.missing} more (${result.received}/${result.required})`,
+        );
       }
     }
 
@@ -143,7 +157,12 @@ function handleGovernanceCheck(args: string[], configFile: string, jsonMode: boo
   }
 }
 
-function handleGovernanceAudit(args: string[], configFile: string, auditFile: string, jsonMode: boolean): void {
+function handleGovernanceAudit(
+  args: string[],
+  configFile: string,
+  auditFile: string,
+  jsonMode: boolean,
+): void {
   const action = args[0];
 
   switch (action) {
@@ -176,7 +195,8 @@ function handleAuditExport(args: string[], auditFile: string, jsonMode: boolean)
   const actorFilter = actorIdx >= 0 && args[actorIdx + 1] ? args[actorIdx + 1] : undefined;
 
   const sinceIdx = args.indexOf('--since');
-  const sinceFilter = sinceIdx >= 0 && args[sinceIdx + 1] ? new Date(args[sinceIdx + 1]).getTime() : undefined;
+  const sinceFilter =
+    sinceIdx >= 0 && args[sinceIdx + 1] ? new Date(args[sinceIdx + 1]).getTime() : undefined;
 
   const trail = loadAuditTrail(auditFile);
   const events = trail.query({
@@ -237,8 +257,17 @@ function handleAuditLog(args: string[], auditFile: string, jsonMode: boolean): v
     console.log('═'.repeat(60));
     for (const e of recent) {
       const time = new Date(e.timestamp).toISOString();
-      const icon = e.action === 'created' ? '🆕' : e.action === 'deleted' ? '🗑️' : e.action === 'approved' ? '✅' : '✏️';
-      console.log(`  ${icon} #${e.sequence} ${time} ${e.actor}(${e.actorRole}) ${e.action} "${e.flag}"`);
+      const icon =
+        e.action === 'created'
+          ? '🆕'
+          : e.action === 'deleted'
+            ? '🗑️'
+            : e.action === 'approved'
+              ? '✅'
+              : '✏️';
+      console.log(
+        `  ${icon} #${e.sequence} ${time} ${e.actor}(${e.actorRole}) ${e.action} "${e.flag}"`,
+      );
     }
   }
 }

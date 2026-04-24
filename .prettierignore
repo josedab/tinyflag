@@ -1,4 +1,8 @@
 dist
 coverage
+build
+target
+.build
+.docusaurus
 pnpm-lock.yaml
 CHANGELOG.md

@@ -11,32 +11,32 @@
 
 The following gaps were identified in the original PRD and resolved in this enhanced version.
 
-| # | Gap | Category | Severity | Proposed Resolution |
-|---|-----|----------|----------|---------------------|
-| 1 | "Zero dependencies" contradicts YAML parsing requirement — YAML parsers are non-trivial | Contradiction | **Blocking** | [DECIDED] Support full YAML spec with a built-in parser. Bundle size target may need to be relaxed to ~8KB gzipped to accommodate a full YAML parser (~3–4KB). |
-| 2 | "File source: reads from filesystem" claimed for browsers — browsers cannot access local files | Contradiction | **Blocking** | Clarify: browser source must be URL, inline object, or bundled import. File source is Node/Bun/Deno only. |
-| 3 | "Hot reload: watch for file changes" — not possible in browsers | Contradiction | **Major** | Hot reload via file watching is server-runtime only. Browsers use URL polling or manual `reload()` call. |
-| 4 | No acceptance criteria for any of the 15 functional requirements | Missing acceptance criteria | **Blocking** | Added Given/When/Then acceptance criteria for every FR. |
-| 5 | No error handling strategy — what happens when flag not found, file malformed, URL unreachable? | Undefined edge cases | **Blocking** | Defined default behaviors: return `false` for unknown flags, `null` for unknown variants, emit `error` event, never throw in evaluation path. |
-| 6 | No edge case definitions (missing context fields, invalid rollout %, variant weight mismatch) | Undefined edge cases | **Major** | Documented edge cases per FR with expected behavior. |
-| 7 | No explicit "out of scope" list | Missing scope boundaries | **Major** | Added explicit out-of-scope list for v1. |
-| 8 | No MoSCoW prioritization within versions | Missing prioritization | **Major** | Added Must/Should/Nice-to-have labels per FR. |
-| 9 | No user stories attached to FRs | Missing user stories | **Major** | Added "As a [persona]…" story per FR. |
-| 10 | FR-7 CLI `generate` appears in v0.1 but FR-14 CLI in v0.3 — unclear split | Contradiction | **Minor** | Clarified: `generate` is v0.1 (core SDK). `validate` and `diff` are v0.3 (CI/CD). |
-| 11 | No security considerations (flag file tampering, exposure tracking PII, URL source auth) | Missing NFRs | **Major** | Added security section: integrity checks, PII handling, URL auth. |
-| 12 | No data retention/privacy policy for exposure tracking events | Missing NFRs | **Major** | Clarified: SDK emits events, does NOT store data. Consumer is responsible for GDPR compliance. |
-| 13 | No accessibility requirements for the micro-dashboard | Missing NFRs | **Minor** | Added WCAG 2.1 AA target for dashboard. |
-| 14 | "Developer joy" is vague | Vague requirements | **Minor** | Replaced with measurable criteria: time-to-first-flag < 60s, API surface ≤ 5 methods, zero config file required. |
-| 15 | No data model defined — entities and relationships are implicit | Missing data model | **Major** | Added conceptual data model with entities: Flag, Rule, Variant, UserContext. |
-| 16 | No integration points documented beyond GitHub Action | Missing integration | **Minor** | Added integration points: analytics adapters, CI systems, CDN sources. |
-| 17 | No UX/UI spec for dashboard (loading/empty/error states) | Missing UX | **Minor** | Added dashboard wireframe descriptions and state definitions. |
-| 18 | No rollback or migration strategy | Missing release plan | **Minor** | Added rollback criteria and semantic versioning policy. |
-| 19 | Bundle size < 5KB including built-in YAML parser + rule engine + hash may be unrealistic | Vague requirements | **Major** | [DECIDED] Full YAML spec parser is included. Revised target: < 8KB gzipped for core (including full YAML parser ~3–4KB, MurmurHash3 ~200B, rule engine ~1KB, core logic ~1KB). If a compliant full-spec parser can be written under 2KB, the original 5KB target may still be achievable. |
-| 20 | Multi-environment support (dev/staging/prod) not addressed | Missing scope | **Minor** | [INFERRED] Out of scope for v1 — users can manage via separate flag files per environment. Documented as future consideration. |
-| 21 | Flag schema versioning not defined — what happens when schema evolves? | Implicit assumption | **Major** | Added `version` field to flag schema. SDK validates and provides clear migration errors. |
-| 22 | ESM vs CJS module format not specified | Implicit assumption | **Minor** | [INFERRED] Dual ESM/CJS build with ESM as primary. Package.json `exports` map. |
-| 23 | Package manager and build toolchain not specified | Implicit assumption | **Minor** | [INFERRED] pnpm workspace monorepo, tsup for building. Documented as implementation notes. |
-| 24 | Success metrics are mostly vanity (stars, downloads) — no product quality metrics | Missing metrics | **Minor** | Added SDK reliability metrics: zero-crash evaluation, <0.1ms p99 latency, deterministic consistency. |
+| #   | Gap                                                                                             | Category                    | Severity     | Proposed Resolution                                                                                                                                                                                                                                                                       |
+| --- | ----------------------------------------------------------------------------------------------- | --------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | "Zero dependencies" contradicts YAML parsing requirement — YAML parsers are non-trivial         | Contradiction               | **Blocking** | [DECIDED] Support full YAML spec with a built-in parser. Bundle size target may need to be relaxed to ~8KB gzipped to accommodate a full YAML parser (~3–4KB).                                                                                                                            |
+| 2   | "File source: reads from filesystem" claimed for browsers — browsers cannot access local files  | Contradiction               | **Blocking** | Clarify: browser source must be URL, inline object, or bundled import. File source is Node/Bun/Deno only.                                                                                                                                                                                 |
+| 3   | "Hot reload: watch for file changes" — not possible in browsers                                 | Contradiction               | **Major**    | Hot reload via file watching is server-runtime only. Browsers use URL polling or manual `reload()` call.                                                                                                                                                                                  |
+| 4   | No acceptance criteria for any of the 15 functional requirements                                | Missing acceptance criteria | **Blocking** | Added Given/When/Then acceptance criteria for every FR.                                                                                                                                                                                                                                   |
+| 5   | No error handling strategy — what happens when flag not found, file malformed, URL unreachable? | Undefined edge cases        | **Blocking** | Defined default behaviors: return `false` for unknown flags, `null` for unknown variants, emit `error` event, never throw in evaluation path.                                                                                                                                             |
+| 6   | No edge case definitions (missing context fields, invalid rollout %, variant weight mismatch)   | Undefined edge cases        | **Major**    | Documented edge cases per FR with expected behavior.                                                                                                                                                                                                                                      |
+| 7   | No explicit "out of scope" list                                                                 | Missing scope boundaries    | **Major**    | Added explicit out-of-scope list for v1.                                                                                                                                                                                                                                                  |
+| 8   | No MoSCoW prioritization within versions                                                        | Missing prioritization      | **Major**    | Added Must/Should/Nice-to-have labels per FR.                                                                                                                                                                                                                                             |
+| 9   | No user stories attached to FRs                                                                 | Missing user stories        | **Major**    | Added "As a [persona]…" story per FR.                                                                                                                                                                                                                                                     |
+| 10  | FR-7 CLI `generate` appears in v0.1 but FR-14 CLI in v0.3 — unclear split                       | Contradiction               | **Minor**    | Clarified: `generate` is v0.1 (core SDK). `validate` and `diff` are v0.3 (CI/CD).                                                                                                                                                                                                         |
+| 11  | No security considerations (flag file tampering, exposure tracking PII, URL source auth)        | Missing NFRs                | **Major**    | Added security section: integrity checks, PII handling, URL auth.                                                                                                                                                                                                                         |
+| 12  | No data retention/privacy policy for exposure tracking events                                   | Missing NFRs                | **Major**    | Clarified: SDK emits events, does NOT store data. Consumer is responsible for GDPR compliance.                                                                                                                                                                                            |
+| 13  | No accessibility requirements for the micro-dashboard                                           | Missing NFRs                | **Minor**    | Added WCAG 2.1 AA target for dashboard.                                                                                                                                                                                                                                                   |
+| 14  | "Developer joy" is vague                                                                        | Vague requirements          | **Minor**    | Replaced with measurable criteria: time-to-first-flag < 60s, API surface ≤ 5 methods, zero config file required.                                                                                                                                                                          |
+| 15  | No data model defined — entities and relationships are implicit                                 | Missing data model          | **Major**    | Added conceptual data model with entities: Flag, Rule, Variant, UserContext.                                                                                                                                                                                                              |
+| 16  | No integration points documented beyond GitHub Action                                           | Missing integration         | **Minor**    | Added integration points: analytics adapters, CI systems, CDN sources.                                                                                                                                                                                                                    |
+| 17  | No UX/UI spec for dashboard (loading/empty/error states)                                        | Missing UX                  | **Minor**    | Added dashboard wireframe descriptions and state definitions.                                                                                                                                                                                                                             |
+| 18  | No rollback or migration strategy                                                               | Missing release plan        | **Minor**    | Added rollback criteria and semantic versioning policy.                                                                                                                                                                                                                                   |
+| 19  | Bundle size < 5KB including built-in YAML parser + rule engine + hash may be unrealistic        | Vague requirements          | **Major**    | [DECIDED] Full YAML spec parser is included. Revised target: < 8KB gzipped for core (including full YAML parser ~3–4KB, MurmurHash3 ~200B, rule engine ~1KB, core logic ~1KB). If a compliant full-spec parser can be written under 2KB, the original 5KB target may still be achievable. |
+| 20  | Multi-environment support (dev/staging/prod) not addressed                                      | Missing scope               | **Minor**    | [INFERRED] Out of scope for v1 — users can manage via separate flag files per environment. Documented as future consideration.                                                                                                                                                            |
+| 21  | Flag schema versioning not defined — what happens when schema evolves?                          | Implicit assumption         | **Major**    | Added `version` field to flag schema. SDK validates and provides clear migration errors.                                                                                                                                                                                                  |
+| 22  | ESM vs CJS module format not specified                                                          | Implicit assumption         | **Minor**    | [INFERRED] Dual ESM/CJS build with ESM as primary. Package.json `exports` map.                                                                                                                                                                                                            |
+| 23  | Package manager and build toolchain not specified                                               | Implicit assumption         | **Minor**    | [INFERRED] pnpm workspace monorepo, tsup for building. Documented as implementation notes.                                                                                                                                                                                                |
+| 24  | Success metrics are mostly vanity (stars, downloads) — no product quality metrics               | Missing metrics             | **Minor**    | Added SDK reliability metrics: zero-crash evaluation, <0.1ms p99 latency, deterministic consistency.                                                                                                                                                                                      |
 
 ---
 
@@ -48,35 +48,39 @@ The following gaps were identified in the original PRD and resolved in this enha
 - **Proposed solution:** TinyFlag is a serverless, file-driven, zero-dependency feature flag SDK. Flags are defined in YAML or JSON files committed to Git (flags-as-code). Evaluation happens entirely in-process — no server, no dashboard, no vendor lock-in. The flag definition file IS the entire system.
 - **Success metrics:**
 
-| Metric | Target (6 months) | Measurement Method |
-|--------|-------------------|--------------------|
-| GitHub stars | 2,000+ | GitHub API |
-| Weekly npm downloads | 5,000+ | npm registry |
-| Time to first flag (new user) | < 60 seconds | Measured via quickstart guide walkthrough |
-| Bundle size (core) | < 8KB gzipped [DECIDED — revised for full YAML parser] | CI build step |
-| Evaluation reliability | Zero thrown exceptions in evaluation path | Unit tests + fuzzing |
-| Deterministic consistency | Same (flagName, userId) → same result, 100% of the time | Property-based tests |
+| Metric                        | Target (6 months)                                       | Measurement Method                        |
+| ----------------------------- | ------------------------------------------------------- | ----------------------------------------- |
+| GitHub stars                  | 2,000+                                                  | GitHub API                                |
+| Weekly npm downloads          | 5,000+                                                  | npm registry                              |
+| Time to first flag (new user) | < 60 seconds                                            | Measured via quickstart guide walkthrough |
+| Bundle size (core)            | < 8KB gzipped [DECIDED — revised for full YAML parser]  | CI build step                             |
+| Evaluation reliability        | Zero thrown exceptions in evaluation path               | Unit tests + fuzzing                      |
+| Deterministic consistency     | Same (flagName, userId) → same result, 100% of the time | Property-based tests                      |
 
 ---
 
 ## 2. Users & Personas
 
 ### 2.1 Indie/Solo Developer
+
 - **Goals:** Ship SaaS product features incrementally with toggles; run A/B tests without a third-party service.
 - **Pain points:** LaunchDarkly pricing is overkill; self-hosted solutions (Unleash, Flipt) require running a server; environment variables are too blunt for rollout control.
 - **Tech comfort level:** High — comfortable with CLI tools, TypeScript, and reading SDK docs.
 
 ### 2.2 Startup Team (1–20 devs)
+
 - **Goals:** Coordinate feature rollouts across the team; gate features for beta users; review flag changes in PRs like any other code change.
 - **Pain points:** Per-seat SaaS pricing scales poorly; self-hosted solutions add DevOps burden the team can't afford; ad-hoc `if` statements and env vars become unmanageable.
 - **Tech comfort level:** High — uses CI/CD, TypeScript, modern frameworks.
 
 ### 2.3 Open-Source Maintainer
+
 - **Goals:** Gate experimental features behind flags so contributors can test them without affecting stable users; enable features for specific contributor groups.
 - **Pain points:** Cannot require contributors to set up a SaaS flag service; needs flags that work without any account or API key.
 - **Tech comfort level:** High — familiar with build tools and configuration.
 
 ### 2.4 Edge/Serverless Developer
+
 - **Goals:** Use feature flags in Cloudflare Workers, Vercel Edge Functions, or Deno Deploy where traditional SDKs with network dependencies won't work.
 - **Pain points:** Existing SDKs assume long-lived server processes with persistent connections; cold start latency matters; no filesystem access in some runtimes.
 - **Tech comfort level:** High — works with edge runtimes and understands their constraints.
@@ -87,25 +91,25 @@ The following gaps were identified in the original PRD and resolved in this enha
 
 ### 3.1 In Scope (v1)
 
-| Version | What Ships |
-|---------|-----------|
+| Version          | What Ships                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **v0.1 (Alpha)** | Core SDK: `isEnabled`, `getVariant`, YAML/JSON loader, targeting rules, rollout hashing, TypeScript type generation CLI (`generate`), inline/file/URL sources |
-| **v0.2 (Beta)** | React hooks, Vue composables, Svelte stores, URL source polling, hot reload (file watcher), SSR support for all framework bindings [DECIDED] |
-| **v0.3 (RC)** | Exposure tracking events, flag change events, GitHub Action (validate/diff), CLI (`validate`, `diff`), 4+ example apps |
-| **v1.0 (GA)** | Static micro-dashboard (read-only + download), documentation site, migration guides |
+| **v0.2 (Beta)**  | React hooks, Vue composables, Svelte stores, URL source polling, hot reload (file watcher), SSR support for all framework bindings [DECIDED]                  |
+| **v0.3 (RC)**    | Exposure tracking events, flag change events, GitHub Action (validate/diff), CLI (`validate`, `diff`), 4+ example apps                                        |
+| **v1.0 (GA)**    | Static micro-dashboard (read-only + download), documentation site, migration guides                                                                           |
 
 ### 3.2 Out of Scope (v1)
 
-| Item | Reason |
-|------|--------|
-| Server mode / centralized flag management | Contradicts the core "no server" value proposition. Revisit post-v1 based on user feedback. |
-| Multi-environment merging (dev/staging/prod in one file) | Users can manage separate flag files per environment. Too complex for v1. |
-| Flag lifecycle management (archiving, deprecation warnings) | Nice-to-have. Users can delete flags from the file. |
-| VS Code extension | Open question #3. Deferred post-v1 based on community demand. |
-| Dynamic variant weight adjustment via environment variables | Open question #2. Deferred — users can modify the flag file instead. |
-| Realtime sync (WebSocket/SSE) | Conflicts with "no server" philosophy. URL polling is sufficient for v1. |
-| Role-based access control on flag edits | Flags are files in Git — Git permissions provide access control. |
-| Mobile SDKs (React Native, Flutter, Swift, Kotlin) | JavaScript/TypeScript only in v1. [INFERRED] |
+| Item                                                        | Reason                                                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Server mode / centralized flag management                   | Contradicts the core "no server" value proposition. Revisit post-v1 based on user feedback. |
+| Multi-environment merging (dev/staging/prod in one file)    | Users can manage separate flag files per environment. Too complex for v1.                   |
+| Flag lifecycle management (archiving, deprecation warnings) | Nice-to-have. Users can delete flags from the file.                                         |
+| VS Code extension                                           | Open question #3. Deferred post-v1 based on community demand.                               |
+| Dynamic variant weight adjustment via environment variables | Open question #2. Deferred — users can modify the flag file instead.                        |
+| Realtime sync (WebSocket/SSE)                               | Conflicts with "no server" philosophy. URL polling is sufficient for v1.                    |
+| Role-based access control on flag edits                     | Flags are files in Git — Git permissions provide access control.                            |
+| Mobile SDKs (React Native, Flutter, Swift, Kotlin)          | JavaScript/TypeScript only in v1. [INFERRED]                                                |
 
 ### 3.3 Future Considerations (v2+)
 
@@ -129,29 +133,29 @@ The following gaps were identified in the original PRD and resolved in this enha
 - **Schema (v1):**
 
 ```yaml
-version: 1                      # Schema version [INFERRED]
+version: 1 # Schema version [INFERRED]
 flags:
-  <flag-name>:                   # kebab-case, alphanumeric + hyphens, 1-128 chars
-    enabled: boolean             # Required. Global on/off switch
-    description?: string         # Optional. Human-readable purpose
-    tags?: string[]              # Optional. Categorization labels
-    rollout?: number             # Optional. 0-100 integer, percentage of users
-    rules?: Rule[]               # Optional. Targeting rules (evaluated top-to-bottom)
-    variants?: Variant[]         # Optional. A/B test variants with weights
+  <flag-name>: # kebab-case, alphanumeric + hyphens, 1-128 chars
+    enabled: boolean # Required. Global on/off switch
+    description?: string # Optional. Human-readable purpose
+    tags?: string[] # Optional. Categorization labels
+    rollout?: number # Optional. 0-100 integer, percentage of users
+    rules?: Rule[] # Optional. Targeting rules (evaluated top-to-bottom)
+    variants?: Variant[] # Optional. A/B test variants with weights
 ```
 
 ```yaml
 # Rule schema
 Rule:
-  conditions: Record<string, any>  # Key-value conditions on UserContext
-  enabled?: boolean                # Override enabled state (default: true)
-  rollout?: number                 # Override rollout % for matched users
-  variant?: string                 # Force a specific variant for matched users
+  conditions: Record<string, any> # Key-value conditions on UserContext
+  enabled?: boolean # Override enabled state (default: true)
+  rollout?: number # Override rollout % for matched users
+  variant?: string # Force a specific variant for matched users
 
 # Variant schema
 Variant:
-  name: string                     # Variant identifier (alphanumeric + hyphens)
-  weight: number                   # Relative weight (positive integer)
+  name: string # Variant identifier (alphanumeric + hyphens)
+  weight: number # Relative weight (positive integer)
 ```
 
 - **Acceptance criteria:**
@@ -187,6 +191,7 @@ isEnabled(flagName: string, context?: UserContext): boolean
 ```
 
 Evaluation logic (in order):
+
 1. If flag does not exist → return `false`, emit `error` event with `FLAG_NOT_FOUND`
 2. If `enabled` is `false` → return `false`
 3. If `rules` exist and context is provided → evaluate rules top-to-bottom; first matching rule's `enabled` value wins (default `true`)
@@ -223,6 +228,7 @@ getVariant(flagName: string, context?: UserContext): string | null
 ```
 
 Evaluation logic:
+
 1. If flag does not exist → return `null`, emit `error` event
 2. If `enabled` is `false` → return `null`
 3. If no `variants` defined → return `null`
@@ -253,13 +259,13 @@ Evaluation logic:
 - **User story:** As a developer, I want to target specific user segments (by plan, email domain, country, etc.) so that I can roll out features to specific groups.
 - **Description:** Rule engine supporting conditions on `UserContext` fields:
 
-| Operator | Syntax | Example | Behavior |
-|----------|--------|---------|----------|
-| Equality | `{ field: value }` | `{ plan: 'pro' }` | Strict equality (`===`) |
-| Pattern | `{ field: 'glob*' }` | `{ email: '*@company.com' }` | Glob-style matching (only `*` wildcard) |
-| Greater/Less | `{ field: { $gt, $gte, $lt, $lte: n } }` | `{ age: { $gte: 18 } }` | Numeric comparison |
-| List inclusion | `{ field: { $in: [...] } }` | `{ country: { $in: ['US', 'CA'] } }` | Value is one of the list items |
-| Negation | `{ field: { $not: value } }` | `{ plan: { $not: 'free' } }` | Inverted match [INFERRED] |
+| Operator       | Syntax                                   | Example                              | Behavior                                |
+| -------------- | ---------------------------------------- | ------------------------------------ | --------------------------------------- |
+| Equality       | `{ field: value }`                       | `{ plan: 'pro' }`                    | Strict equality (`===`)                 |
+| Pattern        | `{ field: 'glob*' }`                     | `{ email: '*@company.com' }`         | Glob-style matching (only `*` wildcard) |
+| Greater/Less   | `{ field: { $gt, $gte, $lt, $lte: n } }` | `{ age: { $gte: 18 } }`              | Numeric comparison                      |
+| List inclusion | `{ field: { $in: [...] } }`              | `{ country: { $in: ['US', 'CA'] } }` | Value is one of the list items          |
+| Negation       | `{ field: { $not: value } }`             | `{ plan: { $not: 'free' } }`         | Inverted match [INFERRED]               |
 
 Rules are evaluated top-to-bottom. First matching rule wins. If no rule matches, fall through to global flag state.
 
@@ -292,22 +298,22 @@ A rule matches when ALL conditions in its `conditions` object are satisfied (AND
 - **Description:**
 
 ```typescript
-import { TinyFlag } from 'tinyflag'
+import { TinyFlag } from 'tinyflag';
 
 // Source options:
 const ff = new TinyFlag({
-  source: './flags.yml',                              // File (Node/Bun/Deno only)
+  source: './flags.yml', // File (Node/Bun/Deno only)
   // OR source: 'https://cdn.example.com/flags.json'  // URL (all runtimes)
   // OR source: { version: 1, flags: { ... } }        // Inline object (all runtimes)
-  headers: { 'Authorization': 'Bearer <token>' },     // Optional: custom headers for URL source [DECIDED]
-})
+  headers: { Authorization: 'Bearer <token>' }, // Optional: custom headers for URL source [DECIDED]
+});
 ```
 
-| Source Type | Detection | Runtimes | Notes |
-|-------------|-----------|----------|-------|
-| File path | String ending in `.yml`, `.yaml`, or `.json` | Node.js, Bun, Deno | Uses `fs.readFileSync` at init |
-| URL | String starting with `http://` or `https://` | All | Fetches once at init, then polls |
-| Inline object | Plain object with `flags` property | All | For testing, bundled configs, edge |
+| Source Type   | Detection                                    | Runtimes           | Notes                              |
+| ------------- | -------------------------------------------- | ------------------ | ---------------------------------- |
+| File path     | String ending in `.yml`, `.yaml`, or `.json` | Node.js, Bun, Deno | Uses `fs.readFileSync` at init     |
+| URL           | String starting with `http://` or `https://` | All                | Fetches once at init, then polls   |
+| Inline object | Plain object with `flags` property           | All                | For testing, bundled configs, edge |
 
 - **Acceptance criteria:**
   1. Given a valid file path, When `new TinyFlag({ source: './flags.yml' })` is called in Node.js, Then flags are loaded synchronously and available immediately.
@@ -341,8 +347,8 @@ const ff = new TinyFlag({
 const ff = new TinyFlag({
   source: 'https://cdn.example.com/flags.json',
   pollInterval: 30_000, // 30 seconds (URL source only)
-  watch: true,          // Enable file watching (file source only, default: true)
-})
+  watch: true, // Enable file watching (file source only, default: true)
+});
 ```
 
 - **Acceptance criteria:**
@@ -374,11 +380,12 @@ npx tinyflag generate ./flags.yml -o ./src/flags.d.ts  # Output to file
 ```
 
 Generates:
+
 ```typescript
 // Auto-generated by tinyflag — do not edit
 export interface TinyFlagDefinitions {
-  'new-checkout': { variants: 'control' | 'new-flow' }
-  'dark-mode': { variants: never }  // no variants defined
+  'new-checkout': { variants: 'control' | 'new-flow' };
+  'dark-mode': { variants: never }; // no variants defined
 }
 ```
 
@@ -404,19 +411,19 @@ export interface TinyFlagDefinitions {
 - **Description:**
 
 ```tsx
-import { TinyFlagProvider, useFlag, useVariant } from 'tinyflag/react'
+import { TinyFlagProvider, useFlag, useVariant } from 'tinyflag/react';
 
 function App() {
   return (
     <TinyFlagProvider source="./flags.yml" context={{ userId: '123', plan: 'pro' }}>
       <Dashboard />
     </TinyFlagProvider>
-  )
+  );
 }
 
 function Dashboard() {
-  const showCheckout = useFlag('new-checkout')        // boolean
-  const theme = useVariant('dark-mode')               // string | null
+  const showCheckout = useFlag('new-checkout'); // boolean
+  const theme = useVariant('dark-mode'); // string | null
   // re-renders when flag values change (hot reload / poll)
 }
 ```
@@ -446,12 +453,12 @@ function Dashboard() {
 
 ```vue
 <script setup>
-import { useFlag, useVariant, provideTinyFlag } from 'tinyflag/vue'
+import { useFlag, useVariant, provideTinyFlag } from 'tinyflag/vue';
 
-provideTinyFlag({ source: './flags.yml', context: { userId: '123' } })
+provideTinyFlag({ source: './flags.yml', context: { userId: '123' } });
 
-const showCheckout = useFlag('new-checkout')   // Ref<boolean>
-const theme = useVariant('dark-mode')          // Ref<string | null>
+const showCheckout = useFlag('new-checkout'); // Ref<boolean>
+const theme = useVariant('dark-mode'); // Ref<string | null>
 </script>
 ```
 
@@ -513,8 +520,8 @@ ff.on('exposure', (event: ExposureEvent) => {
   //   userId: string,
   //   timestamp: number (Unix ms)
   // }
-  analytics.track('feature_exposure', event)
-})
+  analytics.track('feature_exposure', event);
+});
 ```
 
 The SDK emits events but does NOT store, persist, or transmit any data. The consumer is responsible for handling events according to their privacy policy.
@@ -549,7 +556,7 @@ ff.on('change', (event: ChangeEvent) => {
   //   current: FlagDefinition,
   //   timestamp: number
   // }
-})
+});
 ```
 
 - **Acceptance criteria:**
@@ -580,6 +587,7 @@ ff.on('change', (event: ChangeEvent) => {
 ```
 
 Behavior:
+
 1. Validates `flags.yml` against the JSON Schema
 2. If invalid → fail the check with descriptive errors
 3. If valid and flags changed → post a PR comment summarizing changes:
@@ -616,6 +624,7 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
 ```
 
 `validate` output (on failure):
+
 ```
 ❌ flags.yml validation failed:
   - flags.new-checkout.rollout: must be 0-100, got 150
@@ -623,6 +632,7 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
 ```
 
 `diff` output:
+
 ```
 🚩 Flag changes (main → HEAD):
   ~ new-checkout.rollout: 10% → 50%
@@ -679,38 +689,38 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
 
 ### 5.1 Performance
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Flag evaluation latency | < 0.1ms (p99) per call | Benchmark suite in CI |
-| SDK initialization (file source) | < 10ms for a 100-flag file | Benchmark |
-| SDK initialization (URL source) | < network RTT + 10ms | Benchmark |
-| Memory footprint | < 1MB for 1,000 flags | Memory profiling |
-| Bundle size (core) | < 8KB gzipped [DECIDED — revised for full YAML parser] | CI build step |
-| Bundle size (per framework binding) | < 2KB gzipped | CI build step |
+| Metric                              | Target                                                 | Measurement           |
+| ----------------------------------- | ------------------------------------------------------ | --------------------- |
+| Flag evaluation latency             | < 0.1ms (p99) per call                                 | Benchmark suite in CI |
+| SDK initialization (file source)    | < 10ms for a 100-flag file                             | Benchmark             |
+| SDK initialization (URL source)     | < network RTT + 10ms                                   | Benchmark             |
+| Memory footprint                    | < 1MB for 1,000 flags                                  | Memory profiling      |
+| Bundle size (core)                  | < 8KB gzipped [DECIDED — revised for full YAML parser] | CI build step         |
+| Bundle size (per framework binding) | < 2KB gzipped                                          | CI build step         |
 
 ### 5.2 Reliability
 
-| Metric | Target |
-|--------|--------|
-| Evaluation never throws | `isEnabled` and `getVariant` never throw exceptions. Errors are emitted via `error` event and safe defaults are returned (`false` / `null`). |
-| Deterministic consistency | Same `(flagName, userId)` pair → identical result. Always. Across SDK versions. |
-| Hot reload safety | Invalid config changes never break running evaluation. Last valid config is retained. |
+| Metric                    | Target                                                                                                                                       |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Evaluation never throws   | `isEnabled` and `getVariant` never throw exceptions. Errors are emitted via `error` event and safe defaults are returned (`false` / `null`). |
+| Deterministic consistency | Same `(flagName, userId)` pair → identical result. Always. Across SDK versions.                                                              |
+| Hot reload safety         | Invalid config changes never break running evaluation. Last valid config is retained.                                                        |
 
 ### 5.3 Compatibility
 
-| Runtime | Minimum Version |
-|---------|----------------|
-| Node.js | 18+ |
-| Bun | 1.0+ [INFERRED] |
-| Deno | 1.28+ [INFERRED] |
-| Cloudflare Workers | Current |
-| Browsers | ES2020+ (Chrome 80+, Firefox 80+, Safari 14+, Edge 80+) [INFERRED] |
+| Runtime            | Minimum Version                                                    |
+| ------------------ | ------------------------------------------------------------------ |
+| Node.js            | 18+                                                                |
+| Bun                | 1.0+ [INFERRED]                                                    |
+| Deno               | 1.28+ [INFERRED]                                                   |
+| Cloudflare Workers | Current                                                            |
+| Browsers           | ES2020+ (Chrome 80+, Firefox 80+, Safari 14+, Edge 80+) [INFERRED] |
 
-| Build Target | Requirement |
-|--------------|-------------|
-| Module format | ESM (primary) + CJS (via `exports` map) [INFERRED] |
-| Tree-shaking | Unused framework bindings excluded from bundle |
-| Zero dependencies | Core package has zero npm `dependencies` |
+| Build Target      | Requirement                                        |
+| ----------------- | -------------------------------------------------- |
+| Module format     | ESM (primary) + CJS (via `exports` map) [INFERRED] |
+| Tree-shaking      | Unused framework bindings excluded from bundle     |
+| Zero dependencies | Core package has zero npm `dependencies`           |
 
 ### 5.4 Security
 
@@ -721,8 +731,8 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
   ```typescript
   const ff = new TinyFlag({
     source: 'https://api.example.com/flags.json',
-    headers: { 'Authorization': 'Bearer <token>' }
-  })
+    headers: { Authorization: 'Bearer <token>' },
+  });
   ```
 
 ### 5.5 Accessibility (Dashboard Only)
@@ -734,12 +744,12 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
 
 ### 5.6 Testing
 
-| Metric | Target |
-|--------|--------|
-| Line coverage | > 90% |
-| Branch coverage | > 85% [INFERRED] |
+| Metric               | Target                                                      |
+| -------------------- | ----------------------------------------------------------- |
+| Line coverage        | > 90%                                                       |
+| Branch coverage      | > 85% [INFERRED]                                            |
 | Property-based tests | Required for hash distribution and deterministic evaluation |
-| Cross-runtime tests | CI matrix: Node.js 18/20/22, Bun, Deno [INFERRED] |
+| Cross-runtime tests  | CI matrix: Node.js 18/20/22, Bun, Deno [INFERRED]           |
 
 ### 5.7 Documentation
 
@@ -770,13 +780,13 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
    ```
 3. Imports and initializes:
    ```typescript
-   import { TinyFlag } from 'tinyflag'
-   const ff = new TinyFlag({ source: './flags.yml' })
+   import { TinyFlag } from 'tinyflag';
+   const ff = new TinyFlag({ source: './flags.yml' });
    ```
 4. Evaluates a flag:
    ```typescript
    if (ff.isEnabled('new-checkout', { userId: user.id })) {
-     showNewCheckout()
+     showNewCheckout();
    }
    ```
 5. Total time: < 60 seconds.
@@ -830,8 +840,8 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
 2. Flags are defined inline (no filesystem):
    ```typescript
    const ff = new TinyFlag({
-     source: { version: 1, flags: { 'new-feature': { enabled: true, rollout: 20 } } }
-   })
+     source: { version: 1, flags: { 'new-feature': { enabled: true, rollout: 20 } } },
+   });
    ```
 3. Or fetched from a KV store / R2 bucket via URL source.
 4. Evaluates flags in the request handler with zero cold-start penalty.
@@ -900,25 +910,26 @@ npx tinyflag generate ./flags.yml       # Generate TypeScript types (see FR-007)
 
 The SDK emits events. Consumers integrate with their analytics tool:
 
-| Analytics Tool | Integration Pattern |
-|---------------|-------------------|
-| Segment | `ff.on('exposure', (e) => analytics.track('Flag Exposure', e))` |
-| PostHog | `ff.on('exposure', (e) => posthog.capture('$feature_flag_called', e))` |
-| Mixpanel | `ff.on('exposure', (e) => mixpanel.track('Feature Exposure', e))` |
-| Custom | `ff.on('exposure', yourHandler)` |
+| Analytics Tool | Integration Pattern                                                    |
+| -------------- | ---------------------------------------------------------------------- |
+| Segment        | `ff.on('exposure', (e) => analytics.track('Flag Exposure', e))`        |
+| PostHog        | `ff.on('exposure', (e) => posthog.capture('$feature_flag_called', e))` |
+| Mixpanel       | `ff.on('exposure', (e) => mixpanel.track('Feature Exposure', e))`      |
+| Custom         | `ff.on('exposure', yourHandler)`                                       |
 
 No built-in analytics integration. This is by design (zero dependencies).
 
 ### 8.2 CI/CD Systems
 
-| System | Integration |
-|--------|------------|
-| GitHub Actions | Official `tinyflag/validate-action@v1` (FR-013) |
-| Other CI | `npx tinyflag validate ./flags.yml` (exit code 0/1) |
+| System         | Integration                                         |
+| -------------- | --------------------------------------------------- |
+| GitHub Actions | Official `tinyflag/validate-action@v1` (FR-013)     |
+| Other CI       | `npx tinyflag validate ./flags.yml` (exit code 0/1) |
 
 ### 8.3 CDN / Remote Sources
 
 The URL source can fetch from:
+
 - GitHub raw URLs (`https://raw.githubusercontent.com/...`)
 - CDN-hosted flag files
 - Custom API endpoints returning YAML/JSON
@@ -959,13 +970,13 @@ The URL source can fetch from:
 
 ### 9.2 States
 
-| State | Display |
-|-------|---------|
-| **Loading** | Centered spinner with "Loading flags..." text |
-| **Empty** (no flags) | Illustration + "No flags defined. Create a flags.yml to get started." + link to docs |
-| **Error** (invalid source) | Red banner with error message + retry button |
-| **Loaded** | Flag list as shown above |
-| **No results** (search) | "No flags match your search." with clear filter button |
+| State                      | Display                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| **Loading**                | Centered spinner with "Loading flags..." text                                        |
+| **Empty** (no flags)       | Illustration + "No flags defined. Create a flags.yml to get started." + link to docs |
+| **Error** (invalid source) | Red banner with error message + retry button                                         |
+| **Loaded**                 | Flag list as shown above                                                             |
+| **No results** (search)    | "No flags match your search." with clear filter button                               |
 
 ### 9.3 Design Constraints
 
@@ -980,12 +991,12 @@ The URL source can fetch from:
 
 ### 10.1 Rollout Strategy
 
-| Phase | Timeline | Deliverables | Exit Criteria |
-|-------|----------|-------------|---------------|
-| **Alpha (v0.1)** | Weeks 1–2 | Core SDK, YAML/JSON loader, targeting rules, rollout hashing, `generate` CLI | All FR-001–FR-005, FR-007 acceptance criteria pass. 90%+ test coverage. |
-| **Beta (v0.2)** | Weeks 3–4 | React/Vue/Svelte bindings with SSR support, URL source with polling, hot reload | All FR-006, FR-008–FR-010 acceptance criteria pass (including SSR). 3+ framework examples including SSR. |
-| **RC (v0.3)** | Weeks 5–6 | Event hooks, GitHub Action, `validate`/`diff` CLI, 4+ example apps | All FR-011–FR-014 acceptance criteria pass. Beta user feedback incorporated. |
-| **GA (v1.0)** | Weeks 7–8 | Micro-dashboard, docs site, migration guides | FR-015 acceptance criteria pass. Docs complete. Launch campaign ready. |
+| Phase            | Timeline  | Deliverables                                                                    | Exit Criteria                                                                                            |
+| ---------------- | --------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Alpha (v0.1)** | Weeks 1–2 | Core SDK, YAML/JSON loader, targeting rules, rollout hashing, `generate` CLI    | All FR-001–FR-005, FR-007 acceptance criteria pass. 90%+ test coverage.                                  |
+| **Beta (v0.2)**  | Weeks 3–4 | React/Vue/Svelte bindings with SSR support, URL source with polling, hot reload | All FR-006, FR-008–FR-010 acceptance criteria pass (including SSR). 3+ framework examples including SSR. |
+| **RC (v0.3)**    | Weeks 5–6 | Event hooks, GitHub Action, `validate`/`diff` CLI, 4+ example apps              | All FR-011–FR-014 acceptance criteria pass. Beta user feedback incorporated.                             |
+| **GA (v1.0)**    | Weeks 7–8 | Micro-dashboard, docs site, migration guides                                    | FR-015 acceptance criteria pass. Docs complete. Launch campaign ready.                                   |
 
 ### 10.2 Versioning
 
@@ -1008,17 +1019,17 @@ TinyFlag is a new product — no migration from a previous version. Migration gu
 
 ## 11. Open Questions
 
-| # | Question | Resolution |
-|---|----------|------------|
-| 1 | Should we support a lightweight server mode for centralized flag management? | **No for v1.** Defer to v2+ based on user demand. The "no server" philosophy is the core differentiator. |
-| 2 | Should variant weights support dynamic adjustment via environment variables? | **No for v1.** Users can modify the flag file. Env var overrides are a v2+ feature. |
-| 3 | Should we build a VS Code extension for inline flag previews? | **No for v1.** Defer based on community demand (GitHub issue tracking). |
-| 4 | ~~Should the SDK support `Authorization` headers for URL sources?~~ | **[DECIDED] Yes.** Add `headers` option to config. Header values must never be logged. |
-| 5 | ~~How should unknown/extra fields in the flag file be handled?~~ | **[DECIDED] Lenient.** Ignore unknown fields and emit a warning. Strict mode available as opt-in via `strict: true`. |
-| 6 | ~~When `rollout` is set but no `userId` in context, what should happen?~~ | **[DECIDED] Fall through to global `enabled` state.** Rollout without a userId is skipped; the flag's `enabled` value is returned. |
-| 7 | ~~Should the YAML parser support the full YAML spec or a minimal subset?~~ | **[DECIDED] Full YAML spec.** Built-in parser supports the complete YAML 1.2 specification. Bundle size target revised to < 8KB gzipped to accommodate. |
-| 8 | ~~Should SSR be supported in v1 for React/Vue/Svelte?~~ | **[DECIDED] Yes.** SSR support included in v0.2 alongside framework bindings. React (Next.js/Remix), Vue (Nuxt), Svelte (SvelteKit). |
-| 9 | Should the monorepo use pnpm workspaces and tsup for building? | **Yes.** pnpm for workspace management, tsup for zero-config TypeScript bundling with ESM + CJS output. |
+| #   | Question                                                                     | Resolution                                                                                                                                              |
+| --- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Should we support a lightweight server mode for centralized flag management? | **No for v1.** Defer to v2+ based on user demand. The "no server" philosophy is the core differentiator.                                                |
+| 2   | Should variant weights support dynamic adjustment via environment variables? | **No for v1.** Users can modify the flag file. Env var overrides are a v2+ feature.                                                                     |
+| 3   | Should we build a VS Code extension for inline flag previews?                | **No for v1.** Defer based on community demand (GitHub issue tracking).                                                                                 |
+| 4   | ~~Should the SDK support `Authorization` headers for URL sources?~~          | **[DECIDED] Yes.** Add `headers` option to config. Header values must never be logged.                                                                  |
+| 5   | ~~How should unknown/extra fields in the flag file be handled?~~             | **[DECIDED] Lenient.** Ignore unknown fields and emit a warning. Strict mode available as opt-in via `strict: true`.                                    |
+| 6   | ~~When `rollout` is set but no `userId` in context, what should happen?~~    | **[DECIDED] Fall through to global `enabled` state.** Rollout without a userId is skipped; the flag's `enabled` value is returned.                      |
+| 7   | ~~Should the YAML parser support the full YAML spec or a minimal subset?~~   | **[DECIDED] Full YAML spec.** Built-in parser supports the complete YAML 1.2 specification. Bundle size target revised to < 8KB gzipped to accommodate. |
+| 8   | ~~Should SSR be supported in v1 for React/Vue/Svelte?~~                      | **[DECIDED] Yes.** SSR support included in v0.2 alongside framework bindings. React (Next.js/Remix), Vue (Nuxt), Svelte (SvelteKit).                    |
+| 9   | Should the monorepo use pnpm workspaces and tsup for building?               | **Yes.** pnpm for workspace management, tsup for zero-config TypeScript bundling with ESM + CJS output.                                                 |
 
 ---
 

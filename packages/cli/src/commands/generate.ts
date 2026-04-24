@@ -1,6 +1,11 @@
 import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { dirname } from 'path';
-import { generateTypes, generateOpenAPISpec, generateGraphQLSchema, checkGeneratedTypes } from '../generate.js';
+import {
+  generateTypes,
+  generateOpenAPISpec,
+  generateGraphQLSchema,
+  checkGeneratedTypes,
+} from '../generate.js';
 import { loadAndValidate } from './utils.js';
 
 export function handleGenerate(args: string[], jsonMode: boolean): void {

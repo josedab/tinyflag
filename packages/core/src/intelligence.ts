@@ -148,7 +148,9 @@ export function detectAnomalies(
   events: EvalEvent[],
   windowMs: number = 3600000,
 ): FlagAnomaly[] {
-  const flagEvents = events.filter((e) => e.flag === flag).sort((a, b) => a.timestamp - b.timestamp);
+  const flagEvents = events
+    .filter((e) => e.flag === flag)
+    .sort((a, b) => a.timestamp - b.timestamp);
   if (flagEvents.length < 20) return [];
 
   const anomalies: FlagAnomaly[] = [];
@@ -166,9 +168,10 @@ export function detectAnomalies(
   const afterErrorRate = after.filter((e) => e.errorOccurred).length / after.length;
 
   if (afterErrorRate > beforeErrorRate * 2 && afterErrorRate > 0.05) {
-    const changePercent = beforeErrorRate > 0
-      ? ((afterErrorRate - beforeErrorRate) / beforeErrorRate) * 100
-      : afterErrorRate * 100;
+    const changePercent =
+      beforeErrorRate > 0
+        ? ((afterErrorRate - beforeErrorRate) / beforeErrorRate) * 100
+        : afterErrorRate * 100;
 
     anomalies.push({
       flag,
@@ -352,7 +355,9 @@ export function formatAnomalies(anomalies: FlagAnomaly[]): string {
     const icon = a.severity === 'critical' ? '🚨' : '⚠️';
     lines.push(`${icon} ${a.flag} — ${a.type}`);
     lines.push(`   ${a.description}`);
-    lines.push(`   Change: ${a.changePercent.toFixed(1)}% | Confidence: ${(a.confidence * 100).toFixed(0)}%`);
+    lines.push(
+      `   Change: ${a.changePercent.toFixed(1)}% | Confidence: ${(a.confidence * 100).toFixed(0)}%`,
+    );
     lines.push('');
   }
 
@@ -366,7 +371,8 @@ export function formatCleanupSuggestions(suggestions: CleanupSuggestion[]): stri
   const lines: string[] = ['🧹 Cleanup Suggestions', '═'.repeat(50), ''];
 
   for (const s of suggestions) {
-    const actionIcon = s.suggestedAction === 'remove' ? '🗑️' : s.suggestedAction === 'archive' ? '📦' : '👁️';
+    const actionIcon =
+      s.suggestedAction === 'remove' ? '🗑️' : s.suggestedAction === 'archive' ? '📦' : '👁️';
     lines.push(`${actionIcon} ${s.flag} — ${s.reason}`);
     lines.push(`   ${s.description}`);
     lines.push(`   Action: ${s.suggestedAction} | Confidence: ${(s.confidence * 100).toFixed(0)}%`);

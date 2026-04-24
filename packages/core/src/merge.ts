@@ -1,4 +1,10 @@
-import type { FlagConfig, FlagDefinition, Variant, MergeWarning, SegmentDefinition } from './types.js';
+import type {
+  FlagConfig,
+  FlagDefinition,
+  Variant,
+  MergeWarning,
+  SegmentDefinition,
+} from './types.js';
 
 /**
  * Deep-merge multiple FlagConfig objects in order (later sources override earlier).
@@ -46,7 +52,11 @@ export function mergeFlagConfigs(configs: FlagConfig[]): {
       if (!mergedSegments) mergedSegments = {};
       for (const [name, seg] of Object.entries(cfg.segments)) {
         if (mergedSegments[name]) {
-          warnings.push({ flag: `segment:${name}`, field: 'conditions', message: 'Segment overridden by environment overlay' });
+          warnings.push({
+            flag: `segment:${name}`,
+            field: 'conditions',
+            message: 'Segment overridden by environment overlay',
+          });
         }
         mergedSegments[name] = { ...seg };
       }
@@ -96,26 +106,56 @@ export function diffEnvConfigs(
     const b = envBConfig.flags[flag];
 
     if (!a && b) {
-      diffs.push({ flag, field: '(flag)', envA: { name: envAName, value: undefined }, envB: { name: envBName, value: 'defined' } });
+      diffs.push({
+        flag,
+        field: '(flag)',
+        envA: { name: envAName, value: undefined },
+        envB: { name: envBName, value: 'defined' },
+      });
       continue;
     }
     if (a && !b) {
-      diffs.push({ flag, field: '(flag)', envA: { name: envAName, value: 'defined' }, envB: { name: envBName, value: undefined } });
+      diffs.push({
+        flag,
+        field: '(flag)',
+        envA: { name: envAName, value: 'defined' },
+        envB: { name: envBName, value: undefined },
+      });
       continue;
     }
     if (!a || !b) continue;
 
     if (a.enabled !== b.enabled) {
-      diffs.push({ flag, field: 'enabled', envA: { name: envAName, value: a.enabled }, envB: { name: envBName, value: b.enabled } });
+      diffs.push({
+        flag,
+        field: 'enabled',
+        envA: { name: envAName, value: a.enabled },
+        envB: { name: envBName, value: b.enabled },
+      });
     }
     if (a.rollout !== b.rollout) {
-      diffs.push({ flag, field: 'rollout', envA: { name: envAName, value: a.rollout }, envB: { name: envBName, value: b.rollout } });
+      diffs.push({
+        flag,
+        field: 'rollout',
+        envA: { name: envAName, value: a.rollout },
+        envB: { name: envBName, value: b.rollout },
+      });
     }
     if (JSON.stringify(a.rules) !== JSON.stringify(b.rules)) {
-      diffs.push({ flag, field: 'rules', envA: { name: envAName, value: a.rules?.length ?? 0 }, envB: { name: envBName, value: b.rules?.length ?? 0 } });
+      diffs.push({
+        flag,
+        field: 'rules',
+        envA: { name: envAName, value: a.rules?.length ?? 0 },
+        envB: { name: envBName, value: b.rules?.length ?? 0 },
+      });
     }
     if (JSON.stringify(a.variants) !== JSON.stringify(b.variants)) {
-      diffs.push({ flag, field: 'variants', envA: { name: envAName, value: a.variants?.length ?? 0 }, envB: { name: envBName, value: b.variants?.length ?? 0 } });
+      diffs.push({
+        flag,
+        field: 'variants',
+        envA: { name: envAName, value: a.variants?.length ?? 0 },
+        envB: { name: envBName, value: b.variants?.length ?? 0 },
+      });
     }
   }
 

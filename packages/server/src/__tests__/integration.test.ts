@@ -93,7 +93,7 @@ function broadcastUpdate(): void {
 }
 
 function handleGetFlags(req: IncomingMessage, res: ServerResponse, tenant?: string): void {
-  const flags = tenant ? (tenantFlags.get(tenant) || currentFlags) : currentFlags;
+  const flags = tenant ? tenantFlags.get(tenant) || currentFlags : currentFlags;
   const ifNoneMatch = req.headers['if-none-match'];
   if (ifNoneMatch && ifNoneMatch === currentEtag) {
     res.writeHead(304);
@@ -166,8 +166,10 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
 
   // Rate limiting (skip health)
   if (url.pathname !== '/health' && url.pathname !== '/ready') {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
-      || req.socket.remoteAddress || 'unknown';
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.socket.remoteAddress ||
+      'unknown';
     if (!checkRateLimit(ip)) {
       res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '60' });
       res.end(JSON.stringify({ error: 'Too many requests' }));
@@ -260,11 +262,15 @@ describe('Server Integration Tests', () => {
 
   afterAll(async () => {
     for (const res of sseClients) {
-      try { res.end(); } catch {}
+      try {
+        res.end();
+      } catch {}
     }
     sseClients.clear();
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    try { unlinkSync(flagsFile); } catch {}
+    try {
+      unlinkSync(flagsFile);
+    } catch {}
   });
 
   beforeEach(() => {
@@ -350,7 +356,9 @@ describe('Server Integration Tests', () => {
   describe('broadcastUpdate (SSE)', () => {
     it('connects SSE client and receives initial data', async () => {
       const controller = new AbortController();
-      const response = await fetch(`${baseUrl}/events`, { signal: controller.signal }).catch(() => null);
+      const response = await fetch(`${baseUrl}/events`, { signal: controller.signal }).catch(
+        () => null,
+      );
 
       // SSE responds with 200 and text/event-stream
       expect(response?.status).toBe(200);
@@ -441,7 +449,9 @@ describe('Server Integration Tests', () => {
 
       // Simulate cleanup
       for (const res of sseClients) {
-        try { res.end(); } catch {}
+        try {
+          res.end();
+        } catch {}
       }
       sseClients.clear();
       expect(sseClients.size).toBe(0);

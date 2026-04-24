@@ -1,9 +1,5 @@
 import { readFileSync, existsSync } from 'fs';
-import {
-  analyzeMetricImpact,
-  createPrometheusSource,
-  formatImpactAnalysis,
-} from 'tinyflag';
+import { analyzeMetricImpact, createPrometheusSource, formatImpactAnalysis } from 'tinyflag';
 import type { FlagChangePoint, MetricDataPoint } from 'tinyflag';
 
 export function handleImpactAnalyze(args: string[], jsonMode: boolean): void {
@@ -38,16 +34,19 @@ Options:
   const url = urlIdx >= 0 && args[urlIdx + 1] ? args[urlIdx + 1] : 'http://localhost:9090';
 
   const metricIdx = args.indexOf('--metric');
-  const metricQuery = metricIdx >= 0 && args[metricIdx + 1] ? args[metricIdx + 1] : 'http_request_errors_total';
+  const metricQuery =
+    metricIdx >= 0 && args[metricIdx + 1] ? args[metricIdx + 1] : 'http_request_errors_total';
 
   const windowIdx = args.indexOf('--window');
-  const windowHours = windowIdx >= 0 && args[windowIdx + 1] ? parseInt(args[windowIdx + 1], 10) : 24;
+  const windowHours =
+    windowIdx >= 0 && args[windowIdx + 1] ? parseInt(args[windowIdx + 1], 10) : 24;
   const windowMs = windowHours * 3600 * 1000;
 
   const changeIdx = args.indexOf('--change-at');
-  const changeAt = changeIdx >= 0 && args[changeIdx + 1]
-    ? new Date(args[changeIdx + 1]).getTime()
-    : Date.now() - windowMs / 2;
+  const changeAt =
+    changeIdx >= 0 && args[changeIdx + 1]
+      ? new Date(args[changeIdx + 1]).getTime()
+      : Date.now() - windowMs / 2;
 
   const dataIdx = args.indexOf('--data');
   const dataFile = dataIdx >= 0 && args[dataIdx + 1] ? args[dataIdx + 1] : undefined;
@@ -73,7 +72,14 @@ Options:
       const before = data.before ?? [];
       const after = data.after ?? [];
 
-      const analysis = analyzeMetricImpact(flagName, changePoint, before, after, metricQuery, windowMs);
+      const analysis = analyzeMetricImpact(
+        flagName,
+        changePoint,
+        before,
+        after,
+        metricQuery,
+        windowMs,
+      );
 
       if (jsonMode) {
         console.log(JSON.stringify(analysis, null, 2));
@@ -99,7 +105,14 @@ Options:
         const before = beforePoints.map((p: MetricDataPoint) => p.value);
         const after = afterPoints.map((p: MetricDataPoint) => p.value);
 
-        const analysis = analyzeMetricImpact(flagName, changePoint, before, after, metricQuery, windowMs);
+        const analysis = analyzeMetricImpact(
+          flagName,
+          changePoint,
+          before,
+          after,
+          metricQuery,
+          windowMs,
+        );
 
         if (jsonMode) {
           console.log(JSON.stringify(analysis, null, 2));

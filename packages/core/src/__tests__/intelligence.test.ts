@@ -250,7 +250,7 @@ describe('suggestCleanup', () => {
   it('returns suggestions sorted by confidence', () => {
     const config: FlagConfig = {
       flags: {
-        'archived': { enabled: true, lifecycle: { state: 'archived' } } as FlagDefinition,
+        archived: { enabled: true, lifecycle: { state: 'archived' } } as FlagDefinition,
         'no-eval': { enabled: true } as FlagDefinition,
       },
     };

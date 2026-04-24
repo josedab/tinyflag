@@ -22,54 +22,54 @@ spec:
                   properties:
                     gitRepo:
                       type: string
-                      description: "Git repository URL containing flag files"
+                      description: 'Git repository URL containing flag files'
                     branch:
                       type: string
-                      default: "main"
-                      description: "Git branch to watch"
+                      default: 'main'
+                      description: 'Git branch to watch'
                     path:
                       type: string
-                      default: "flags.yml"
-                      description: "Path to flag file within the repo"
+                      default: 'flags.yml'
+                      description: 'Path to flag file within the repo'
                     pollInterval:
                       type: string
-                      default: "60s"
-                      description: "Poll interval for git changes"
+                      default: '60s'
+                      description: 'Poll interval for git changes'
                 configMap:
                   type: object
                   properties:
                     name:
                       type: string
-                      description: "Name of the ConfigMap to create/update"
+                      description: 'Name of the ConfigMap to create/update'
                     namespace:
                       type: string
-                      description: "Namespace for the ConfigMap (defaults to FlagConfig namespace)"
+                      description: 'Namespace for the ConfigMap (defaults to FlagConfig namespace)'
                     key:
                       type: string
-                      default: "flags.yml"
-                      description: "Key within the ConfigMap"
+                      default: 'flags.yml'
+                      description: 'Key within the ConfigMap'
                 namespaces:
                   type: array
                   items:
                     type: string
-                  description: "Additional namespaces to sync ConfigMaps to"
+                  description: 'Additional namespaces to sync ConfigMaps to'
                 sidecar:
                   type: object
                   properties:
                     enabled:
                       type: boolean
                       default: false
-                      description: "Enable sidecar injection"
+                      description: 'Enable sidecar injection'
                     port:
                       type: integer
                       default: 8080
-                      description: "Port for the sidecar HTTP endpoint"
+                      description: 'Port for the sidecar HTTP endpoint'
             status:
               type: object
               properties:
                 phase:
                   type: string
-                  enum: ["Syncing", "Synced", "Error"]
+                  enum: ['Syncing', 'Synced', 'Error']
                 lastSyncTime:
                   type: string
                   format: date-time

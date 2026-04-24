@@ -131,7 +131,12 @@ function handleEnvDiff(args: string[], envNames: string[], jsonMode: boolean): v
     process.exit(1);
   }
 
-  const diffs = diffEnvConfigs(configs[0].name, configs[0].config, configs[1].name, configs[1].config);
+  const diffs = diffEnvConfigs(
+    configs[0].name,
+    configs[0].config,
+    configs[1].name,
+    configs[1].config,
+  );
 
   if (jsonMode) {
     console.log(JSON.stringify({ command: 'env-diff', environments: envNames, diffs }, null, 2));

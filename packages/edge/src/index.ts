@@ -59,7 +59,8 @@ export function evaluateEdgeFlags(request: Request, options: EdgeFlagOptions): E
 
   // CDN-aware caching
   if (options.cdnCaching) {
-    headers['Cache-Control'] = options.cacheControl ?? 'public, max-age=60, stale-while-revalidate=300';
+    headers['Cache-Control'] =
+      options.cacheControl ?? 'public, max-age=60, stale-while-revalidate=300';
 
     // Build Vary header based on fields that affect flag evaluation
     const varyFields = options.varyFields ?? ['x-user-id', 'cookie'];

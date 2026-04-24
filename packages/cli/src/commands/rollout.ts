@@ -100,9 +100,7 @@ function handleRolloutStart(args: string[], jsonMode: boolean): void {
 
   const stagesIdx = args.indexOf('--stages');
   const stages =
-    stagesIdx >= 0 && args[stagesIdx + 1]
-      ? parseStages(args[stagesIdx + 1])
-      : DEFAULT_STAGES;
+    stagesIdx >= 0 && args[stagesIdx + 1] ? parseStages(args[stagesIdx + 1]) : DEFAULT_STAGES;
 
   const healthIdx = args.indexOf('--health-check');
   const healthType = healthIdx >= 0 && args[healthIdx + 1] ? args[healthIdx + 1] : 'prometheus';
@@ -114,15 +112,14 @@ function handleRolloutStart(args: string[], jsonMode: boolean): void {
   const maxErrorRate = errorIdx >= 0 && args[errorIdx + 1] ? parseFloat(args[errorIdx + 1]) : 0.05;
 
   const latencyIdx = args.indexOf('--max-latency');
-  const maxLatencyP99 = latencyIdx >= 0 && args[latencyIdx + 1] ? parseFloat(args[latencyIdx + 1]) : undefined;
+  const maxLatencyP99 =
+    latencyIdx >= 0 && args[latencyIdx + 1] ? parseFloat(args[latencyIdx + 1]) : undefined;
 
   const holdIdx = args.indexOf('--hold-time');
   const minHoldTime = holdIdx >= 0 && args[holdIdx + 1] ? parseInt(args[holdIdx + 1], 10) : 300;
 
   const healthCheck =
-    healthType === 'http'
-      ? createHttpHealthCheck(url)
-      : createPrometheusHealthCheck(url);
+    healthType === 'http' ? createHttpHealthCheck(url) : createPrometheusHealthCheck(url);
 
   const orchestrator = new RolloutOrchestrator(
     {
@@ -195,8 +192,17 @@ function handleRolloutStatus(args: string[], jsonMode: boolean): void {
       console.log('═'.repeat(60));
       for (const flag of flags) {
         const s = data[flag];
-        const icon = s.status === 'running' ? '🟢' : s.status === 'completed' ? '✅' : s.status === 'rolled-back' ? '🔴' : '⏸️';
-        console.log(`  ${icon} ${flag}: ${s.status} — ${s.currentStageName}@${s.currentPercentage}%`);
+        const icon =
+          s.status === 'running'
+            ? '🟢'
+            : s.status === 'completed'
+              ? '✅'
+              : s.status === 'rolled-back'
+                ? '🔴'
+                : '⏸️';
+        console.log(
+          `  ${icon} ${flag}: ${s.status} — ${s.currentStageName}@${s.currentPercentage}%`,
+        );
       }
     }
   }
@@ -223,8 +229,8 @@ function handleRolloutPromote(args: string[], jsonMode: boolean): void {
 
   // Simulate promotion by advancing stage
   const nextIndex = state.currentStageIndex + 1;
-  if (force || (state.consecutivePassingChecks >= 3)) {
-    if (nextIndex >= (state.history.filter((e) => e.type === 'stage-entered').length + 1)) {
+  if (force || state.consecutivePassingChecks >= 3) {
+    if (nextIndex >= state.history.filter((e) => e.type === 'stage-entered').length + 1) {
       state.status = 'completed';
       state.currentPercentage = 100;
       console.log(`✅ Rollout for ${flagName} completed at 100%`);
@@ -245,7 +251,9 @@ function handleRolloutPromote(args: string[], jsonMode: boolean): void {
     }
     saveState(state);
   } else {
-    console.error(`Cannot promote — only ${state.consecutivePassingChecks} passing checks (need 3). Use --force to override.`);
+    console.error(
+      `Cannot promote — only ${state.consecutivePassingChecks} passing checks (need 3). Use --force to override.`,
+    );
     process.exit(1);
   }
 
@@ -320,7 +328,9 @@ function handleRolloutPause(args: string[], jsonMode: boolean): void {
   if (jsonMode) {
     console.log(JSON.stringify(state, null, 2));
   } else {
-    console.log(`⏸️  Paused ${flagName} at ${state.currentStageName} (${state.currentPercentage}%)`);
+    console.log(
+      `⏸️  Paused ${flagName} at ${state.currentStageName} (${state.currentPercentage}%)`,
+    );
   }
 }
 
@@ -357,6 +367,8 @@ function handleRolloutResume(args: string[], jsonMode: boolean): void {
   if (jsonMode) {
     console.log(JSON.stringify(state, null, 2));
   } else {
-    console.log(`▶️  Resumed ${flagName} at ${state.currentStageName} (${state.currentPercentage}%)`);
+    console.log(
+      `▶️  Resumed ${flagName} at ${state.currentStageName} (${state.currentPercentage}%)`,
+    );
   }
 }

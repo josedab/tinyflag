@@ -1,6 +1,4 @@
-import type {
-  ValidationError,
-} from './types.js';
+import type { ValidationError } from './types.js';
 import {
   SUPPORTED_VERSIONS,
   detectCircularSegments,

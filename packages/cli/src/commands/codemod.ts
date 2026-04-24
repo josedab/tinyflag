@@ -19,7 +19,9 @@ export function handleCodemod(args: string[], jsonMode: boolean): void {
 
   if (!flagsFile) {
     console.error('Error: Missing --flags option\n');
-    console.log('Usage: tinyflag codemod --flags <file> [--dir <dir>] [--archived] [--dry-run] [--ci]');
+    console.log(
+      'Usage: tinyflag codemod --flags <file> [--dir <dir>] [--archived] [--dry-run] [--ci]',
+    );
     process.exit(1);
   }
 
@@ -29,16 +31,22 @@ export function handleCodemod(args: string[], jsonMode: boolean): void {
   if (ciMode && archivedOnly) {
     const result = checkArchivedFlagRefs(scanDir, config);
     if (jsonMode) {
-      console.log(JSON.stringify({
-        command: 'codemod-check',
-        clean: result.clean,
-        staleRefs: result.staleRefs.map((r) => ({
-          flag: r.flag,
-          file: r.file,
-          line: r.line,
-          type: r.type,
-        })),
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            command: 'codemod-check',
+            clean: result.clean,
+            staleRefs: result.staleRefs.map((r) => ({
+              flag: r.flag,
+              file: r.file,
+              line: r.line,
+              type: r.type,
+            })),
+          },
+          null,
+          2,
+        ),
+      );
     } else if (result.clean) {
       console.log('✅ No archived flag references found in code.');
     } else {
@@ -58,17 +66,25 @@ export function handleCodemod(args: string[], jsonMode: boolean): void {
   });
 
   if (jsonMode) {
-    console.log(JSON.stringify({
-      command: 'codemod',
-      dryRun: dryRun || ciMode,
-      filesChanged: results.length,
-      changes: results.flatMap((r) => r.changes.map((c) => ({
-        file: r.file,
-        line: c.line,
-        type: c.type,
-        description: c.description,
-      }))),
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          command: 'codemod',
+          dryRun: dryRun || ciMode,
+          filesChanged: results.length,
+          changes: results.flatMap((r) =>
+            r.changes.map((c) => ({
+              file: r.file,
+              line: c.line,
+              type: c.type,
+              description: c.description,
+            })),
+          ),
+        },
+        null,
+        2,
+      ),
+    );
   } else {
     const diff = formatCodemodDiff(results, scanDir);
     console.log(diff);

@@ -2,7 +2,8 @@ import { readdirSync, readFileSync, statSync } from 'fs';
 import { join, extname } from 'path';
 import type { FlagDefinition } from 'tinyflag';
 
-const FLAG_USAGE_PATTERN = /(?:isEnabled|getVariant|useFlag|getConfig)\s*\(\s*['"]([a-z0-9-]+)['"]/g;
+const FLAG_USAGE_PATTERN =
+  /(?:isEnabled|getVariant|useFlag|getConfig)\s*\(\s*['"]([a-z0-9-]+)['"]/g;
 const TINYFLAG_IGNORE_PATTERN = /\/\/\s*tinyflag-ignore/;
 
 const SCANNABLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
@@ -115,7 +116,15 @@ function scanFile(
  * Generate a stale flag report by cross-referencing definitions vs code usage.
  */
 export function generateStaleReport(
-  definedFlags: Record<string, { enabled: boolean; rollout?: number | unknown; lifecycle?: { state: string; sunsetAt?: string }; tags?: readonly string[] }>,
+  definedFlags: Record<
+    string,
+    {
+      enabled: boolean;
+      rollout?: number | unknown;
+      lifecycle?: { state: string; sunsetAt?: string };
+      tags?: readonly string[];
+    }
+  >,
   codeUsages: Map<string, Array<{ file: string; line: number }>>,
   stalenessConfig?: StalenessConfig,
 ): StaleReport {
@@ -176,7 +185,10 @@ export function generateStaleReport(
 
     // Archived but still has code references
     if (flag.lifecycle?.state === 'archived' && referencedNames.has(name)) {
-      archivalCandidates.push({ flag: name, reason: 'Archived but still has code references — run codemod' });
+      archivalCandidates.push({
+        flag: name,
+        reason: 'Archived but still has code references — run codemod',
+      });
     }
 
     // Unused + enabled for a long time = cleanup candidate
@@ -245,8 +257,11 @@ export function formatStaleReport(report: StaleReport): string {
   }
 
   const total =
-    report.unusedFlags.length + report.undefinedRefs.length + report.zeroRolloutFlags.length +
-    (report.pastSunsetFlags?.length || 0) + (report.archivalCandidates?.length || 0);
+    report.unusedFlags.length +
+    report.undefinedRefs.length +
+    report.zeroRolloutFlags.length +
+    (report.pastSunsetFlags?.length || 0) +
+    (report.archivalCandidates?.length || 0);
   lines.push(`Found ${total} issue(s).`);
   return lines.join('\n');
 }

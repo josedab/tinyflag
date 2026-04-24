@@ -23,9 +23,27 @@ export interface RolePermissions {
 
 /** Map roles to permission sets. */
 const ROLE_PERMISSIONS: Record<GovernanceRole, RolePermissions> = {
-  viewer: { canView: true, canEdit: false, canApprove: false, canAdmin: false, canExportAudit: false },
-  editor: { canView: true, canEdit: true, canApprove: false, canAdmin: false, canExportAudit: false },
-  approver: { canView: true, canEdit: true, canApprove: true, canAdmin: false, canExportAudit: true },
+  viewer: {
+    canView: true,
+    canEdit: false,
+    canApprove: false,
+    canAdmin: false,
+    canExportAudit: false,
+  },
+  editor: {
+    canView: true,
+    canEdit: true,
+    canApprove: false,
+    canAdmin: false,
+    canExportAudit: false,
+  },
+  approver: {
+    canView: true,
+    canEdit: true,
+    canApprove: true,
+    canAdmin: false,
+    canExportAudit: true,
+  },
   admin: { canView: true, canEdit: true, canApprove: true, canAdmin: true, canExportAudit: true },
 };
 
@@ -64,17 +82,16 @@ export function getPermissions(role: GovernanceRole): RolePermissions {
 }
 
 /** Check if a user has a specific permission. */
-export function hasPermission(
-  user: GovernanceUser,
-  permission: keyof RolePermissions,
-): boolean {
+export function hasPermission(user: GovernanceUser, permission: keyof RolePermissions): boolean {
   return ROLE_PERMISSIONS[user.role][permission];
 }
 
 /** Parse governance.yml content into config. */
 export function parseGovernanceConfig(raw: Record<string, unknown>): GovernanceConfig {
   const version = typeof raw.version === 'number' ? raw.version : 1;
-  const defaultRole = (typeof raw.defaultRole === 'string' ? raw.defaultRole : 'viewer') as GovernanceRole;
+  const defaultRole = (
+    typeof raw.defaultRole === 'string' ? raw.defaultRole : 'viewer'
+  ) as GovernanceRole;
 
   const users: GovernanceUser[] = [];
   if (Array.isArray(raw.users)) {
@@ -83,7 +100,7 @@ export function parseGovernanceConfig(raw: Record<string, unknown>): GovernanceC
         const entry = u as Record<string, unknown>;
         users.push({
           username: String(entry.username || ''),
-          role: (String(entry.role || 'viewer')) as GovernanceRole,
+          role: String(entry.role || 'viewer') as GovernanceRole,
           email: typeof entry.email === 'string' ? entry.email : undefined,
           teams: Array.isArray(entry.teams) ? (entry.teams as string[]) : undefined,
         });
@@ -97,12 +114,15 @@ export function parseGovernanceConfig(raw: Record<string, unknown>): GovernanceC
       if (typeof w === 'object' && w !== null) {
         const entry = w as Record<string, unknown>;
         workflows.push({
-          requiredApprovals: typeof entry.requiredApprovals === 'number' ? entry.requiredApprovals : 1,
+          requiredApprovals:
+            typeof entry.requiredApprovals === 'number' ? entry.requiredApprovals : 1,
           approverRoles: Array.isArray(entry.approverRoles)
             ? (entry.approverRoles as GovernanceRole[])
             : ['approver', 'admin'],
           selfApproval: entry.selfApproval === true,
-          flagPatterns: Array.isArray(entry.flagPatterns) ? (entry.flagPatterns as string[]) : undefined,
+          flagPatterns: Array.isArray(entry.flagPatterns)
+            ? (entry.flagPatterns as string[])
+            : undefined,
         });
       }
     }
@@ -152,7 +172,12 @@ export function validateApprovalRequest(
 
   const received = validApprovals.length;
   const required = workflow.requiredApprovals;
-  return { met: received >= required, required, received, missing: Math.max(0, required - received) };
+  return {
+    met: received >= required,
+    required,
+    received,
+    missing: Math.max(0, required - received),
+  };
 }
 
 function matchGlob(pattern: string, value: string): boolean {
@@ -163,10 +188,7 @@ function matchGlob(pattern: string, value: string): boolean {
   return regex.test(value);
 }
 
-function findMatchingWorkflow(
-  flag: string,
-  workflows: ApprovalWorkflow[],
-): ApprovalWorkflow {
+function findMatchingWorkflow(flag: string, workflows: ApprovalWorkflow[]): ApprovalWorkflow {
   for (const w of workflows) {
     if (!w.flagPatterns || w.flagPatterns.length === 0) continue;
     if (w.flagPatterns.some((p) => matchGlob(p, flag))) return w;
@@ -210,7 +232,9 @@ export class ComplianceAuditTrail {
   }
 
   /** Append an event to the audit trail. */
-  append(event: Omit<ComplianceAuditEvent, 'sequence' | 'hash' | 'previousHash'>): ComplianceAuditEvent {
+  append(
+    event: Omit<ComplianceAuditEvent, 'sequence' | 'hash' | 'previousHash'>,
+  ): ComplianceAuditEvent {
     const sequence = this.events.length + 1;
     const previousHash = this.lastHash;
 
@@ -248,7 +272,11 @@ export class ComplianceAuditTrail {
       const event = this.events[i];
 
       if (event.previousHash !== prevHash) {
-        return { valid: false, brokenAt: i + 1, message: `Chain broken at event ${i + 1}: previousHash mismatch` };
+        return {
+          valid: false,
+          brokenAt: i + 1,
+          message: `Chain broken at event ${i + 1}: previousHash mismatch`,
+        };
       }
 
       const payload = JSON.stringify({
@@ -265,7 +293,11 @@ export class ComplianceAuditTrail {
 
       const expectedHash = createHmac('sha256', this.hmacKey).update(payload).digest('hex');
       if (event.hash !== expectedHash) {
-        return { valid: false, brokenAt: i + 1, message: `Tampered event at ${i + 1}: hash mismatch` };
+        return {
+          valid: false,
+          brokenAt: i + 1,
+          message: `Tampered event at ${i + 1}: hash mismatch`,
+        };
       }
 
       prevHash = event.hash;
@@ -301,8 +333,9 @@ export class ComplianceAuditTrail {
   exportCsv(events?: ComplianceAuditEvent[]): string {
     const rows = events ?? this.events;
     const header = 'sequence,timestamp,flag,action,actor,actorRole,hash\n';
-    const lines = rows.map((e) =>
-      `${e.sequence},${new Date(e.timestamp).toISOString()},${e.flag},${e.action},${e.actor},${e.actorRole},${e.hash}`,
+    const lines = rows.map(
+      (e) =>
+        `${e.sequence},${new Date(e.timestamp).toISOString()},${e.flag},${e.action},${e.actor},${e.actorRole},${e.hash}`,
     );
     return header + lines.join('\n');
   }
@@ -331,14 +364,18 @@ export function formatGovernanceReport(config: GovernanceConfig): string {
     if (perms.canAdmin) badges.push('👑');
     if (perms.canApprove) badges.push('✅');
     if (perms.canEdit) badges.push('✏️');
-    lines.push(`  ${badges.join('')} ${user.username} — ${user.role}${user.teams ? ` [${user.teams.join(', ')}]` : ''}`);
+    lines.push(
+      `  ${badges.join('')} ${user.username} — ${user.role}${user.teams ? ` [${user.teams.join(', ')}]` : ''}`,
+    );
   }
   lines.push('');
 
   lines.push(`Workflows (${config.workflows.length}):`);
   for (const wf of config.workflows) {
     const scope = wf.flagPatterns ? wf.flagPatterns.join(', ') : '(all flags)';
-    lines.push(`  • ${wf.requiredApprovals} approval(s) from ${wf.approverRoles.join('/')} — scope: ${scope}`);
+    lines.push(
+      `  • ${wf.requiredApprovals} approval(s) from ${wf.approverRoles.join('/')} — scope: ${scope}`,
+    );
   }
 
   return lines.join('\n');

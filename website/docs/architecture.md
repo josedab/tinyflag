@@ -72,12 +72,12 @@ graph TD
 
 ### Module Categories
 
-| Category               | Modules                                              | Purpose                                      |
-| ---------------------- | ---------------------------------------------------- | -------------------------------------------- |
-| **Runtime**            | CachedTinyFlag, Multi-tenant, Merge, Rollout strategies | Extended evaluation and flag resolution     |
+| Category               | Modules                                                          | Purpose                                      |
+| ---------------------- | ---------------------------------------------------------------- | -------------------------------------------- |
+| **Runtime**            | CachedTinyFlag, Multi-tenant, Merge, Rollout strategies          | Extended evaluation and flag resolution      |
 | **Delivery & Control** | Progressive Rollouts, Sync, Signing, Audit, Webhooks, Governance | Safe deployment, compliance, and integration |
-| **Optimization**       | Experiments, Intelligence, Correlation, Bandit        | Data-driven decisions and auto-optimization  |
-| **Verification**       | Replay, Perf Testing                                  | Regression detection and load testing        |
+| **Optimization**       | Experiments, Intelligence, Correlation, Bandit                   | Data-driven decisions and auto-optimization  |
+| **Verification**       | Replay, Perf Testing                                             | Regression detection and load testing        |
 
 ### Data Flow
 

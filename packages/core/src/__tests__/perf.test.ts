@@ -70,17 +70,13 @@ describe('generateTestMatrix', () => {
     config.flags['c'].tags = ['perf'];
 
     const matrix = generateTestMatrix(config, { tags: ['perf'] });
-    const allFlagNames = new Set(
-      matrix.combinations.flatMap((c) => Object.keys(c.flags)),
-    );
+    const allFlagNames = new Set(matrix.combinations.flatMap((c) => Object.keys(c.flags)));
     expect(allFlagNames.has('b')).toBe(false);
   });
 
   it('excludes specific flags', () => {
     const matrix = generateTestMatrix(makeConfig(['a', 'b', 'c']), { exclude: ['b'] });
-    const allFlagNames = new Set(
-      matrix.combinations.flatMap((c) => Object.keys(c.flags)),
-    );
+    const allFlagNames = new Set(matrix.combinations.flatMap((c) => Object.keys(c.flags)));
     expect(allFlagNames.has('b')).toBe(false);
   });
 
@@ -89,9 +85,7 @@ describe('generateTestMatrix', () => {
     config.flags['a'].rollout = 50;
 
     const matrix = generateTestMatrix(config, { rolloutOnly: true });
-    const allFlagNames = new Set(
-      matrix.combinations.flatMap((c) => Object.keys(c.flags)),
-    );
+    const allFlagNames = new Set(matrix.combinations.flatMap((c) => Object.keys(c.flags)));
     expect(allFlagNames.has('a')).toBe(true);
     expect(allFlagNames.has('b')).toBe(false);
   });
@@ -99,14 +93,15 @@ describe('generateTestMatrix', () => {
   it('prioritizes flags with variants/rollout for pruning', () => {
     const flagNames = Array.from({ length: 20 }, (_, i) => `flag-${i}`);
     const config = makeConfig(flagNames);
-    config.flags['flag-0'].variants = [{ name: 'a', weight: 50 }, { name: 'b', weight: 50 }];
+    config.flags['flag-0'].variants = [
+      { name: 'a', weight: 50 },
+      { name: 'b', weight: 50 },
+    ];
     config.flags['flag-0'].rollout = 50;
 
     const matrix = generateTestMatrix(config, { maxCombinations: 4 });
     // flag-0 should be prioritized (has variants + rollout)
-    const includedFlags = new Set(
-      matrix.combinations.flatMap((c) => Object.keys(c.flags)),
-    );
+    const includedFlags = new Set(matrix.combinations.flatMap((c) => Object.keys(c.flags)));
     expect(includedFlags.has('flag-0')).toBe(true);
   });
 
@@ -197,7 +192,11 @@ describe('generatePerfReport', () => {
 
 describe('generateK6Script', () => {
   it('generates valid k6 script', () => {
-    const combo = { id: 'combo-1', flags: { 'flag-a': true, 'flag-b': false }, description: 'flag-a' };
+    const combo = {
+      id: 'combo-1',
+      flags: { 'flag-a': true, 'flag-b': false },
+      description: 'flag-a',
+    };
     const script = generateK6Script(combo, 'http://localhost:3000');
 
     expect(script).toContain("import http from 'k6/http'");

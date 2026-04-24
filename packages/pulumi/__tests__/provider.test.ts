@@ -8,7 +8,9 @@ vi.mock('@pulumi/pulumi', () => {
   function createOutput<T>(val: T) {
     return {
       __value: val,
-      apply(fn: (v: T) => unknown) { return createOutput(fn(val)); },
+      apply(fn: (v: T) => unknown) {
+        return createOutput(fn(val));
+      },
     };
   }
 
@@ -18,7 +20,7 @@ vi.mock('@pulumi/pulumi', () => {
 
   const allFn = (inputs: unknown[]) => ({
     apply(fn: (resolved: unknown[]) => unknown) {
-      const resolved = inputs.map((i: any) => i?.__value !== undefined ? i.__value : i);
+      const resolved = inputs.map((i: any) => (i?.__value !== undefined ? i.__value : i));
       return fn(resolved);
     },
   });
@@ -49,7 +51,9 @@ describe('@tinyflag/pulumi', () => {
   afterEach(() => {
     try {
       if (existsSync(testFile)) unlinkSync(testFile);
-    } catch { /* cleanup */ }
+    } catch {
+      /* cleanup */
+    }
   });
 
   describe('TinyFlag resource creation', () => {
@@ -220,7 +224,11 @@ describe('@tinyflag/pulumi', () => {
       expect(content.flags['fresh-flag'].enabled).toBe(true);
 
       // cleanup
-      try { unlinkSync(nonExistentFile); } catch { /* */ }
+      try {
+        unlinkSync(nonExistentFile);
+      } catch {
+        /* */
+      }
     });
 
     it('handles multiple flags in sequence', async () => {

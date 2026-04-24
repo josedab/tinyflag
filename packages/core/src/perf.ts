@@ -49,9 +49,7 @@ export function generateTestMatrix(config: FlagConfig, options: MatrixOptions = 
   const totalFlags = flagEntries.length;
 
   if (options.tags?.length) {
-    flagEntries = flagEntries.filter(([, def]) =>
-      def.tags?.some((t) => options.tags!.includes(t)),
-    );
+    flagEntries = flagEntries.filter(([, def]) => def.tags?.some((t) => options.tags!.includes(t)));
   }
 
   if (options.exclude?.length) {
@@ -68,8 +66,10 @@ export function generateTestMatrix(config: FlagConfig, options: MatrixOptions = 
 
   // Prioritize flags with variants or rollout (more interesting to test)
   flagEntries.sort((a, b) => {
-    const scoreA = (a[1].variants?.length ?? 0) * 2 + (a[1].rollout ? 1 : 0) + (a[1].rules?.length ?? 0);
-    const scoreB = (b[1].variants?.length ?? 0) * 2 + (b[1].rollout ? 1 : 0) + (b[1].rules?.length ?? 0);
+    const scoreA =
+      (a[1].variants?.length ?? 0) * 2 + (a[1].rollout ? 1 : 0) + (a[1].rules?.length ?? 0);
+    const scoreB =
+      (b[1].variants?.length ?? 0) * 2 + (b[1].rollout ? 1 : 0) + (b[1].rules?.length ?? 0);
     return scoreB - scoreA;
   });
 
@@ -151,12 +151,14 @@ export function comparePerf(
   current: PerfMetrics,
   latencyBudget: number = 200,
 ): PerfComparison {
-  const latencyP99Change = baseline.latencyP99 > 0
-    ? ((current.latencyP99 - baseline.latencyP99) / baseline.latencyP99) * 100
-    : 0;
-  const throughputChange = baseline.throughput > 0
-    ? ((current.throughput - baseline.throughput) / baseline.throughput) * 100
-    : 0;
+  const latencyP99Change =
+    baseline.latencyP99 > 0
+      ? ((current.latencyP99 - baseline.latencyP99) / baseline.latencyP99) * 100
+      : 0;
+  const throughputChange =
+    baseline.throughput > 0
+      ? ((current.throughput - baseline.throughput) / baseline.throughput) * 100
+      : 0;
   const errorRateChange = current.errorRate - baseline.errorRate;
 
   return {
@@ -187,9 +189,10 @@ export function generatePerfReport(
     }
   }
 
-  const worstCase = results.length > 0
-    ? results.reduce((worst, r) => (r.latencyP99 > worst.latencyP99 ? r : worst))
-    : null;
+  const worstCase =
+    results.length > 0
+      ? results.reduce((worst, r) => (r.latencyP99 > worst.latencyP99 ? r : worst))
+      : null;
 
   return {
     matrix,
@@ -287,7 +290,9 @@ export function formatTestMatrix(matrix: TestMatrix): string {
 
   lines.push('🧪 Performance Test Matrix');
   lines.push('═'.repeat(50));
-  lines.push(`Total flags: ${matrix.totalFlags} | Tested: ${matrix.totalFlags - matrix.prunedFlags} | Pruned: ${matrix.prunedFlags}`);
+  lines.push(
+    `Total flags: ${matrix.totalFlags} | Tested: ${matrix.totalFlags - matrix.prunedFlags} | Pruned: ${matrix.prunedFlags}`,
+  );
   lines.push(`Combinations: ${matrix.combinations.length}`);
   lines.push('');
 
@@ -314,14 +319,18 @@ export function formatPerfReport(report: PerfReport): string {
 
   if (report.worstCase) {
     lines.push(`Worst case: ${report.worstCase.combinationId}`);
-    lines.push(`  p99: ${report.worstCase.latencyP99.toFixed(1)}ms | errors: ${(report.worstCase.errorRate * 100).toFixed(2)}%`);
+    lines.push(
+      `  p99: ${report.worstCase.latencyP99.toFixed(1)}ms | errors: ${(report.worstCase.errorRate * 100).toFixed(2)}%`,
+    );
     lines.push('');
   }
 
   lines.push('Results:');
   for (const r of report.results) {
     const budget = r.latencyP99 <= report.latencyBudget ? '✅' : '❌';
-    lines.push(`  ${budget} ${r.combinationId}: p50=${r.latencyP50.toFixed(1)}ms p99=${r.latencyP99.toFixed(1)}ms throughput=${r.throughput.toFixed(0)}req/s errors=${(r.errorRate * 100).toFixed(2)}%`);
+    lines.push(
+      `  ${budget} ${r.combinationId}: p50=${r.latencyP50.toFixed(1)}ms p99=${r.latencyP99.toFixed(1)}ms throughput=${r.throughput.toFixed(0)}req/s errors=${(r.errorRate * 100).toFixed(2)}%`,
+    );
   }
 
   if (report.comparisons.length > 0) {
@@ -329,7 +338,9 @@ export function formatPerfReport(report: PerfReport): string {
     lines.push('Comparisons vs baseline:');
     for (const c of report.comparisons) {
       const direction = c.latencyP99Change >= 0 ? '📈' : '📉';
-      lines.push(`  ${direction} ${c.current.combinationId}: latency ${c.latencyP99Change >= 0 ? '+' : ''}${c.latencyP99Change.toFixed(1)}% | throughput ${c.throughputChange >= 0 ? '+' : ''}${c.throughputChange.toFixed(1)}%`);
+      lines.push(
+        `  ${direction} ${c.current.combinationId}: latency ${c.latencyP99Change >= 0 ? '+' : ''}${c.latencyP99Change.toFixed(1)}% | throughput ${c.throughputChange >= 0 ? '+' : ''}${c.throughputChange.toFixed(1)}%`,
+      );
     }
   }
 

@@ -8,7 +8,9 @@ const MAX_FLAG_NAME_LENGTH = 128;
 export const SUPPORTED_VERSIONS = [1];
 
 /** Detect circular inheritance in segment definitions. */
-export function detectCircularSegments(segments: Record<string, Record<string, unknown>>): string[][] {
+export function detectCircularSegments(
+  segments: Record<string, Record<string, unknown>>,
+): string[][] {
   const cycles: string[][] = [];
   const visited = new Set<string>();
   const inStack = new Set<string>();
@@ -388,7 +390,11 @@ export function validateRule(prefix: string, rule: unknown, errors: ValidationEr
   }
 }
 
-export function validateVariants(prefix: string, variants: unknown[], errors: ValidationError[]): void {
+export function validateVariants(
+  prefix: string,
+  variants: unknown[],
+  errors: ValidationError[],
+): void {
   let allZero = true;
 
   for (let i = 0; i < variants.length; i++) {

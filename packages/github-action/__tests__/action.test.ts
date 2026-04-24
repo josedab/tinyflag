@@ -45,10 +45,7 @@ ${diffOutput}
 describe('GitHub Action', () => {
   describe('action.yml structure', () => {
     it('contains required inputs', () => {
-      const actionYml = readFileSync(
-        join(__dirname, '..', 'action.yml'),
-        'utf-8',
-      );
+      const actionYml = readFileSync(join(__dirname, '..', 'action.yml'), 'utf-8');
       expect(actionYml).toContain('flags-file');
       expect(actionYml).toContain('flag-owners-file');
       expect(actionYml).toContain('check-approvals');
@@ -56,34 +53,22 @@ describe('GitHub Action', () => {
     });
 
     it('uses composite action type', () => {
-      const actionYml = readFileSync(
-        join(__dirname, '..', 'action.yml'),
-        'utf-8',
-      );
+      const actionYml = readFileSync(join(__dirname, '..', 'action.yml'), 'utf-8');
       expect(actionYml).toContain("using: 'composite'");
     });
 
     it('includes validation step', () => {
-      const actionYml = readFileSync(
-        join(__dirname, '..', 'action.yml'),
-        'utf-8',
-      );
+      const actionYml = readFileSync(join(__dirname, '..', 'action.yml'), 'utf-8');
       expect(actionYml).toContain('tinyflag validate');
     });
 
     it('includes diff step for PR comments', () => {
-      const actionYml = readFileSync(
-        join(__dirname, '..', 'action.yml'),
-        'utf-8',
-      );
+      const actionYml = readFileSync(join(__dirname, '..', 'action.yml'), 'utf-8');
       expect(actionYml).toContain('tinyflag diff');
     });
 
     it('sets up Node.js v20', () => {
-      const actionYml = readFileSync(
-        join(__dirname, '..', 'action.yml'),
-        'utf-8',
-      );
+      const actionYml = readFileSync(join(__dirname, '..', 'action.yml'), 'utf-8');
       expect(actionYml).toContain("node-version: '20'");
     });
   });
@@ -106,9 +91,7 @@ describe('GitHub Action', () => {
     });
 
     it('prefers flag field over name field', () => {
-      const input = JSON.stringify([
-        { flag: 'preferred', name: 'fallback' },
-      ]);
+      const input = JSON.stringify([{ flag: 'preferred', name: 'fallback' }]);
       expect(extractChangedFlags(input)).toBe('preferred');
     });
 
@@ -173,20 +156,14 @@ describe('GitHub Action', () => {
 
   describe('schema validation step', () => {
     it('action uses npx tinyflag validate command', () => {
-      const actionYml = readFileSync(
-        join(__dirname, '..', 'action.yml'),
-        'utf-8',
-      );
+      const actionYml = readFileSync(join(__dirname, '..', 'action.yml'), 'utf-8');
       // Verify the validate command uses the flags-file input
       expect(actionYml).toContain('npx tinyflag validate');
       expect(actionYml).toMatch(/tinyflag validate.*flags-file/);
     });
 
     it('action handles ownership check conditionally', () => {
-      const actionYml = readFileSync(
-        join(__dirname, '..', 'action.yml'),
-        'utf-8',
-      );
+      const actionYml = readFileSync(join(__dirname, '..', 'action.yml'), 'utf-8');
       // Ownership check is conditional on PR events and check-approvals input
       expect(actionYml).toContain('check-approvals');
       expect(actionYml).toContain('pull_request');

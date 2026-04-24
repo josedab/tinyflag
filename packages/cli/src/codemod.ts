@@ -34,10 +34,22 @@ const EXCLUDE_DIRS = new Set(['node_modules', 'dist', '.git', 'coverage', '.next
 
 // Patterns for finding flag usage
 const FLAG_PATTERNS = [
-  { regex: /(?:ff|flags|tinyflag|featureFlags)\s*\.\s*isEnabled\s*\(\s*['"]([a-z0-9-]+)['"]\s*(?:,\s*[^)]+)?\s*\)/g, type: 'isEnabled' as const },
-  { regex: /(?:ff|flags|tinyflag|featureFlags)\s*\.\s*getVariant\s*\(\s*['"]([a-z0-9-]+)['"]\s*(?:,\s*[^)]+)?\s*\)/g, type: 'getVariant' as const },
+  {
+    regex:
+      /(?:ff|flags|tinyflag|featureFlags)\s*\.\s*isEnabled\s*\(\s*['"]([a-z0-9-]+)['"]\s*(?:,\s*[^)]+)?\s*\)/g,
+    type: 'isEnabled' as const,
+  },
+  {
+    regex:
+      /(?:ff|flags|tinyflag|featureFlags)\s*\.\s*getVariant\s*\(\s*['"]([a-z0-9-]+)['"]\s*(?:,\s*[^)]+)?\s*\)/g,
+    type: 'getVariant' as const,
+  },
   { regex: /useFlag\s*\(\s*['"]([a-z0-9-]+)['"]\s*\)/g, type: 'useFlag' as const },
-  { regex: /(?:ff|flags|tinyflag|featureFlags)\s*\.\s*getConfig\s*(?:<[^>]+>)?\s*\(\s*['"]([a-z0-9-]+)['"]\s*(?:,\s*[^)]+)?\s*\)/g, type: 'getConfig' as const },
+  {
+    regex:
+      /(?:ff|flags|tinyflag|featureFlags)\s*\.\s*getConfig\s*(?:<[^>]+>)?\s*\(\s*['"]([a-z0-9-]+)['"]\s*(?:,\s*[^)]+)?\s*\)/g,
+    type: 'getConfig' as const,
+  },
 ];
 
 /**
@@ -132,17 +144,24 @@ export function transformFile(
   const changes: CodemodChange[] = [];
   const transformedLines = [...lines];
 
-  const archivedFlags = options.archivedFlags ?? new Set(
-    Object.entries(config.flags)
-      .filter(([, def]) => def.lifecycle?.state === 'archived')
-      .map(([name]) => name),
-  );
+  const archivedFlags =
+    options.archivedFlags ??
+    new Set(
+      Object.entries(config.flags)
+        .filter(([, def]) => def.lifecycle?.state === 'archived')
+        .map(([name]) => name),
+    );
 
-  const fullyRolledOut = options.fullyRolledOutFlags ?? new Set(
-    Object.entries(config.flags)
-      .filter(([, def]) => def.enabled && (def.rollout === undefined || def.rollout === 100) && !def.rules?.length)
-      .map(([name]) => name),
-  );
+  const fullyRolledOut =
+    options.fullyRolledOutFlags ??
+    new Set(
+      Object.entries(config.flags)
+        .filter(
+          ([, def]) =>
+            def.enabled && (def.rollout === undefined || def.rollout === 100) && !def.rules?.length,
+        )
+        .map(([name]) => name),
+    );
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -320,7 +339,9 @@ export function formatCodemodDiff(results: CodemodResult[], baseDir: string): st
 
   for (const result of results) {
     const relPath = relative(baseDir, result.file);
-    lines.push(`\n📄 ${relPath} (${result.changes.length} change${result.changes.length > 1 ? 's' : ''}):`);
+    lines.push(
+      `\n📄 ${relPath} (${result.changes.length} change${result.changes.length > 1 ? 's' : ''}):`,
+    );
     for (const change of result.changes) {
       lines.push(`  L${change.line}: ${change.description}`);
       lines.push(`    - ${change.before}`);

@@ -152,7 +152,9 @@ export class WebhookEngine {
   }
 
   /** Test a webhook endpoint with a test event. */
-  async testEndpoint(id: string): Promise<{ success: boolean; statusCode?: number; error?: string }> {
+  async testEndpoint(
+    id: string,
+  ): Promise<{ success: boolean; statusCode?: number; error?: string }> {
     const endpoint = this.endpoints.get(id);
     if (!endpoint) return { success: false, error: 'Endpoint not found' };
 
@@ -252,7 +254,9 @@ export class WebhookEngine {
       const matched = filter.flags.some((pattern) => {
         if (pattern === event.flag) return true;
         if (!pattern.includes('*')) return false;
-        const regex = new RegExp('^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+        const regex = new RegExp(
+          '^' + pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$',
+        );
         return regex.test(event.flag);
       });
       if (!matched) return false;
@@ -327,8 +331,11 @@ export function connectEventBus(
 
   const handler = (event: ChangeEvent) => {
     const type: WebhookEvent['type'] =
-      event.previous === undefined ? 'flag.created' :
-      event.current === undefined ? 'flag.deleted' : 'flag.updated';
+      event.previous === undefined
+        ? 'flag.created'
+        : event.current === undefined
+          ? 'flag.deleted'
+          : 'flag.updated';
 
     const webhookEvent: WebhookEvent = {
       id: `evt-${Date.now()}-${++counter}`,

@@ -194,8 +194,20 @@ describe('tinyflag-otel', () => {
 
       instrumentTinyFlag(tf, { otelApi });
 
-      emitExposure(handlers, { flag: 'f1', enabled: true, variant: null, userId: 'u1', timestamp: Date.now() });
-      emitExposure(handlers, { flag: 'f2', enabled: false, variant: null, userId: 'u2', timestamp: Date.now() });
+      emitExposure(handlers, {
+        flag: 'f1',
+        enabled: true,
+        variant: null,
+        userId: 'u1',
+        timestamp: Date.now(),
+      });
+      emitExposure(handlers, {
+        flag: 'f2',
+        enabled: false,
+        variant: null,
+        userId: 'u2',
+        timestamp: Date.now(),
+      });
 
       expect(mockSpan.end).toHaveBeenCalledTimes(2);
     });
@@ -224,7 +236,13 @@ describe('tinyflag-otel', () => {
 
       instrumentTinyFlag(tf, { otelApi, spanNamePrefix: 'custom.prefix' });
 
-      emitExposure(handlers, { flag: 'my-flag', enabled: true, variant: null, userId: 'u1', timestamp: Date.now() });
+      emitExposure(handlers, {
+        flag: 'my-flag',
+        enabled: true,
+        variant: null,
+        userId: 'u1',
+        timestamp: Date.now(),
+      });
 
       expect(mockTracer.startSpan).toHaveBeenCalledWith('custom.prefix.my-flag');
     });
@@ -237,7 +255,13 @@ describe('tinyflag-otel', () => {
 
       const flags = ['flag-a', 'flag-b', 'flag-c'];
       for (const flag of flags) {
-        emitExposure(handlers, { flag, enabled: true, variant: null, userId: 'u1', timestamp: Date.now() });
+        emitExposure(handlers, {
+          flag,
+          enabled: true,
+          variant: null,
+          userId: 'u1',
+          timestamp: Date.now(),
+        });
       }
 
       expect(mockTracer.startSpan).toHaveBeenCalledTimes(3);
@@ -251,13 +275,25 @@ describe('tinyflag-otel', () => {
       const instrumentation = instrumentTinyFlag(tf, { otelApi });
 
       // Emit before dispose
-      emitExposure(handlers, { flag: 'f1', enabled: true, variant: null, userId: 'u1', timestamp: Date.now() });
+      emitExposure(handlers, {
+        flag: 'f1',
+        enabled: true,
+        variant: null,
+        userId: 'u1',
+        timestamp: Date.now(),
+      });
       expect(mockTracer.startSpan).toHaveBeenCalledTimes(1);
 
       instrumentation.dispose();
 
       // After dispose, handler should be removed
-      emitExposure(handlers, { flag: 'f2', enabled: true, variant: null, userId: 'u1', timestamp: Date.now() });
+      emitExposure(handlers, {
+        flag: 'f2',
+        enabled: true,
+        variant: null,
+        userId: 'u1',
+        timestamp: Date.now(),
+      });
       expect(mockTracer.startSpan).toHaveBeenCalledTimes(1); // No new calls
     });
 
@@ -267,7 +303,13 @@ describe('tinyflag-otel', () => {
 
       instrumentTinyFlag(tf, { otelApi, filter: () => false });
 
-      emitExposure(handlers, { flag: 'any-flag', enabled: true, variant: null, userId: 'u1', timestamp: Date.now() });
+      emitExposure(handlers, {
+        flag: 'any-flag',
+        enabled: true,
+        variant: null,
+        userId: 'u1',
+        timestamp: Date.now(),
+      });
 
       expect(mockTracer.startSpan).not.toHaveBeenCalled();
     });
@@ -278,8 +320,20 @@ describe('tinyflag-otel', () => {
 
       instrumentTinyFlag(tf, { otelApi, filter: () => true });
 
-      emitExposure(handlers, { flag: 'a', enabled: true, variant: null, userId: 'u1', timestamp: Date.now() });
-      emitExposure(handlers, { flag: 'b', enabled: false, variant: null, userId: 'u2', timestamp: Date.now() });
+      emitExposure(handlers, {
+        flag: 'a',
+        enabled: true,
+        variant: null,
+        userId: 'u1',
+        timestamp: Date.now(),
+      });
+      emitExposure(handlers, {
+        flag: 'b',
+        enabled: false,
+        variant: null,
+        userId: 'u2',
+        timestamp: Date.now(),
+      });
 
       expect(mockTracer.startSpan).toHaveBeenCalledTimes(2);
     });
@@ -298,7 +352,10 @@ describe('tinyflag-otel', () => {
         timestamp: Date.now(),
       });
 
-      expect(mockSpan.setAttribute).toHaveBeenCalledWith('feature_flag.user_id', 'specific-user-42');
+      expect(mockSpan.setAttribute).toHaveBeenCalledWith(
+        'feature_flag.user_id',
+        'specific-user-42',
+      );
     });
 
     it('uses default options when none specified', () => {
@@ -309,7 +366,13 @@ describe('tinyflag-otel', () => {
 
       expect(otelApi.trace.getTracer).toHaveBeenCalledWith('tinyflag', '0.1.0');
 
-      emitExposure(handlers, { flag: 'def', enabled: true, variant: null, userId: 'u', timestamp: Date.now() });
+      emitExposure(handlers, {
+        flag: 'def',
+        enabled: true,
+        variant: null,
+        userId: 'u',
+        timestamp: Date.now(),
+      });
       expect(mockTracer.startSpan).toHaveBeenCalledWith('tinyflag.evaluate.def');
     });
   });

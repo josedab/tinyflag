@@ -5,7 +5,14 @@ import type { IncomingMessage } from 'http';
 /** Minimal Fastify instance interface needed for plugin registration. */
 interface FastifyInstance {
   decorateRequest(property: string, value: unknown): void;
-  addHook(name: string, handler: (request: IncomingMessage & Record<string, unknown>, reply: unknown, done: () => void) => void): void;
+  addHook(
+    name: string,
+    handler: (
+      request: IncomingMessage & Record<string, unknown>,
+      reply: unknown,
+      done: () => void,
+    ) => void,
+  ): void;
 }
 
 /**
@@ -38,11 +45,19 @@ export function tinyflagFastify(
 ): void {
   fastify.decorateRequest('flags', null);
 
-  fastify.addHook('onRequest', (request: IncomingMessage & Record<string, unknown>, _reply: unknown, hookDone: () => void) => {
-    const context = options.contextFromRequest?.(request);
-    (request as IncomingMessage & Record<string, unknown>).flags = evaluateForContext(options.instance, context, options.tracing, options.otelTrace);
-    hookDone();
-  });
+  fastify.addHook(
+    'onRequest',
+    (request: IncomingMessage & Record<string, unknown>, _reply: unknown, hookDone: () => void) => {
+      const context = options.contextFromRequest?.(request);
+      (request as IncomingMessage & Record<string, unknown>).flags = evaluateForContext(
+        options.instance,
+        context,
+        options.tracing,
+        options.otelTrace,
+      );
+      hookDone();
+    },
+  );
 
   done();
 }

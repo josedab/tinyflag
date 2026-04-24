@@ -73,9 +73,8 @@ export function initOptimizerState(
       impressions: 0,
       conversions: 0,
       conversionRate: 0,
-      weight: i === variantNames.length - 1
-        ? 100 - equalWeight * (variantNames.length - 1)
-        : equalWeight,
+      weight:
+        i === variantNames.length - 1 ? 100 - equalWeight * (variantNames.length - 1) : equalWeight,
     })),
     winner: null,
     winnerProbability: 0,
@@ -277,10 +276,14 @@ export function formatOptimizerState(state: OptimizerState): string {
 
   lines.push(`🎰 Multi-Armed Bandit: ${state.flag}`);
   lines.push('═'.repeat(50));
-  lines.push(`Iteration: ${state.iteration} | Total: ${state.totalImpressions} impressions, ${state.totalConversions} conversions`);
+  lines.push(
+    `Iteration: ${state.iteration} | Total: ${state.totalImpressions} impressions, ${state.totalConversions} conversions`,
+  );
 
   if (state.winner) {
-    lines.push(`🏆 Winner: ${state.winner} (${(state.winnerProbability * 100).toFixed(1)}% probability)`);
+    lines.push(
+      `🏆 Winner: ${state.winner} (${(state.winnerProbability * 100).toFixed(1)}% probability)`,
+    );
   }
 
   lines.push('');
@@ -289,7 +292,9 @@ export function formatOptimizerState(state: OptimizerState): string {
     const bar = '█'.repeat(Math.round(v.weight / 5)) + '░'.repeat(20 - Math.round(v.weight / 5));
     lines.push(`  ${v.name}`);
     lines.push(`    Weight: ${v.weight}% ${bar}`);
-    lines.push(`    Rate: ${(v.conversionRate * 100).toFixed(2)}% (${v.conversions}/${v.impressions})`);
+    lines.push(
+      `    Rate: ${(v.conversionRate * 100).toFixed(2)}% (${v.conversions}/${v.impressions})`,
+    );
     lines.push(`    Beta(α=${v.params.alpha.toFixed(0)}, β=${v.params.beta.toFixed(0)})`);
   }
 

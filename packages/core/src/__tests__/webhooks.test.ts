@@ -92,7 +92,9 @@ describe('WebhookEngine', () => {
   });
 
   it('delivers event to active matching endpoints', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok', { status: 200 }));
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }));
     const engine = new WebhookEngine({ maxRetries: 0, baseDelay: 0 });
     engine.addEndpoint(makeEndpoint());
 
@@ -104,7 +106,9 @@ describe('WebhookEngine', () => {
   });
 
   it('skips inactive endpoints', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok', { status: 200 }));
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }));
     const engine = new WebhookEngine({ maxRetries: 0 });
     engine.addEndpoint(makeEndpoint({ active: false }));
 
@@ -114,11 +118,11 @@ describe('WebhookEngine', () => {
   });
 
   it('filters events by type', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok', { status: 200 }));
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }));
     const engine = new WebhookEngine({ maxRetries: 0 });
-    engine.addEndpoint(
-      makeEndpoint({ filter: { types: ['flag.created'] } }),
-    );
+    engine.addEndpoint(makeEndpoint({ filter: { types: ['flag.created'] } }));
 
     await engine.deliver(makeEvent({ type: 'flag.updated' }));
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -129,11 +133,11 @@ describe('WebhookEngine', () => {
   });
 
   it('filters events by flag pattern', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok', { status: 200 }));
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }));
     const engine = new WebhookEngine({ maxRetries: 0 });
-    engine.addEndpoint(
-      makeEndpoint({ filter: { flags: ['prod-*'] } }),
-    );
+    engine.addEndpoint(makeEndpoint({ filter: { flags: ['prod-*'] } }));
 
     await engine.deliver(makeEvent({ flag: 'dev-flag' }));
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -144,7 +148,9 @@ describe('WebhookEngine', () => {
   });
 
   it('empty filter matches all events', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok', { status: 200 }));
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }));
     const engine = new WebhookEngine({ maxRetries: 0 });
     engine.addEndpoint(makeEndpoint({ filter: {} }));
 
@@ -208,7 +214,9 @@ describe('WebhookEngine', () => {
   });
 
   it('testEndpoint succeeds for valid endpoint', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok', { status: 200 }));
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }));
     const engine = new WebhookEngine();
     engine.addEndpoint(makeEndpoint({ id: 'ep-test' }));
 
@@ -256,7 +264,9 @@ describe('Event Bus Adapters', () => {
   });
 
   it('createWebhookAdapter wraps WebhookEngine', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('ok', { status: 200 }));
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('ok', { status: 200 }));
     const adapter = createWebhookAdapter([makeEndpoint()]);
     expect(adapter.name).toBe('webhook');
     await adapter.publish(makeEvent());

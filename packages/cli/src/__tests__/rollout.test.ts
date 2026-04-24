@@ -79,7 +79,14 @@ function createRunningState(flag: string, overrides: Partial<RolloutState> = {})
     stageEnteredAt: Date.now(),
     startedAt: Date.now(),
     history: [
-      { type: 'stage-entered', timestamp: Date.now(), stageName: 'canary', stageIndex: 0, percentage: 1, message: 'Started' },
+      {
+        type: 'stage-entered',
+        timestamp: Date.now(),
+        stageName: 'canary',
+        stageIndex: 0,
+        percentage: 1,
+        message: 'Started',
+      },
     ],
     ...overrides,
   };
@@ -380,23 +387,55 @@ describe('rollout history tracking', () => {
     const loaded = loadState('my-flag')!;
     // Pause
     loaded.status = 'paused';
-    loaded.history.push({ type: 'paused', timestamp: Date.now(), stageName: 'canary', stageIndex: 0, percentage: 1, message: 'Paused' });
+    loaded.history.push({
+      type: 'paused',
+      timestamp: Date.now(),
+      stageName: 'canary',
+      stageIndex: 0,
+      percentage: 1,
+      message: 'Paused',
+    });
     // Resume
     loaded.status = 'running';
-    loaded.history.push({ type: 'resumed', timestamp: Date.now(), stageName: 'canary', stageIndex: 0, percentage: 1, message: 'Resumed' });
+    loaded.history.push({
+      type: 'resumed',
+      timestamp: Date.now(),
+      stageName: 'canary',
+      stageIndex: 0,
+      percentage: 1,
+      message: 'Resumed',
+    });
     // Promote
     loaded.currentStageIndex = 1;
-    loaded.history.push({ type: 'promoted', timestamp: Date.now(), stageName: 'ring-1', stageIndex: 1, percentage: 10, message: 'Promoted' });
+    loaded.history.push({
+      type: 'promoted',
+      timestamp: Date.now(),
+      stageName: 'ring-1',
+      stageIndex: 1,
+      percentage: 10,
+      message: 'Promoted',
+    });
     // Rollback
     loaded.status = 'rolled-back';
-    loaded.history.push({ type: 'rollback', timestamp: Date.now(), stageName: 'ring-1', stageIndex: 1, percentage: 0, message: 'Rollback' });
+    loaded.history.push({
+      type: 'rollback',
+      timestamp: Date.now(),
+      stageName: 'ring-1',
+      stageIndex: 1,
+      percentage: 0,
+      message: 'Rollback',
+    });
     saveState(loaded);
 
     const final = loadState('my-flag')!;
     // Initial + 4 events
     expect(final.history.length).toBe(5);
     expect(final.history.map((h) => h.type)).toEqual([
-      'stage-entered', 'paused', 'resumed', 'promoted', 'rollback',
+      'stage-entered',
+      'paused',
+      'resumed',
+      'promoted',
+      'rollback',
     ]);
   });
 });

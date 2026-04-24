@@ -104,13 +104,19 @@ function handleSegmentsImpact(args: string[], jsonMode: boolean): void {
   }
 
   if (jsonMode) {
-    console.log(JSON.stringify({
-      command: 'segments-impact',
-      segment: segmentName,
-      definition: segments[segmentName],
-      impactedFlags,
-      dependentSegments,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          command: 'segments-impact',
+          segment: segmentName,
+          definition: segments[segmentName],
+          impactedFlags,
+          dependentSegments,
+        },
+        null,
+        2,
+      ),
+    );
     return;
   }
 

@@ -258,8 +258,20 @@ describe('formatExperimentResults', () => {
       metric: 'conversion',
       method: 'bayesian',
       variants: [
-        { name: 'control', sampleSize: 100, conversions: 10, conversionRate: 0.1, confidenceInterval: [0.05, 0.17] },
-        { name: 'treatment', sampleSize: 100, conversions: 30, conversionRate: 0.3, confidenceInterval: [0.22, 0.39] },
+        {
+          name: 'control',
+          sampleSize: 100,
+          conversions: 10,
+          conversionRate: 0.1,
+          confidenceInterval: [0.05, 0.17],
+        },
+        {
+          name: 'treatment',
+          sampleSize: 100,
+          conversions: 30,
+          conversionRate: 0.3,
+          confidenceInterval: [0.22, 0.39],
+        },
       ],
       winner: 'treatment',
       significant: true,
@@ -278,7 +290,13 @@ describe('formatExperimentResults', () => {
       metric: 'clicks',
       method: 'frequentist',
       variants: [
-        { name: 'control', sampleSize: 50, conversions: 10, conversionRate: 0.2, confidenceInterval: [0.1, 0.33] },
+        {
+          name: 'control',
+          sampleSize: 50,
+          conversions: 10,
+          conversionRate: 0.2,
+          confidenceInterval: [0.1, 0.33],
+        },
       ],
       winner: null,
       significant: false,

@@ -53,7 +53,9 @@ describe('diffEnvConfigs', () => {
 
   it('detects different rules', () => {
     const envA = makeConfig({ f: { enabled: true, rules: [{ conditions: { plan: 'pro' } }] } });
-    const envB = makeConfig({ f: { enabled: true, rules: [{ conditions: { plan: 'enterprise' } }] } });
+    const envB = makeConfig({
+      f: { enabled: true, rules: [{ conditions: { plan: 'enterprise' } }] },
+    });
     const diffs = diffEnvConfigs('s', envA, 'p', envB);
 
     const rulesDiff = diffs.find((d) => d.field === 'rules');

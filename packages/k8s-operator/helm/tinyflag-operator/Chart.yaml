@@ -3,7 +3,7 @@ name: tinyflag-operator
 description: A Helm chart for the TinyFlag Kubernetes Operator
 type: application
 version: 0.1.0
-appVersion: "0.1.0"
+appVersion: '0.1.0'
 keywords:
   - feature-flags
   - gitops

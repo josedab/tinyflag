@@ -221,7 +221,9 @@ function loadFlags(): void {
       flagsFilePath = filePath;
       const lines = content.split('\n');
 
-      for (const [name, def] of Object.entries(parsed.flags as Record<string, Record<string, unknown>>)) {
+      for (const [name, def] of Object.entries(
+        parsed.flags as Record<string, Record<string, unknown>>,
+      )) {
         const lineIdx = lines.findIndex((l) => new RegExp(`^\\s{2}${name}\\s*:`).test(l));
         flagsMap.set(name, {
           name,
@@ -230,7 +232,9 @@ function loadFlags(): void {
           rollout: def?.rollout as number | undefined,
           rulesCount: Array.isArray(def?.rules) ? def.rules.length : 0,
           variants: Array.isArray(def?.variants)
-            ? (def.variants as Record<string, unknown>[]).map((v) => v?.name as string).filter(Boolean)
+            ? (def.variants as Record<string, unknown>[])
+                .map((v) => v?.name as string)
+                .filter(Boolean)
             : [],
           tags: def?.tags as string[] | undefined,
           line: lineIdx >= 0 ? lineIdx : 0,

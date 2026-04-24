@@ -218,12 +218,16 @@ function approximateChiCdf(chi2: number): number {
 function normalCdf(z: number): number {
   if (z < -8) return 0;
   if (z > 8) return 1;
-  const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429;
+  const a1 = 0.254829592,
+    a2 = -0.284496736,
+    a3 = 1.421413741,
+    a4 = -1.453152027,
+    a5 = 1.061405429;
   const p = 0.3275911;
   const sign = z < 0 ? -1 : 1;
   const x = Math.abs(z) / Math.sqrt(2);
   const t = 1 / (1 + p * x);
-  const erf = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+  const erf = 1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
   return 0.5 * (1 + sign * erf);
 }
 
@@ -236,9 +240,12 @@ function betaFunction(a: number, b: number): number {
 function gamma(n: number): number {
   if (n < 0.5) return Math.PI / (Math.sin(Math.PI * n) * gamma(1 - n));
   const g = 7;
-  const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
-    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
-  const x = c.reduce((acc, ci, i) => i === 0 ? ci : acc + ci / (n - 1 + i), 0);
+  const c = [
+    0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6,
+    1.5056327351493116e-7,
+  ];
+  const x = c.reduce((acc, ci, i) => (i === 0 ? ci : acc + ci / (n - 1 + i)), 0);
   const t = n - 1 + g + 0.5;
   return Math.sqrt(2 * Math.PI) * Math.pow(t, n - 0.5) * Math.exp(-t) * x;
 }
@@ -334,20 +341,30 @@ export function formatImpactAnalysis(analysis: ImpactAnalysis): string {
   lines.push(`📈 Impact Analysis: ${analysis.flag}`);
   lines.push('═'.repeat(50));
   lines.push(`Metric:  ${analysis.metric}`);
-  lines.push(`Change:  ${analysis.changePoint.action} at ${new Date(analysis.changePoint.timestamp).toISOString()}`);
+  lines.push(
+    `Change:  ${analysis.changePoint.action} at ${new Date(analysis.changePoint.timestamp).toISOString()}`,
+  );
   lines.push('');
 
   lines.push('Before:');
-  lines.push(`  Mean: ${analysis.beforeSummary.mean.toFixed(4)}  StdDev: ${analysis.beforeSummary.stddev.toFixed(4)}  N=${analysis.beforeSummary.count}`);
+  lines.push(
+    `  Mean: ${analysis.beforeSummary.mean.toFixed(4)}  StdDev: ${analysis.beforeSummary.stddev.toFixed(4)}  N=${analysis.beforeSummary.count}`,
+  );
   lines.push('After:');
-  lines.push(`  Mean: ${analysis.afterSummary.mean.toFixed(4)}  StdDev: ${analysis.afterSummary.stddev.toFixed(4)}  N=${analysis.afterSummary.count}`);
-  lines.push(`Change: ${analysis.changePercent >= 0 ? '+' : ''}${analysis.changePercent.toFixed(2)}%`);
+  lines.push(
+    `  Mean: ${analysis.afterSummary.mean.toFixed(4)}  StdDev: ${analysis.afterSummary.stddev.toFixed(4)}  N=${analysis.afterSummary.count}`,
+  );
+  lines.push(
+    `Change: ${analysis.changePercent >= 0 ? '+' : ''}${analysis.changePercent.toFixed(2)}%`,
+  );
   lines.push('');
 
   const test = analysis.statisticalTest;
   const sigIcon = test.significant ? '✅' : '❌';
   lines.push(`Statistical Test: ${test.testName}`);
-  lines.push(`  ${sigIcon} Significant: ${test.significant} (p=${test.pValue.toFixed(4)}, α=${(1 - test.confidenceLevel).toFixed(2)})`);
+  lines.push(
+    `  ${sigIcon} Significant: ${test.significant} (p=${test.pValue.toFixed(4)}, α=${(1 - test.confidenceLevel).toFixed(2)})`,
+  );
   lines.push(`  Statistic: ${test.statistic.toFixed(4)}`);
   lines.push(`  Effect size: ${test.effectSize.toFixed(4)}`);
 
@@ -355,7 +372,9 @@ export function formatImpactAnalysis(analysis: ImpactAnalysis): string {
     lines.push('');
     lines.push('Causal Impact Estimate:');
     lines.push(`  Point estimate: ${analysis.causalImpactEstimate.pointEstimate.toFixed(4)}`);
-    lines.push(`  Relative effect: ${(analysis.causalImpactEstimate.relativeEffect * 100).toFixed(2)}%`);
+    lines.push(
+      `  Relative effect: ${(analysis.causalImpactEstimate.relativeEffect * 100).toFixed(2)}%`,
+    );
     lines.push(`  Confidence: ${(analysis.causalImpactEstimate.confidence * 100).toFixed(0)}%`);
   }
 

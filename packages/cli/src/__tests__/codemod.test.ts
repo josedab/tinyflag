@@ -224,10 +224,7 @@ describe('transformFile', () => {
   });
 
   it('handles multiple changes on different lines', () => {
-    const filePath = writeFile(
-      'app.ts',
-      `ff.isEnabled('flag-a');\nff.isEnabled('flag-b');`,
-    );
+    const filePath = writeFile('app.ts', `ff.isEnabled('flag-a');\nff.isEnabled('flag-b');`);
     const config: FlagConfig = {
       flags: {
         'flag-a': { enabled: false, lifecycle: { state: 'archived' } },
@@ -365,7 +362,13 @@ describe('formatCodemodDiff', () => {
         original: '',
         transformed: '',
         changes: [
-          { line: 5, type: 'remove-branch', description: 'Replace archived flag', before: 'old', after: 'new' },
+          {
+            line: 5,
+            type: 'remove-branch',
+            description: 'Replace archived flag',
+            before: 'old',
+            after: 'new',
+          },
         ],
       },
     ];
@@ -392,9 +395,7 @@ describe('formatCodemodDiff', () => {
         file: join(tmpDir, 'b.ts'),
         original: '',
         transformed: '',
-        changes: [
-          { line: 10, type: 'remove-call', description: 'd3', before: 'b3', after: 'a3' },
-        ],
+        changes: [{ line: 10, type: 'remove-call', description: 'd3', before: 'b3', after: 'a3' }],
       },
     ];
 

@@ -51,12 +51,17 @@ const TINYFLAG_TOKEN = process.env.TINYFLAG_TOKEN || '';
 const MULTI_TENANT = process.env.MULTI_TENANT === 'true';
 
 // Structured logging
-function log(level: 'info' | 'warn' | 'error' | 'debug', message: string, meta?: Record<string, unknown>): void {
+function log(
+  level: 'info' | 'warn' | 'error' | 'debug',
+  message: string,
+  meta?: Record<string, unknown>,
+): void {
   const entry = { timestamp: new Date().toISOString(), level, message, ...meta };
   if (process.env.LOG_FORMAT === 'json') {
     console.log(JSON.stringify(entry));
   } else {
-    const prefix = level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'debug' ? '🔍' : '✅';
+    const prefix =
+      level === 'error' ? '❌' : level === 'warn' ? '⚠️' : level === 'debug' ? '🔍' : '✅';
     console.log(`${prefix} ${message}`);
   }
 }
@@ -108,17 +113,25 @@ function loadFlags(tenant?: string): void {
     const { config, errors } = parseFlagConfig(raw);
 
     if (errors.length > 0) {
-      log('error', 'Flag validation errors', { file: flagsFile, errors: errors.map(e => `${e.path}: ${e.message}`) });
+      log('error', 'Flag validation errors', {
+        file: flagsFile,
+        errors: errors.map((e) => `${e.path}: ${e.message}`),
+      });
       return;
     }
 
     if (tenant) {
       tenantFlags.set(tenant, config.flags);
-      log('info', `Loaded ${Object.keys(config.flags).length} flags for tenant ${tenant}`, { tenant, count: Object.keys(config.flags).length });
+      log('info', `Loaded ${Object.keys(config.flags).length} flags for tenant ${tenant}`, {
+        tenant,
+        count: Object.keys(config.flags).length,
+      });
     } else {
       currentFlags = config.flags;
       currentEtag = `"${Date.now().toString(36)}"`;
-      log('info', `Loaded ${Object.keys(config.flags).length} flags from ${flagsFile}`, { count: Object.keys(config.flags).length });
+      log('info', `Loaded ${Object.keys(config.flags).length} flags from ${flagsFile}`, {
+        count: Object.keys(config.flags).length,
+      });
       broadcastUpdate();
     }
   } catch (error) {
@@ -191,8 +204,11 @@ function checkAuth(req: IncomingMessage, res: ServerResponse, tenant?: string): 
 }
 
 function getClientIp(req: IncomingMessage): string {
-  return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-    req.socket.remoteAddress || 'unknown';
+  return (
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+    req.socket.remoteAddress ||
+    'unknown'
+  );
 }
 
 function handleRequest(req: IncomingMessage, res: ServerResponse): void {
@@ -237,12 +253,14 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
       break;
     case '/health':
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        status: 'ok',
-        flagCount: Object.keys(currentFlags).length,
-        uptime: Math.floor((Date.now() - startTime) / 1000),
-        connections: { websocket: wsClients.size, sse: sseClients.size },
-      }));
+      res.end(
+        JSON.stringify({
+          status: 'ok',
+          flagCount: Object.keys(currentFlags).length,
+          uptime: Math.floor((Date.now() - startTime) / 1000),
+          connections: { websocket: wsClients.size, sse: sseClients.size },
+        }),
+      );
       break;
     case '/ready':
       if (Object.keys(currentFlags).length > 0) {
@@ -278,7 +296,7 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
 }
 
 function handleGetFlags(req: IncomingMessage, res: ServerResponse, tenant?: string): void {
-  const flags = tenant ? (tenantFlags.get(tenant) || currentFlags) : currentFlags;
+  const flags = tenant ? tenantFlags.get(tenant) || currentFlags : currentFlags;
 
   // ETag support for conditional requests
   const ifNoneMatch = req.headers['if-none-match'];
@@ -302,7 +320,9 @@ function handleSSE(_req: IncomingMessage, res: ServerResponse): void {
     'Cache-Control': 'no-cache',
     Connection: 'keep-alive',
   });
-  res.write(`data: ${JSON.stringify({ type: 'flags-updated', flags: currentFlags, etag: currentEtag })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({ type: 'flags-updated', flags: currentFlags, etag: currentEtag })}\n\n`,
+  );
   sseClients.add(res);
 
   res.on('close', () => {
@@ -424,7 +444,10 @@ function handleCollabPresence(_req: IncomingMessage, res: ServerResponse): void 
 function handleCollabHistory(req: IncomingMessage, res: ServerResponse): void {
   const url = new URL(req.url || '/', `http://localhost:${PORT}`);
   const flagName = url.searchParams.get('flag') || undefined;
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || String(serverOptions.defaultHistoryLimit), 10), serverOptions.maxHistoryLimit);
+  const limit = Math.min(
+    parseInt(url.searchParams.get('limit') || String(serverOptions.defaultHistoryLimit), 10),
+    serverOptions.maxHistoryLimit,
+  );
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ operations: collabState.getHistory(flagName, limit) }));
 }
@@ -453,13 +476,21 @@ function startGitWatcher(): void {
       const hash = execSync(`git -C "${serverOptions.gitRepoPath}" rev-parse HEAD`, {
         stdio: 'pipe',
         timeout: 5000,
-      }).toString().trim();
+      })
+        .toString()
+        .trim();
 
       if (lastGitHash && hash !== lastGitHash) {
-        log('info', 'Git change detected, reloading flags', { oldHash: lastGitHash.slice(0, 8), newHash: hash.slice(0, 8) });
+        log('info', 'Git change detected, reloading flags', {
+          oldHash: lastGitHash.slice(0, 8),
+          newHash: hash.slice(0, 8),
+        });
         if (GIT_AUTO_PULL) {
           try {
-            execSync(`git -C "${serverOptions.gitRepoPath}" pull --ff-only`, { stdio: 'pipe', timeout: 10_000 });
+            execSync(`git -C "${serverOptions.gitRepoPath}" pull --ff-only`, {
+              stdio: 'pipe',
+              timeout: 10_000,
+            });
           } catch (e) {
             log('error', `Git pull failed: ${(e as Error).message}`);
           }
@@ -504,7 +535,9 @@ wss.on('connection', (ws: WebSocket) => {
   // Enforce connection limit
   if (wsClients.size >= serverOptions.maxConnections) {
     ws.close();
-    log('warn', 'WebSocket connection rejected: max connections reached', { max: serverOptions.maxConnections });
+    log('warn', 'WebSocket connection rejected: max connections reached', {
+      max: serverOptions.maxConnections,
+    });
     return;
   }
 
@@ -583,14 +616,18 @@ function shutdown(signal: string): void {
   for (const client of wsClients) {
     try {
       client.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Close all SSE connections
   for (const res of sseClients) {
     try {
       res.end();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Force exit after 10 seconds
