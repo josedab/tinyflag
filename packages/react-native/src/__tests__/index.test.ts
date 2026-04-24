@@ -2,10 +2,12 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook } from '@testing-library/react';
 import {
   loadCachedFlags,
   saveFlagsToCache,
   useFlagWithOffline,
+  useBackgroundRefresh,
   createOfflineInstance,
 } from '../index.js';
 import type { StorageAdapter } from '../index.js';
@@ -178,9 +180,6 @@ describe('useBackgroundRefresh', () => {
       getFlags: vi.fn(() => ({ 'my-flag': { enabled: true } })),
     } as any;
 
-    const { renderHook, cleanup } = await import('@testing-library/react');
-    const { useBackgroundRefresh } = await import('../index.js');
-
     const { unmount } = renderHook(() =>
       useBackgroundRefresh({ instance: mockInstance, interval: 1000 }),
     );
@@ -202,9 +201,6 @@ describe('useBackgroundRefresh', () => {
       getFlags: vi.fn(() => ({})),
     } as any;
 
-    const { renderHook } = await import('@testing-library/react');
-    const { useBackgroundRefresh } = await import('../index.js');
-
     const { unmount } = renderHook(() =>
       useBackgroundRefresh({ instance: mockInstance, interval: 1000 }),
     );
@@ -224,9 +220,6 @@ describe('useBackgroundRefresh', () => {
       reload: vi.fn().mockRejectedValue(new Error('Network down')),
       getFlags: vi.fn(() => ({})),
     } as any;
-
-    const { renderHook } = await import('@testing-library/react');
-    const { useBackgroundRefresh } = await import('../index.js');
 
     const { unmount } = renderHook(() =>
       useBackgroundRefresh({ instance: mockInstance, interval: 1000 }),
@@ -249,18 +242,12 @@ describe('useBackgroundRefresh', () => {
       getFlags: vi.fn(() => ({ 'my-flag': { enabled: true } })),
     } as any;
 
-    const { renderHook } = await import('@testing-library/react');
-    const { useBackgroundRefresh } = await import('../index.js');
-
     const { unmount } = renderHook(() =>
       useBackgroundRefresh({ instance: mockInstance, interval: 1000, storage }),
     );
 
     await vi.advanceTimersByTimeAsync(1000);
-    expect(storage.setItem).toHaveBeenCalledWith(
-      '@tinyflag/flags',
-      expect.any(String),
-    );
+    expect(storage.setItem).toHaveBeenCalledWith('@tinyflag/flags', expect.any(String));
 
     unmount();
     vi.useRealTimers();
@@ -272,9 +259,6 @@ describe('useBackgroundRefresh', () => {
       reload: vi.fn().mockResolvedValue(undefined),
       getFlags: vi.fn(() => ({})),
     } as any;
-
-    const { renderHook } = await import('@testing-library/react');
-    const { useBackgroundRefresh } = await import('../index.js');
 
     const { unmount } = renderHook(() =>
       useBackgroundRefresh({ instance: mockInstance, interval: 5000 }),
@@ -297,12 +281,7 @@ describe('useBackgroundRefresh', () => {
       getFlags: vi.fn(() => ({})),
     } as any;
 
-    const { renderHook } = await import('@testing-library/react');
-    const { useBackgroundRefresh } = await import('../index.js');
-
-    const { unmount } = renderHook(() =>
-      useBackgroundRefresh({ instance: mockInstance }),
-    );
+    const { unmount } = renderHook(() => useBackgroundRefresh({ instance: mockInstance }));
 
     await vi.advanceTimersByTimeAsync(29_000);
     expect(mockInstance.reload).not.toHaveBeenCalled();

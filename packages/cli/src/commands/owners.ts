@@ -1,5 +1,3 @@
-import { readFileSync } from 'fs';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
 import {
   loadFlagOwners,
   resolveOwnership,
@@ -7,6 +5,7 @@ import {
   formatApprovalResult,
   formatOwnershipReport,
 } from '../governance.js';
+import { loadAndValidate } from './utils.js';
 
 export function handleOwners(args: string[], jsonMode: boolean): void {
   const subCommand = args[0];
@@ -51,9 +50,7 @@ export function handleOwners(args: string[], jsonMode: boolean): void {
       process.exit(1);
     }
 
-    const content = readFileSync(flagFile, 'utf8');
-    const raw = parseYaml(content);
-    const config = parseFlagConfig(raw);
+    const config = loadAndValidate(flagFile);
     const ownersConfig = loadFlagOwners(ownersFile);
 
     if (jsonMode) {

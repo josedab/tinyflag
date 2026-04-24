@@ -1,5 +1,4 @@
 import { readFileSync, existsSync } from 'fs';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
 import {
   suggestRolloutPercentage,
   detectAnomalies,
@@ -9,6 +8,7 @@ import {
   formatCleanupSuggestions,
 } from 'tinyflag';
 import type { EvalEvent } from 'tinyflag';
+import { loadAndValidate } from './utils.js';
 
 function loadEvents(eventsFile: string): EvalEvent[] {
   if (!existsSync(eventsFile)) return [];
@@ -51,22 +51,22 @@ Options:
   const flagsFile = flagsIdx >= 0 && args[flagsIdx + 1] ? args[flagsIdx + 1] : 'flags.yml';
 
   const eventsIdx = args.indexOf('--events');
-  const eventsFile = eventsIdx >= 0 && args[eventsIdx + 1] ? args[eventsIdx + 1] : '.tinyflag-events.jsonl';
+  const eventsFile =
+    eventsIdx >= 0 && args[eventsIdx + 1] ? args[eventsIdx + 1] : '.tinyflag-events.jsonl';
 
   const flagIdx = args.indexOf('--flag');
   const flagFilter = flagIdx >= 0 && args[flagIdx + 1] ? args[flagIdx + 1] : undefined;
 
   const windowIdx = args.indexOf('--window');
-  const windowHours = windowIdx >= 0 && args[windowIdx + 1] ? parseInt(args[windowIdx + 1], 10) : 24;
+  const windowHours =
+    windowIdx >= 0 && args[windowIdx + 1] ? parseInt(args[windowIdx + 1], 10) : 24;
 
   if (!existsSync(flagsFile)) {
     console.error(`Error: Flags file not found: ${flagsFile}`);
     process.exit(1);
   }
 
-  const content = readFileSync(flagsFile, 'utf8');
-  const raw = parseYaml(content);
-  const config = parseFlagConfig(raw);
+  const config = loadAndValidate(flagsFile);
   const events = loadEvents(eventsFile);
 
   switch (subcommand) {
@@ -81,7 +81,9 @@ Options:
       } else {
         if (events.length === 0) {
           console.log('⚠️  No evaluation events found. Provide events via --events <file>');
-          console.log('   Events file should be JSONL with {flag, enabled, userId, timestamp, errorOccurred?, latencyMs?}');
+          console.log(
+            '   Events file should be JSONL with {flag, enabled, userId, timestamp, errorOccurred?, latencyMs?}',
+          );
           console.log('');
         }
         console.log(formatRecommendations(recommendations));

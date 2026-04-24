@@ -6,7 +6,7 @@ import type {
   ProviderMetadata,
   ProviderStatus,
   Hook,
-  ProviderEventEmitter,
+  Logger,
 } from '@openfeature/server-sdk';
 import {
   OpenFeatureEventEmitter,
@@ -14,7 +14,7 @@ import {
   ErrorCode,
   StandardResolutionReasons,
 } from '@openfeature/server-sdk';
-import type { TinyFlag, UserContext, ChangeEvent, ErrorEvent } from 'tinyflag';
+import type { TinyFlag, UserContext, ChangeEvent, ErrorEvent, FlagDefinition } from 'tinyflag';
 
 /**
  * OpenFeature provider backed by TinyFlag.
@@ -31,7 +31,7 @@ export class TinyFlagProvider implements Provider {
   hooks: Hook[] = [];
   events = new OpenFeatureEventEmitter();
 
-  private status: ProviderStatus = 'NOT_READY' as ProviderStatus;
+  status: ProviderStatus = 'NOT_READY' as ProviderStatus;
   private instance: TinyFlag;
 
   constructor(instance: TinyFlag) {
@@ -65,35 +65,39 @@ export class TinyFlagProvider implements Provider {
     this.status = 'NOT_READY' as ProviderStatus;
   }
 
-  resolveBooleanEvaluation(
+  async resolveBooleanEvaluation(
     flagKey: string,
     defaultValue: boolean,
     context: EvaluationContext,
-  ): ResolutionDetails<boolean> {
+    _logger: Logger,
+  ): Promise<ResolutionDetails<boolean>> {
     return this.resolve(flagKey, defaultValue, context, 'boolean');
   }
 
-  resolveStringEvaluation(
+  async resolveStringEvaluation(
     flagKey: string,
     defaultValue: string,
     context: EvaluationContext,
-  ): ResolutionDetails<string> {
+    _logger: Logger,
+  ): Promise<ResolutionDetails<string>> {
     return this.resolve(flagKey, defaultValue, context, 'string');
   }
 
-  resolveNumberEvaluation(
+  async resolveNumberEvaluation(
     flagKey: string,
     defaultValue: number,
     context: EvaluationContext,
-  ): ResolutionDetails<number> {
+    _logger: Logger,
+  ): Promise<ResolutionDetails<number>> {
     return this.resolve(flagKey, defaultValue, context, 'number');
   }
 
-  resolveObjectEvaluation<T extends JsonValue>(
+  async resolveObjectEvaluation<T extends JsonValue>(
     flagKey: string,
     defaultValue: T,
     context: EvaluationContext,
-  ): ResolutionDetails<T> {
+    _logger: Logger,
+  ): Promise<ResolutionDetails<T>> {
     return this.resolve(flagKey, defaultValue, context, 'object');
   }
 
@@ -208,7 +212,7 @@ export class TinyFlagProvider implements Provider {
   }
 
   private getReason(
-    flag: { rules?: readonly unknown[]; rollout?: number },
+    flag: Pick<FlagDefinition, 'rules' | 'rollout'>,
     context?: UserContext,
   ): string {
     if (flag.rules && flag.rules.length > 0 && context) {

@@ -56,70 +56,105 @@ describe('TinyFlagProvider', () => {
   });
 
   describe('resolveBooleanEvaluation', () => {
-    it('returns enabled state', () => {
-      const result = provider.resolveBooleanEvaluation('test-flag', false, {
-        targetingKey: 'user-1',
-      });
+    it('returns enabled state', async () => {
+      const result = await provider.resolveBooleanEvaluation(
+        'test-flag',
+        false,
+        {
+          targetingKey: 'user-1',
+        },
+        console,
+      );
       expect(result.value).toBe(true);
       expect(mock.isEnabled).toHaveBeenCalledWith('test-flag', { userId: 'user-1' });
     });
 
-    it('returns default for unknown flag', () => {
+    it('returns default for unknown flag', async () => {
       const m = createMockInstance({ getFlags: vi.fn().mockReturnValue({}) });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveBooleanEvaluation('unknown', false, {});
+      const result = await p.resolveBooleanEvaluation('unknown', false, {}, console);
       expect(result.value).toBe(false);
       expect(result.errorCode).toBe('FLAG_NOT_FOUND');
     });
   });
 
   describe('resolveStringEvaluation', () => {
-    it('returns variant name', () => {
-      const result = provider.resolveStringEvaluation('test-flag', 'default', {
-        targetingKey: 'user-1',
-      });
+    it('returns variant name', async () => {
+      const result = await provider.resolveStringEvaluation(
+        'test-flag',
+        'default',
+        {
+          targetingKey: 'user-1',
+        },
+        console,
+      );
       expect(result.value).toBe('control');
       expect(result.variant).toBe('control');
     });
 
-    it('returns enabled string when no variant', () => {
+    it('returns enabled string when no variant', async () => {
       const m = createMockInstance({ getVariant: vi.fn().mockReturnValue(null) });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveStringEvaluation('test-flag', 'default', { targetingKey: 'user-1' });
+      const result = await p.resolveStringEvaluation(
+        'test-flag',
+        'default',
+        { targetingKey: 'user-1' },
+        console,
+      );
       expect(result.value).toBe('true');
     });
   });
 
   describe('resolveNumberEvaluation', () => {
-    it('returns numeric variant', () => {
+    it('returns numeric variant', async () => {
       const m = createMockInstance({ getVariant: vi.fn().mockReturnValue('42') });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveNumberEvaluation('test-flag', 0, { targetingKey: 'user-1' });
+      const result = await p.resolveNumberEvaluation(
+        'test-flag',
+        0,
+        { targetingKey: 'user-1' },
+        console,
+      );
       expect(result.value).toBe(42);
     });
 
-    it('returns default for non-numeric variant', () => {
+    it('returns default for non-numeric variant', async () => {
       const m = createMockInstance({ getVariant: vi.fn().mockReturnValue('not-a-number') });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveNumberEvaluation('test-flag', 99, { targetingKey: 'user-1' });
+      const result = await p.resolveNumberEvaluation(
+        'test-flag',
+        99,
+        { targetingKey: 'user-1' },
+        console,
+      );
       expect(result.value).toBe(99);
     });
   });
 
   describe('resolveObjectEvaluation', () => {
-    it('returns flag state as object', () => {
-      const result = provider.resolveObjectEvaluation('test-flag', {}, { targetingKey: 'user-1' });
+    it('returns flag state as object', async () => {
+      const result = await provider.resolveObjectEvaluation(
+        'test-flag',
+        {},
+        { targetingKey: 'user-1' },
+        console,
+      );
       expect(result.value).toEqual({ enabled: true, variant: 'control' });
     });
   });
 
   describe('context translation', () => {
-    it('maps targetingKey to userId', () => {
-      provider.resolveBooleanEvaluation('test-flag', false, {
-        targetingKey: 'u-123',
-        plan: 'pro',
-        country: 'US',
-      });
+    it('maps targetingKey to userId', async () => {
+      await provider.resolveBooleanEvaluation(
+        'test-flag',
+        false,
+        {
+          targetingKey: 'u-123',
+          plan: 'pro',
+          country: 'US',
+        },
+        console,
+      );
       expect(mock.isEnabled).toHaveBeenCalledWith('test-flag', {
         userId: 'u-123',
         plan: 'pro',
@@ -215,42 +250,42 @@ describe('TinyFlagProvider', () => {
   });
 
   describe('reason calculation', () => {
-    it('returns TARGETING_MATCH when rules exist and context provided', () => {
+    it('returns TARGETING_MATCH when rules exist and context provided', async () => {
       const m = createMockInstance({
         getFlags: vi.fn().mockReturnValue({
           f: { enabled: true, rules: [{ conditions: { plan: 'pro' } }], rollout: undefined },
         }),
       });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' });
+      const result = await p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' }, console);
       expect(result.reason).toBe('TARGETING_MATCH');
     });
 
-    it('returns SPLIT when rollout is defined and userId present', () => {
+    it('returns SPLIT when rollout is defined and userId present', async () => {
       const m = createMockInstance({
         getFlags: vi.fn().mockReturnValue({
           f: { enabled: true, rollout: 50 },
         }),
       });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' });
+      const result = await p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' }, console);
       expect(result.reason).toBe('SPLIT');
     });
 
-    it('returns STATIC when no rules or rollout', () => {
+    it('returns STATIC when no rules or rollout', async () => {
       const m = createMockInstance({
         getFlags: vi.fn().mockReturnValue({
           f: { enabled: true },
         }),
       });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' });
+      const result = await p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' }, console);
       expect(result.reason).toBe('STATIC');
     });
   });
 
   describe('resolveStringEvaluation with variant flag', () => {
-    it('returns variant string and variant field', () => {
+    it('returns variant string and variant field', async () => {
       const m = createMockInstance({
         getVariant: vi.fn().mockReturnValue('treatment'),
         getFlags: vi.fn().mockReturnValue({
@@ -258,7 +293,12 @@ describe('TinyFlagProvider', () => {
         }),
       });
       const p = new TinyFlagProvider(m);
-      const result = p.resolveStringEvaluation('f', 'default', { targetingKey: 'u1' });
+      const result = await p.resolveStringEvaluation(
+        'f',
+        'default',
+        { targetingKey: 'u1' },
+        console,
+      );
       expect(result.value).toBe('treatment');
       expect(result.variant).toBe('treatment');
     });

@@ -1,5 +1,4 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
 import {
   generateTestMatrix,
   generateK6Script,
@@ -10,6 +9,7 @@ import {
 } from 'tinyflag';
 import type { PerfMetrics } from 'tinyflag';
 import { join } from 'path';
+import { loadAndValidate } from './utils.js';
 
 export function handlePerf(args: string[], jsonMode: boolean): void {
   const subcommand = args[0];
@@ -59,9 +59,7 @@ function handlePerfMatrix(args: string[], flagsFile: string, jsonMode: boolean):
     process.exit(1);
   }
 
-  const content = readFileSync(flagsFile, 'utf8');
-  const raw = parseYaml(content);
-  const config = parseFlagConfig(raw);
+  const config = loadAndValidate(flagsFile);
 
   const maxIdx = args.indexOf('--max');
   const maxCombinations = maxIdx >= 0 && args[maxIdx + 1] ? parseInt(args[maxIdx + 1], 10) : 64;
@@ -84,9 +82,7 @@ function handlePerfGenerate(args: string[], flagsFile: string, jsonMode: boolean
     process.exit(1);
   }
 
-  const content = readFileSync(flagsFile, 'utf8');
-  const raw = parseYaml(content);
-  const config = parseFlagConfig(raw);
+  const config = loadAndValidate(flagsFile);
 
   const urlIdx = args.indexOf('--url');
   const baseUrl = urlIdx >= 0 && args[urlIdx + 1] ? args[urlIdx + 1] : 'http://localhost:3000';
@@ -124,11 +120,15 @@ function handlePerfGenerate(args: string[], flagsFile: string, jsonMode: boolean
   }
 
   if (jsonMode) {
-    console.log(JSON.stringify({ generated, outputDir, format, combinations: matrix.combinations.length }));
+    console.log(
+      JSON.stringify({ generated, outputDir, format, combinations: matrix.combinations.length }),
+    );
   } else {
     console.log(`✅ Generated ${generated} ${format} test scripts in ${outputDir}/`);
     console.log(`   Combinations: ${matrix.combinations.length}`);
-    console.log(`   Run: ${format === 'k6' ? `k6 run ${outputDir}/combo-0.js` : `artillery run ${outputDir}/combo-0.yml`}`);
+    console.log(
+      `   Run: ${format === 'k6' ? `k6 run ${outputDir}/combo-0.js` : `artillery run ${outputDir}/combo-0.yml`}`,
+    );
   }
 }
 
@@ -137,11 +137,14 @@ function handlePerfReport(args: string[], flagsFile: string, jsonMode: boolean):
   const resultsFile = resultsIdx >= 0 && args[resultsIdx + 1] ? args[resultsIdx + 1] : undefined;
 
   const budgetIdx = args.indexOf('--budget');
-  const latencyBudget = budgetIdx >= 0 && args[budgetIdx + 1] ? parseInt(args[budgetIdx + 1], 10) : 200;
+  const latencyBudget =
+    budgetIdx >= 0 && args[budgetIdx + 1] ? parseInt(args[budgetIdx + 1], 10) : 200;
 
   if (!resultsFile || !existsSync(resultsFile)) {
     console.error('Error: --results <file> is required with performance test results JSON');
-    console.error('Expected format: [{"combinationId": "combo-0", "latencyP50": 10, "latencyP95": 50, "latencyP99": 100, "throughput": 1000, "errorRate": 0.01, "duration": 30}]');
+    console.error(
+      'Expected format: [{"combinationId": "combo-0", "latencyP50": 10, "latencyP95": 50, "latencyP99": 100, "throughput": 1000, "errorRate": 0.01, "duration": 30}]',
+    );
     process.exit(1);
   }
 
@@ -150,9 +153,7 @@ function handlePerfReport(args: string[], flagsFile: string, jsonMode: boolean):
     process.exit(1);
   }
 
-  const content = readFileSync(flagsFile, 'utf8');
-  const raw = parseYaml(content);
-  const config = parseFlagConfig(raw);
+  const config = loadAndValidate(flagsFile);
 
   const matrix = generateTestMatrix(config, { maxCombinations: 64 });
   const results: PerfMetrics[] = JSON.parse(readFileSync(resultsFile, 'utf8'));

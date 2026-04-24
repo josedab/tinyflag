@@ -284,7 +284,7 @@ export function runTestSpecs(specDir: string, config: FlagConfig): TestRunResult
     if (spec.flagsFile) {
       try {
         const flagContent = readFileSync(spec.flagsFile, 'utf8');
-        effectiveConfig = parseFlagConfig(parseYaml(flagContent));
+        effectiveConfig = parseFlagConfig(parseYaml(flagContent)).config;
       } catch {
         // Fall back to provided config
       }

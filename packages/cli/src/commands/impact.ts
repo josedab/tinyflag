@@ -1,6 +1,6 @@
-import { readFileSync } from 'fs';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
+import type { FlagConfig } from 'tinyflag';
 import { analyzeImpact, formatImpactReport } from '../impact.js';
+import { loadAndValidate } from './utils.js';
 
 export function handleImpact(args: string[], jsonMode: boolean): void {
   const flagName = args[0];
@@ -13,11 +13,9 @@ export function handleImpact(args: string[], jsonMode: boolean): void {
   const dir = dirIdx >= 0 && args[dirIdx + 1] ? args[dirIdx + 1] : '.';
 
   const flagsIdx = args.indexOf('--flags');
-  let config = undefined;
+  let config: FlagConfig | undefined;
   if (flagsIdx >= 0 && args[flagsIdx + 1]) {
-    const content = readFileSync(args[flagsIdx + 1], 'utf8');
-    const raw = parseYaml(content);
-    config = parseFlagConfig(raw);
+    config = loadAndValidate(args[flagsIdx + 1]);
   }
 
   const analysis = analyzeImpact(dir, flagName, config);

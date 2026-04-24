@@ -30,8 +30,11 @@ export type { EnvDiffEntry } from './merge.js';
 export {
   detectCircularDependencies,
   buildDependencyTree,
+  evaluateFlag,
+  evaluateVariant,
   evaluateWithPersona,
   getEvaluationWarnings,
+  setEvaluationContext,
 } from './evaluator.js';
 export type { EvaluationWarning, EvaluationEnv } from './evaluator.js';
 export { setDebug } from './debug.js';
@@ -143,12 +146,7 @@ export {
   getRecommendation,
   formatOptimizerState,
 } from './bandit.js';
-export type {
-  BetaParams,
-  VariantState,
-  OptimizerState,
-  OptimizerConfig,
-} from './bandit.js';
+export type { BetaParams, VariantState, OptimizerState, OptimizerConfig } from './bandit.js';
 export {
   WebhookEngine,
   signPayload,

@@ -79,6 +79,7 @@
     "tinyflag": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^25.6.0",
     "tinyflag": "workspace:*",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",

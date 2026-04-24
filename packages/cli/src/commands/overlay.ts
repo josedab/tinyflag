@@ -1,6 +1,5 @@
-import { readFileSync } from 'fs';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
 import { applyOverlay, cleanupExpiredOverlays, listActiveOverlays } from '../ephemeral.js';
+import { loadAndValidate } from './utils.js';
 
 export function handleOverlay(args: string[], jsonMode: boolean): void {
   const subCommand = args[0];
@@ -38,9 +37,7 @@ export function handleOverlay(args: string[], jsonMode: boolean): void {
       process.exit(1);
     }
 
-    const content = readFileSync(flagFile, 'utf8');
-    const raw = parseYaml(content);
-    let config = parseFlagConfig(raw);
+    let config = loadAndValidate(flagFile);
 
     const overlays = listActiveOverlays(dir);
     for (const overlay of overlays) {

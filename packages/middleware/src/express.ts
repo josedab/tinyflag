@@ -26,9 +26,13 @@ import type { IncomingMessage, ServerResponse } from 'http';
  * ```
  */
 export function tinyflagExpress(options: TinyFlagMiddlewareOptions) {
-  return (req: IncomingMessage & Record<string, unknown>, _res: ServerResponse, next: (...args: unknown[]) => void) => {
+  return (
+    req: IncomingMessage & Record<string, unknown> & { flags?: EvaluatedFlags },
+    _res: ServerResponse,
+    next: (...args: unknown[]) => void,
+  ) => {
     const context = options.contextFromRequest?.(req);
-    (req as IncomingMessage & { flags: EvaluatedFlags }).flags = evaluateForContext(options.instance, context, options.tracing, options.otelTrace);
+    req.flags = evaluateForContext(options.instance, context, options.tracing, options.otelTrace);
     next();
   };
 }

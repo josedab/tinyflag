@@ -1,5 +1,4 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
 import {
   initOptimizerState,
   recordBanditConversion,
@@ -7,6 +6,7 @@ import {
   formatOptimizerState,
 } from 'tinyflag';
 import type { OptimizerState } from 'tinyflag';
+import { loadAndValidate } from './utils.js';
 
 const STATE_FILE = '.tinyflag-optimizer.json';
 
@@ -78,9 +78,7 @@ function handleOptimizeInit(args: string[], jsonMode: boolean): void {
     process.exit(1);
   }
 
-  const content = readFileSync(flagsFile, 'utf8');
-  const raw = parseYaml(content);
-  const config = parseFlagConfig(raw);
+  const config = loadAndValidate(flagsFile);
   const flag = config.flags[flagName];
 
   if (!flag) {
@@ -103,7 +101,9 @@ function handleOptimizeInit(args: string[], jsonMode: boolean): void {
   if (jsonMode) {
     console.log(JSON.stringify(state, null, 2));
   } else {
-    console.log(`✅ Initialized optimizer for "${flagName}" with variants: ${variantNames.join(', ')}`);
+    console.log(
+      `✅ Initialized optimizer for "${flagName}" with variants: ${variantNames.join(', ')}`,
+    );
   }
 }
 
@@ -126,7 +126,9 @@ function handleOptimizeRecord(args: string[], jsonMode: boolean): void {
 
   const states = loadOptimizerStates();
   if (!states[flagName]) {
-    console.error(`Error: No optimizer state for "${flagName}". Run 'tinyflag optimize init' first.`);
+    console.error(
+      `Error: No optimizer state for "${flagName}". Run 'tinyflag optimize init' first.`,
+    );
     process.exit(1);
   }
 
@@ -136,7 +138,9 @@ function handleOptimizeRecord(args: string[], jsonMode: boolean): void {
   if (jsonMode) {
     console.log(JSON.stringify({ recorded: true, variant: variantName, converted }));
   } else {
-    console.log(`📊 Recorded ${converted ? 'conversion' : 'impression'} for ${flagName}/${variantName}`);
+    console.log(
+      `📊 Recorded ${converted ? 'conversion' : 'impression'} for ${flagName}/${variantName}`,
+    );
   }
 }
 
