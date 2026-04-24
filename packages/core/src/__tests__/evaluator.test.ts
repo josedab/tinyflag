@@ -181,7 +181,10 @@ describe('evaluateVariant', () => {
   it('returns deterministic variant', () => {
     const flag: FlagDefinition = {
       enabled: true,
-      variants: [{ name: 'control', weight: 50 }, { name: 'test', weight: 50 }],
+      variants: [
+        { name: 'control', weight: 50 },
+        { name: 'test', weight: 50 },
+      ],
     };
     const a = evaluateVariant('f', flag, { userId: '1' });
     const b = evaluateVariant('f', flag, { userId: '1' });
@@ -192,7 +195,10 @@ describe('evaluateVariant', () => {
     const flag: FlagDefinition = {
       enabled: true,
       rules: [{ conditions: { plan: 'pro' }, variant: 'premium' }],
-      variants: [{ name: 'control', weight: 50 }, { name: 'premium', weight: 50 }],
+      variants: [
+        { name: 'control', weight: 50 },
+        { name: 'premium', weight: 50 },
+      ],
     };
     expect(evaluateVariant('f', flag, { userId: '1', plan: 'pro' })).toBe('premium');
   });
@@ -201,7 +207,10 @@ describe('evaluateVariant', () => {
     const flag: FlagDefinition = {
       enabled: true,
       rules: [{ conditions: { plan: 'pro' } }],
-      variants: [{ name: 'a', weight: 50 }, { name: 'b', weight: 50 }],
+      variants: [
+        { name: 'a', weight: 50 },
+        { name: 'b', weight: 50 },
+      ],
     };
     const result = evaluateVariant('f', flag, { userId: '1', plan: 'pro' });
     expect(['a', 'b']).toContain(result);

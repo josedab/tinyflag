@@ -51,16 +51,26 @@ describe('EventEmitter', () => {
   it('catches listener errors and emits error event', () => {
     const emitter = new EventEmitter();
     const errors: unknown[] = [];
-    emitter.on('exposure', () => { throw new Error('boom'); });
+    emitter.on('exposure', () => {
+      throw new Error('boom');
+    });
     emitter.on('error', (e) => errors.push(e));
-    emitter.emit('exposure', { flag: 'f', variant: null, enabled: true, userId: 'u', timestamp: 0 });
+    emitter.emit('exposure', {
+      flag: 'f',
+      variant: null,
+      enabled: true,
+      userId: 'u',
+      timestamp: 0,
+    });
     expect(errors).toHaveLength(1);
     expect((errors[0] as { code: string }).code).toBe('LISTENER_ERROR');
   });
 
   it('does not recurse on error listener errors', () => {
     const emitter = new EventEmitter();
-    emitter.on('error', () => { throw new Error('error handler fails'); });
+    emitter.on('error', () => {
+      throw new Error('error handler fails');
+    });
     // Should not throw or infinite loop
     expect(() => emitter.emit('error', { code: 'T', message: 't' })).not.toThrow();
   });

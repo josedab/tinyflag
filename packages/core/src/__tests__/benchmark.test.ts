@@ -43,7 +43,9 @@ describe('Performance benchmarks', () => {
     const elapsed = performance.now() - start;
 
     const avgMs = elapsed / iterations;
-    console.log(`  isEnabled: ${avgMs.toFixed(4)}ms avg (${iterations} calls in ${elapsed.toFixed(1)}ms)`);
+    console.log(
+      `  isEnabled: ${avgMs.toFixed(4)}ms avg (${iterations} calls in ${elapsed.toFixed(1)}ms)`,
+    );
 
     // PRD target: < 0.1ms p99. Average should be well under.
     expect(avgMs).toBeLessThan(0.1);
@@ -77,7 +79,9 @@ describe('Performance benchmarks', () => {
     const elapsed = performance.now() - start;
 
     const avgMs = elapsed / iterations;
-    console.log(`  getVariant: ${avgMs.toFixed(4)}ms avg (${iterations} calls in ${elapsed.toFixed(1)}ms)`);
+    console.log(
+      `  getVariant: ${avgMs.toFixed(4)}ms avg (${iterations} calls in ${elapsed.toFixed(1)}ms)`,
+    );
 
     expect(avgMs).toBeLessThan(0.1);
 
@@ -102,7 +106,9 @@ describe('Performance benchmarks', () => {
     const elapsed = performance.now() - start;
 
     const avgMs = elapsed / iterations;
-    console.log(`  evaluateFlag (raw): ${avgMs.toFixed(5)}ms avg (${iterations} calls in ${elapsed.toFixed(1)}ms)`);
+    console.log(
+      `  evaluateFlag (raw): ${avgMs.toFixed(5)}ms avg (${iterations} calls in ${elapsed.toFixed(1)}ms)`,
+    );
 
     expect(avgMs).toBeLessThan(0.01);
   });

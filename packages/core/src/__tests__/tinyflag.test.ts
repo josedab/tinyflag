@@ -93,8 +93,8 @@ describe('TinyFlag', () => {
         if (ff.isEnabled('rollout-flag', { userId: `u-${i}` })) enabled++;
       }
       const pct = enabled / 1000;
-      expect(pct).toBeGreaterThan(0.40);
-      expect(pct).toBeLessThan(0.60);
+      expect(pct).toBeGreaterThan(0.4);
+      expect(pct).toBeLessThan(0.6);
     });
 
     it('rollout without userId falls through to enabled (DECIDED)', () => {
@@ -233,7 +233,9 @@ describe('TinyFlag', () => {
       await ff.init();
 
       const errors: ErrorEvent[] = [];
-      ff.on('exposure', () => { throw new Error('boom'); });
+      ff.on('exposure', () => {
+        throw new Error('boom');
+      });
       ff.on('error', (e) => errors.push(e));
 
       const result = ff.isEnabled('f', { userId: 'u' });
@@ -525,7 +527,7 @@ describe('TinyFlag', () => {
       // Reload with invalid config — should retain previous
       await ff.reload({ flags: { 'bad name': { enabled: true } } } as never);
       expect(ff.isEnabled('f')).toBe(true); // Retained
-      expect(errors.some(e => e.code === 'LOAD_ERROR')).toBe(true);
+      expect(errors.some((e) => e.code === 'LOAD_ERROR')).toBe(true);
 
       ff.destroy();
     });

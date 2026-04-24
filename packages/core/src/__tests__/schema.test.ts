@@ -44,9 +44,7 @@ describe('validateConfig', () => {
 
   it('rejects empty flag name', () => {
     expect(
-      validateConfig({ flags: { '': { enabled: true } } }).some((e) =>
-        e.message.includes('empty'),
-      ),
+      validateConfig({ flags: { '': { enabled: true } } }).some((e) => e.message.includes('empty')),
     ).toBe(true);
   });
 
@@ -66,9 +64,12 @@ describe('validateConfig', () => {
     expect(
       validateConfig({
         flags: {
-          'f': {
+          f: {
             enabled: true,
-            variants: [{ name: 'a', weight: 0 }, { name: 'b', weight: 0 }],
+            variants: [
+              { name: 'a', weight: 0 },
+              { name: 'b', weight: 0 },
+            ],
           },
         },
       }).some((e) => e.message.includes('zero')),
@@ -100,7 +101,9 @@ describe('validateConfig', () => {
   });
 
   it('lenient mode allows unknown fields', () => {
-    expect(validateConfig({ flags: { f: { enabled: true, extra: 'x' } }, extra: true })).toEqual([]);
+    expect(validateConfig({ flags: { f: { enabled: true, extra: 'x' } }, extra: true })).toEqual(
+      [],
+    );
   });
 
   it('accepts empty flags object', () => {
@@ -137,22 +140,24 @@ describe('validateConfig edge cases', () => {
   });
 
   it('rejects flags as array', () => {
-    expect(validateConfig({ flags: [1, 2] }).some(e => e.message.includes('object'))).toBe(true);
+    expect(validateConfig({ flags: [1, 2] }).some((e) => e.message.includes('object'))).toBe(true);
   });
 
   it('rejects flags as null', () => {
-    expect(validateConfig({ flags: null }).some(e => e.message.includes('object'))).toBe(true);
+    expect(validateConfig({ flags: null }).some((e) => e.message.includes('object'))).toBe(true);
   });
 
   it('rejects non-boolean enabled', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: 'yes' } } }).some(e => e.message.includes('boolean')),
+      validateConfig({ flags: { f: { enabled: 'yes' } } }).some((e) =>
+        e.message.includes('boolean'),
+      ),
     ).toBe(true);
   });
 
   it('rejects non-string description', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, description: 123 } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, description: 123 } } }).some((e) =>
         e.message.includes('string'),
       ),
     ).toBe(true);
@@ -160,7 +165,7 @@ describe('validateConfig edge cases', () => {
 
   it('rejects non-array tags', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, tags: 'beta' } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, tags: 'beta' } } }).some((e) =>
         e.message.includes('array'),
       ),
     ).toBe(true);
@@ -168,7 +173,7 @@ describe('validateConfig edge cases', () => {
 
   it('rejects non-string tag items', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, tags: [123] } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, tags: [123] } } }).some((e) =>
         e.message.includes('string'),
       ),
     ).toBe(true);
@@ -176,7 +181,7 @@ describe('validateConfig edge cases', () => {
 
   it('rejects non-integer rollout', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, rollout: 3.5 } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, rollout: 3.5 } } }).some((e) =>
         e.message.includes('integer'),
       ),
     ).toBe(true);
@@ -184,7 +189,7 @@ describe('validateConfig edge cases', () => {
 
   it('rejects non-array rules', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, rules: 'rule' } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, rules: 'rule' } } }).some((e) =>
         e.message.includes('array'),
       ),
     ).toBe(true);
@@ -192,7 +197,7 @@ describe('validateConfig edge cases', () => {
 
   it('rejects rule as non-object', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, rules: ['bad'] } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, rules: ['bad'] } } }).some((e) =>
         e.message.includes('object'),
       ),
     ).toBe(true);
@@ -200,7 +205,7 @@ describe('validateConfig edge cases', () => {
 
   it('rejects rule conditions as array', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, rules: [{ conditions: [1] }] } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, rules: [{ conditions: [1] }] } } }).some((e) =>
         e.message.includes('object'),
       ),
     ).toBe(true);
@@ -210,7 +215,7 @@ describe('validateConfig edge cases', () => {
     expect(
       validateConfig({
         flags: { f: { enabled: true, rules: [{ conditions: {}, rollout: 200 }] } },
-      }).some(e => e.message.includes('0-100')),
+      }).some((e) => e.message.includes('0-100')),
     ).toBe(true);
   });
 
@@ -218,7 +223,7 @@ describe('validateConfig edge cases', () => {
     expect(
       validateConfig({
         flags: { f: { enabled: true, rules: [{ conditions: {}, variant: 123 }] } },
-      }).some(e => e.message.includes('string')),
+      }).some((e) => e.message.includes('string')),
     ).toBe(true);
   });
 
@@ -226,13 +231,13 @@ describe('validateConfig edge cases', () => {
     expect(
       validateConfig({
         flags: { f: { enabled: true, rules: [{ conditions: {}, enabled: 'yes' }] } },
-      }).some(e => e.message.includes('boolean')),
+      }).some((e) => e.message.includes('boolean')),
     ).toBe(true);
   });
 
   it('rejects variant as non-object', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, variants: ['bad'] } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, variants: ['bad'] } } }).some((e) =>
         e.message.includes('object'),
       ),
     ).toBe(true);
@@ -242,13 +247,13 @@ describe('validateConfig edge cases', () => {
     expect(
       validateConfig({
         flags: { f: { enabled: true, variants: [{ name: 'a', weight: -1 }] } },
-      }).some(e => e.message.includes('non-negative')),
+      }).some((e) => e.message.includes('non-negative')),
     ).toBe(true);
   });
 
   it('rejects non-array variants', () => {
     expect(
-      validateConfig({ flags: { f: { enabled: true, variants: 'bad' } } }).some(e =>
+      validateConfig({ flags: { f: { enabled: true, variants: 'bad' } } }).some((e) =>
         e.message.includes('array'),
       ),
     ).toBe(true);
@@ -257,7 +262,7 @@ describe('validateConfig edge cases', () => {
   it('rejects flag name exceeding max length', () => {
     const longName = 'a'.repeat(129);
     expect(
-      validateConfig({ flags: { [longName]: { enabled: true } } }).some(e =>
+      validateConfig({ flags: { [longName]: { enabled: true } } }).some((e) =>
         e.message.includes('max length'),
       ),
     ).toBe(true);
@@ -265,9 +270,7 @@ describe('validateConfig edge cases', () => {
 
   it('rejects flag definition as non-object', () => {
     expect(
-      validateConfig({ flags: { f: 'not-object' } }).some(e =>
-        e.message.includes('object'),
-      ),
+      validateConfig({ flags: { f: 'not-object' } }).some((e) => e.message.includes('object')),
     ).toBe(true);
   });
 
@@ -284,7 +287,10 @@ describe('validateConfig edge cases', () => {
           tags: ['beta'],
           rollout: 50,
           rules: [{ conditions: { plan: 'pro' }, enabled: true, rollout: 80, variant: 'premium' }],
-          variants: [{ name: 'a', weight: 50 }, { name: 'b', weight: 50 }],
+          variants: [
+            { name: 'a', weight: 50 },
+            { name: 'b', weight: 50 },
+          ],
         },
       },
     });

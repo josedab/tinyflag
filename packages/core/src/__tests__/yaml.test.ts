@@ -4,7 +4,9 @@ import { parseYaml } from '../yaml.js';
 describe('parseYaml', () => {
   it('parses simple key-value mappings', () => {
     expect(parseYaml('name: hello\nvalue: 42\nenabled: true')).toEqual({
-      name: 'hello', value: 42, enabled: true,
+      name: 'hello',
+      value: 42,
+      enabled: true,
     });
   });
 
@@ -21,15 +23,23 @@ describe('parseYaml', () => {
   });
 
   it('parses sequence of objects', () => {
-    const result = parseYaml('variants:\n  - name: control\n    weight: 50\n  - name: test\n    weight: 50');
+    const result = parseYaml(
+      'variants:\n  - name: control\n    weight: 50\n  - name: test\n    weight: 50',
+    );
     expect(result).toEqual({
-      variants: [{ name: 'control', weight: 50 }, { name: 'test', weight: 50 }],
+      variants: [
+        { name: 'control', weight: 50 },
+        { name: 'test', weight: 50 },
+      ],
     });
   });
 
   it('parses booleans', () => {
     expect(parseYaml('a: true\nb: false\nc: yes\nd: no')).toEqual({
-      a: true, b: false, c: true, d: false,
+      a: true,
+      b: false,
+      c: true,
+      d: false,
     });
   });
 
@@ -39,13 +49,17 @@ describe('parseYaml', () => {
 
   it('parses numbers', () => {
     expect(parseYaml('int: 42\nfloat: 3.14\nneg: -7\nzero: 0')).toEqual({
-      int: 42, float: 3.14, neg: -7, zero: 0,
+      int: 42,
+      float: 3.14,
+      neg: -7,
+      zero: 0,
     });
   });
 
   it('parses quoted strings (preserves literal value)', () => {
-    expect(parseYaml("single: 'hello world'\ndouble: \"42\"")).toEqual({
-      single: 'hello world', double: '42',
+    expect(parseYaml('single: \'hello world\'\ndouble: "42"')).toEqual({
+      single: 'hello world',
+      double: '42',
     });
   });
 
@@ -121,7 +135,10 @@ flags:
   });
 
   it('parses nested flow mapping in sequence', () => {
-    const result = parseYaml('rules:\n  - conditions: {plan: pro}\n    enabled: true') as Record<string, unknown>;
+    const result = parseYaml('rules:\n  - conditions: {plan: pro}\n    enabled: true') as Record<
+      string,
+      unknown
+    >;
     expect(result.rules).toEqual([{ conditions: { plan: 'pro' }, enabled: true }]);
   });
 

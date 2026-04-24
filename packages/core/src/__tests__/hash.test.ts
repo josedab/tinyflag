@@ -68,14 +68,20 @@ describe('rolloutBucket', () => {
 
 describe('selectVariant', () => {
   it('is deterministic', () => {
-    const variants = [{ name: 'control', weight: 50 }, { name: 'test', weight: 50 }];
+    const variants = [
+      { name: 'control', weight: 50 },
+      { name: 'test', weight: 50 },
+    ];
     const a = selectVariant('flag', 'user-1', variants);
     const b = selectVariant('flag', 'user-1', variants);
     expect(a).toBe(b);
   });
 
   it('distributes roughly evenly with equal weights', () => {
-    const variants = [{ name: 'control', weight: 50 }, { name: 'test', weight: 50 }];
+    const variants = [
+      { name: 'control', weight: 50 },
+      { name: 'test', weight: 50 },
+    ];
     const counts: Record<string, number> = { control: 0, test: 0 };
     for (let i = 0; i < 10000; i++) {
       counts[selectVariant('experiment', `user-${i}`, variants)]++;
@@ -85,7 +91,10 @@ describe('selectVariant', () => {
   });
 
   it('respects unequal weights (1:99)', () => {
-    const variants = [{ name: 'a', weight: 1 }, { name: 'b', weight: 99 }];
+    const variants = [
+      { name: 'a', weight: 1 },
+      { name: 'b', weight: 99 },
+    ];
     const counts: Record<string, number> = { a: 0, b: 0 };
     for (let i = 0; i < 10000; i++) {
       counts[selectVariant('flag', `user-${i}`, variants)]++;
@@ -98,7 +107,10 @@ describe('selectVariant', () => {
   });
 
   it('all users get first variant when weights are [100, 0] (GAP 6)', () => {
-    const variants = [{ name: 'winner', weight: 100 }, { name: 'loser', weight: 0 }];
+    const variants = [
+      { name: 'winner', weight: 100 },
+      { name: 'loser', weight: 0 },
+    ];
     for (let i = 0; i < 100; i++) {
       expect(selectVariant('flag', `user-${i}`, variants)).toBe('winner');
     }
