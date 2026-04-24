@@ -31,6 +31,17 @@ Welcome to the TinyFlag documentation. TinyFlag is a serverless, file-driven, ze
 - [JSON Schema](./flag-format.md#json-schema) — IDE autocompletion
 - [Troubleshooting](./troubleshooting.md) — Error codes, common issues, debug logging
 
+### Advanced Capabilities
+
+- [A/B Experiments](../website/docs/tools/experiments.md) — Track conversions and declare winners
+- [Progressive Rollouts](../website/docs/tools/progressive.md) — Multi-stage canary → GA pipelines
+- [Webhooks & Event Bus](../website/docs/tools/webhooks.md) — Push events to Kafka, SNS, PubSub
+- [Governance](../website/docs/tools/governance.md) — RBAC, approval workflows, audit trail
+- [Flag Intelligence](../website/docs/tools/intelligence.md) — Anomaly detection, rollout suggestions
+- [Impact Correlation](../website/docs/tools/correlation.md) — Statistical significance testing
+- [Bandit Optimizer](../website/docs/tools/bandit.md) — Thompson Sampling auto-optimization
+- [Performance Testing](../website/docs/tools/perf.md) — Test matrix + k6/Artillery scripts
+
 ### API Reference
 
 - [TinyFlag Class](./api-reference.md)

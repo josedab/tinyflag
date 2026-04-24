@@ -47,12 +47,12 @@ tinyflag/
   │ • file    │      │ • isEnabled() │     │ • exposure    │
   │ • url     │      │ • getVariant()│     │ • change      │
   │ • inline  │      │ • rules       │     │ • error       │
-  └─────┬─────┘      │ • rollout     │     └───────────────┘
-        │             │ • overrides   │
-  ┌─────▼─────┐      └───────┬───────┘
-  │  Parser   │              │
-  │           │       ┌──────▼───────┐
-  │ • YAML    │       │  MurmurHash3 │
+  └─────┬─────┘      │ • rollout     │     └───────┬───────┘
+        │             │ • overrides   │             │
+  ┌─────▼─────┐      └───────┬───────┘     ┌───────▼───────┐
+  │  Parser   │              │              │  Webhooks &   │
+  │           │       ┌──────▼───────┐      │  Event Bus    │
+  │ • YAML    │       │  MurmurHash3 │      └───────────────┘
   │   (custom)│       │  (custom)    │
   │ • JSON    │       │              │
   └─────┬─────┘       │ • rollout    │
@@ -61,6 +61,19 @@ tinyflag/
   │  Schema   │       │   assignment │
   │ Validator │       └──────────────┘
   └───────────┘
+
+  ┌───────────────────────────────────────────────────────────────┐
+  │                     Advanced Modules                          │
+  ├────────────────┬──────────────────┬──────────────────┬────────┤
+  │  Runtime       │  Delivery        │  Optimization    │ Verify │
+  │                │                  │                  │        │
+  │ • CachedClient │ • Progressive   │ • Experiments    │ • Replay│
+  │ • Multi-tenant │   Rollouts      │ • Intelligence   │ • Perf │
+  │ • Merge        │ • Sync          │ • Correlation    │  Tests │
+  │ • Rollout      │ • Signing       │ • Bandit         │        │
+  │   strategies   │ • Audit trail   │   Optimizer      │        │
+  │                │ • Governance    │                  │        │
+  └────────────────┴──────────────────┴──────────────────┴────────┘
 
   ┌───────────────────────────────────────┐
   │           CLI (tinyflag-cli)          │

@@ -43,7 +43,41 @@ graph TD
     G --> K[MurmurHash3]
     L[CLI] --> E
     M[GitHub Action] --> L
+
+    subgraph Advanced Modules
+        direction TB
+        N[CachedTinyFlag]
+        O[Experiments]
+        P[Progressive Rollouts]
+        Q[Webhooks & Event Bus]
+        R[Governance & RBAC]
+        S[Intelligence & Anomaly Detection]
+        T[Impact Correlation]
+        U[Bandit Optimizer]
+        V[Replay & Debugging]
+        W[Perf Testing]
+    end
+
+    E --> N
+    H --> Q
+    H --> O
+    E --> P
+    E --> R
+    E --> S
+    E --> T
+    E --> U
+    E --> V
+    E --> W
 ```
+
+### Module Categories
+
+| Category               | Modules                                              | Purpose                                      |
+| ---------------------- | ---------------------------------------------------- | -------------------------------------------- |
+| **Runtime**            | CachedTinyFlag, Multi-tenant, Merge, Rollout strategies | Extended evaluation and flag resolution     |
+| **Delivery & Control** | Progressive Rollouts, Sync, Signing, Audit, Webhooks, Governance | Safe deployment, compliance, and integration |
+| **Optimization**       | Experiments, Intelligence, Correlation, Bandit        | Data-driven decisions and auto-optimization  |
+| **Verification**       | Replay, Perf Testing                                  | Regression detection and load testing        |
 
 ### Data Flow
 
