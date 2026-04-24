@@ -12,7 +12,7 @@ flags:
           plan: pro
         enabled: true
       - conditions:
-          country: {$in: [US, CA]}
+          country: { $in: [US, CA] }
         rollout: 80
     variants:
       - name: control
@@ -31,7 +31,7 @@ flags:
     description: Beta features for internal users
     rules:
       - conditions:
-          email: "*@company.com"
+          email: '*@company.com'
         enabled: true
     rollout: 0
 

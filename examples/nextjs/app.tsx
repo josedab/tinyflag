@@ -81,11 +81,7 @@ export function CheckoutButton() {
     return <button>Classic Checkout</button>;
   }
 
-  return (
-    <button>
-      {variant === 'redesign' ? '🚀 New Checkout' : 'Checkout'}
-    </button>
-  );
+  return <button>{variant === 'redesign' ? '🚀 New Checkout' : 'Checkout'}</button>;
 }
 
 // === components/ThemeToggle.tsx ===

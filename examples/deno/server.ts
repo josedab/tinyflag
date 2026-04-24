@@ -20,9 +20,7 @@ const ff = new TinyFlag({
       },
       'geo-feature': {
         enabled: true,
-        rules: [
-          { conditions: { country: { $in: ['US', 'CA', 'UK'] } }, enabled: true },
-        ],
+        rules: [{ conditions: { country: { $in: ['US', 'CA', 'UK'] } }, enabled: true }],
         rollout: 0,
       },
     },

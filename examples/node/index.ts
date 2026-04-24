@@ -26,9 +26,7 @@ async function main() {
         'beta-features': {
           enabled: true,
           description: 'Beta for company emails',
-          rules: [
-            { conditions: { email: '*@company.com' }, enabled: true },
-          ],
+          rules: [{ conditions: { email: '*@company.com' }, enabled: true }],
           rollout: 0,
         },
       },
