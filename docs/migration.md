@@ -2,15 +2,15 @@
 
 ## From LaunchDarkly
 
-| LaunchDarkly | TinyFlag |
-|-------------|----------|
-| `LDClient.init(sdkKey)` | `new TinyFlag({ source: './flags.yml' })` |
-| `client.variation('flag', user, default)` | `ff.isEnabled('flag', context)` |
-| `client.jsonVariation(...)` | `ff.getVariant('flag', context)` |
-| `client.track('event')` | `ff.on('exposure', handler)` |
-| Dashboard → Targeting | `rules:` in `flags.yml` |
-| Dashboard → Rollout % | `rollout: 50` in `flags.yml` |
-| Per-seat pricing | Free forever |
+| LaunchDarkly                              | TinyFlag                                  |
+| ----------------------------------------- | ----------------------------------------- |
+| `LDClient.init(sdkKey)`                   | `new TinyFlag({ source: './flags.yml' })` |
+| `client.variation('flag', user, default)` | `ff.isEnabled('flag', context)`           |
+| `client.jsonVariation(...)`               | `ff.getVariant('flag', context)`          |
+| `client.track('event')`                   | `ff.on('exposure', handler)`              |
+| Dashboard → Targeting                     | `rules:` in `flags.yml`                   |
+| Dashboard → Rollout %                     | `rollout: 50` in `flags.yml`              |
+| Per-seat pricing                          | Free forever                              |
 
 ### Key Differences
 
@@ -29,14 +29,14 @@
 
 ## From Unleash
 
-| Unleash | TinyFlag |
-|---------|----------|
+| Unleash                        | TinyFlag                                  |
+| ------------------------------ | ----------------------------------------- |
 | `initialize({ url, appName })` | `new TinyFlag({ source: './flags.yml' })` |
-| `isEnabled('flag')` | `ff.isEnabled('flag', context)` |
-| `getVariant('flag')` | `ff.getVariant('flag', context)` |
-| Strategies (gradual rollout) | `rollout:` field |
-| Strategies (user IDs) | `rules:` with `$in` operator |
-| Unleash server | No server needed |
+| `isEnabled('flag')`            | `ff.isEnabled('flag', context)`           |
+| `getVariant('flag')`           | `ff.getVariant('flag', context)`          |
+| Strategies (gradual rollout)   | `rollout:` field                          |
+| Strategies (user IDs)          | `rules:` with `$in` operator              |
+| Unleash server                 | No server needed                          |
 
 ### Key Differences
 

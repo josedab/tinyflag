@@ -34,15 +34,15 @@ function Dashboard() {
 
 ### `<TinyFlagProvider>`
 
-| Prop | Type | Required | Description |
-|------|------|----------|-------------|
-| `source` | `string \| FlagConfig` | Yes | Flag source |
-| `context` | `UserContext` | No | User context for evaluation |
-| `headers` | `Record<string, string>` | No | HTTP headers for URL source |
-| `pollInterval` | `number` | No | URL polling interval (ms) |
-| `watch` | `boolean` | No | File watching |
-| `strict` | `boolean` | No | Strict validation |
-| `instance` | `TinyFlag` | No | Pre-initialized instance (SSR) |
+| Prop           | Type                     | Required | Description                    |
+| -------------- | ------------------------ | -------- | ------------------------------ |
+| `source`       | `string \| FlagConfig`   | Yes      | Flag source                    |
+| `context`      | `UserContext`            | No       | User context for evaluation    |
+| `headers`      | `Record<string, string>` | No       | HTTP headers for URL source    |
+| `pollInterval` | `number`                 | No       | URL polling interval (ms)      |
+| `watch`        | `boolean`                | No       | File watching                  |
+| `strict`       | `boolean`                | No       | Strict validation              |
+| `instance`     | `TinyFlag`               | No       | Pre-initialized instance (SSR) |
 
 ### `useFlag(flagName: string): boolean`
 

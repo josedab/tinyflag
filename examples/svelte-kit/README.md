@@ -40,7 +40,7 @@ await ff.init();
 export async function handle({ event, resolve }) {
   createTinyFlag({
     instance: ff,
-    context: { userId: event.cookies.get('userId') || 'anonymous' }
+    context: { userId: event.cookies.get('userId') || 'anonymous' },
   });
   return resolve(event);
 }

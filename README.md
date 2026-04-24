@@ -6,19 +6,20 @@ Serverless, file-driven, zero-dependency feature flag SDK for JavaScript/TypeScr
 
 [![npm version](https://img.shields.io/npm/v/tinyflag)](https://www.npmjs.com/package/tinyflag)
 [![CI](https://github.com/josedab/tinyflag/actions/workflows/ci.yml/badge.svg)](https://github.com/josedab/tinyflag/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/josedab/tinyflag/branch/main/graph/badge.svg)](https://codecov.io/gh/josedab/tinyflag)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/tinyflag)](https://bundlephobia.com/package/tinyflag)
 [![license](https://img.shields.io/npm/l/tinyflag)](./LICENSE)
 
 ## Why TinyFlag?
 
-| Feature | LaunchDarkly | Unleash | GrowthBook | **TinyFlag** |
-|---------|-------------|---------|------------|-------------|
-| Requires server | ✅ (SaaS) | ✅ | ✅ | ❌ **No** |
-| Git-native flags | ❌ | ❌ | ❌ | ✅ |
-| Zero dependencies | ❌ | ❌ | ❌ | ✅ |
-| Edge/serverless | Partial | ❌ | Partial | ✅ |
-| Bundle size | ~50KB | ~30KB | ~20KB | **< 8KB** |
-| Pricing | $$$$ | Free + paid | Free + paid | **Free forever** |
+| Feature           | LaunchDarkly | Unleash     | GrowthBook  | **TinyFlag**     |
+| ----------------- | ------------ | ----------- | ----------- | ---------------- |
+| Requires server   | ✅ (SaaS)    | ✅          | ✅          | ❌ **No**        |
+| Git-native flags  | ❌           | ❌          | ❌          | ✅               |
+| Zero dependencies | ❌           | ❌          | ❌          | ✅               |
+| Edge/serverless   | Partial      | ❌          | Partial     | ✅               |
+| Bundle size       | ~50KB        | ~30KB       | ~20KB       | **< 8KB**        |
+| Pricing           | $$$$         | Free + paid | Free + paid | **Free forever** |
 
 ## Quick Start (< 60 seconds)
 
@@ -65,7 +66,7 @@ Roll out features to a percentage of users with deterministic bucketing:
 flags:
   new-feature:
     enabled: true
-    rollout: 25  # 25% of users
+    rollout: 25 # 25% of users
 ```
 
 ```typescript
@@ -114,18 +115,18 @@ flags:
       - conditions:
           age: { $gte: 18 }
         enabled: true
-    rollout: 0  # disabled for everyone else
+    rollout: 0 # disabled for everyone else
 ```
 
 **Supported operators:**
 
-| Operator | Example | Description |
-|----------|---------|-------------|
-| Equality | `plan: pro` | Exact match |
-| Glob | `email: '*@co.com'` | Wildcard pattern |
-| `$gte`, `$gt`, `$lte`, `$lt` | `age: { $gte: 18 }` | Numeric comparison |
-| `$in` | `country: { $in: [US, CA] }` | List membership |
-| `$not` | `plan: { $not: free }` | Negation |
+| Operator                     | Example                      | Description        |
+| ---------------------------- | ---------------------------- | ------------------ |
+| Equality                     | `plan: pro`                  | Exact match        |
+| Glob                         | `email: '*@co.com'`          | Wildcard pattern   |
+| `$gte`, `$gt`, `$lte`, `$lt` | `age: { $gte: 18 }`          | Numeric comparison |
+| `$in`                        | `country: { $in: [US, CA] }` | List membership    |
+| `$not`                       | `plan: { $not: free }`       | Negation           |
 
 ### Multiple Sources
 
@@ -136,7 +137,7 @@ new TinyFlag({ source: './flags.yml' });
 // URL (all runtimes, including browsers and edge)
 new TinyFlag({
   source: 'https://cdn.example.com/flags.json',
-  headers: { 'Authorization': 'Bearer <token>' },
+  headers: { Authorization: 'Bearer <token>' },
 });
 
 // Inline (testing, edge workers, bundled configs)
@@ -188,13 +189,13 @@ export interface TinyFlagDefinitions {
 
 ### `new TinyFlag(options)`
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `source` | `string \| FlagConfig` | **required** | File path, URL, or inline config |
-| `headers` | `Record<string, string>` | `undefined` | HTTP headers for URL source |
-| `pollInterval` | `number` | `60000` | URL polling interval (ms, min: 5000) |
-| `watch` | `boolean` | `true` | Watch file for changes |
-| `strict` | `boolean` | `false` | Reject unknown fields in flag file |
+| Option         | Type                     | Default      | Description                          |
+| -------------- | ------------------------ | ------------ | ------------------------------------ |
+| `source`       | `string \| FlagConfig`   | **required** | File path, URL, or inline config     |
+| `headers`      | `Record<string, string>` | `undefined`  | HTTP headers for URL source          |
+| `pollInterval` | `number`                 | `60000`      | URL polling interval (ms, min: 5000) |
+| `watch`        | `boolean`                | `true`       | Watch file for changes               |
+| `strict`       | `boolean`                | `false`      | Reject unknown fields in flag file   |
 
 ### `ff.init(): Promise<void>`
 
@@ -380,89 +381,89 @@ createTinyFlag({ instance: ff, context: { userId: getUser().id } });
 
 ### From LaunchDarkly
 
-| LaunchDarkly | TinyFlag |
-|-------------|----------|
-| `LDClient.init(sdkKey)` | `new TinyFlag({ source: './flags.yml' })` |
-| `client.variation('flag', user, default)` | `ff.isEnabled('flag', context)` |
-| `client.jsonVariation(...)` | `ff.getVariant('flag', context)` |
-| Dashboard UI | `flags.yml` in your repo |
-| Targeting rules (UI) | Rules in `flags.yml` |
+| LaunchDarkly                              | TinyFlag                                  |
+| ----------------------------------------- | ----------------------------------------- |
+| `LDClient.init(sdkKey)`                   | `new TinyFlag({ source: './flags.yml' })` |
+| `client.variation('flag', user, default)` | `ff.isEnabled('flag', context)`           |
+| `client.jsonVariation(...)`               | `ff.getVariant('flag', context)`          |
+| Dashboard UI                              | `flags.yml` in your repo                  |
+| Targeting rules (UI)                      | Rules in `flags.yml`                      |
 
 ### From Unleash
 
-| Unleash | TinyFlag |
-|---------|----------|
+| Unleash                        | TinyFlag                                  |
+| ------------------------------ | ----------------------------------------- |
 | `initialize({ url, appName })` | `new TinyFlag({ source: './flags.yml' })` |
-| `isEnabled('flag')` | `ff.isEnabled('flag', context)` |
-| `getVariant('flag')` | `ff.getVariant('flag', context)` |
-| Unleash server | No server needed |
-| Strategies | Rules in `flags.yml` |
+| `isEnabled('flag')`            | `ff.isEnabled('flag', context)`           |
+| `getVariant('flag')`           | `ff.getVariant('flag', context)`          |
+| Unleash server                 | No server needed                          |
+| Strategies                     | Rules in `flags.yml`                      |
 
 ## Full API Reference
 
 ### Constructor Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `source` | `string \| FlagConfig` | **required** | File path (.yml/.yaml/.json), URL (http/https), or inline config object |
-| `headers` | `Record<string, string>` | `undefined` | HTTP headers for URL source (e.g., `Authorization`) |
-| `pollInterval` | `number` | `60000` | URL polling interval in ms (minimum: 5000) |
-| `watch` | `boolean` | `true` | Watch file for changes (file source only) |
-| `strict` | `boolean` | `false` | Reject unknown fields in flag file |
-| `deduplicate` | `boolean` | `true` | Deduplicate exposure events per (flag, userId) pair |
+| Option         | Type                     | Default      | Description                                                             |
+| -------------- | ------------------------ | ------------ | ----------------------------------------------------------------------- |
+| `source`       | `string \| FlagConfig`   | **required** | File path (.yml/.yaml/.json), URL (http/https), or inline config object |
+| `headers`      | `Record<string, string>` | `undefined`  | HTTP headers for URL source (e.g., `Authorization`)                     |
+| `pollInterval` | `number`                 | `60000`      | URL polling interval in ms (minimum: 5000)                              |
+| `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                               |
+| `strict`       | `boolean`                | `false`      | Reject unknown fields in flag file                                      |
+| `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId) pair                     |
 
 ### Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `init()` | `Promise<void>` | Load flags from source. Must be called before evaluation. |
-| `isEnabled(name, ctx?)` | `boolean` | Check if flag is enabled. Never throws. |
-| `getVariant(name, ctx?)` | `string \| null` | Get assigned variant. Never throws. |
-| `on(event, handler)` | `void` | Register event listener. |
-| `off(event, handler)` | `void` | Remove event listener. |
-| `reload(newSource?)` | `Promise<void>` | Manually reload flags. |
-| `getFlags()` | `Record<string, FlagDefinition>` | Snapshot of current flags. |
-| `destroy()` | `void` | Clean up watchers, timers, listeners. |
+| Method                   | Returns                          | Description                                               |
+| ------------------------ | -------------------------------- | --------------------------------------------------------- |
+| `init()`                 | `Promise<void>`                  | Load flags from source. Must be called before evaluation. |
+| `isEnabled(name, ctx?)`  | `boolean`                        | Check if flag is enabled. Never throws.                   |
+| `getVariant(name, ctx?)` | `string \| null`                 | Get assigned variant. Never throws.                       |
+| `on(event, handler)`     | `void`                           | Register event listener.                                  |
+| `off(event, handler)`    | `void`                           | Remove event listener.                                    |
+| `reload(newSource?)`     | `Promise<void>`                  | Manually reload flags.                                    |
+| `getFlags()`             | `Record<string, FlagDefinition>` | Snapshot of current flags.                                |
+| `destroy()`              | `void`                           | Clean up watchers, timers, listeners.                     |
 
 ### Event Payloads
 
 ```typescript
 // ff.on('exposure', (event) => ...)
 interface ExposureEvent {
-  flag: string;           // Flag name
+  flag: string; // Flag name
   variant: string | null; // Assigned variant (null if no variants)
-  enabled: boolean;       // Whether flag is enabled
-  userId: string;         // User ID from context
-  timestamp: number;      // Unix timestamp (ms)
+  enabled: boolean; // Whether flag is enabled
+  userId: string; // User ID from context
+  timestamp: number; // Unix timestamp (ms)
 }
 
 // ff.on('change', (event) => ...)
 interface ChangeEvent {
-  flag: string;                     // Flag name
+  flag: string; // Flag name
   previous: FlagDefinition | undefined; // Previous definition (undefined if added)
-  current: FlagDefinition | undefined;  // Current definition (undefined if removed)
-  timestamp: number;                // Unix timestamp (ms)
+  current: FlagDefinition | undefined; // Current definition (undefined if removed)
+  timestamp: number; // Unix timestamp (ms)
 }
 
 // ff.on('error', (event) => ...)
 interface ErrorEvent {
-  code: string;      // Error code (FLAG_NOT_FOUND, LOAD_ERROR, etc.)
-  message: string;   // Human-readable message
+  code: string; // Error code (FLAG_NOT_FOUND, LOAD_ERROR, etc.)
+  message: string; // Human-readable message
   flagName?: string; // Related flag name (if applicable)
 }
 ```
 
 ### Error Codes
 
-| Code | When |
-|------|------|
-| `FLAG_NOT_FOUND` | `isEnabled`/`getVariant` called with unknown flag name |
-| `INVALID_FLAG_NAME` | Empty or whitespace-only flag name |
-| `LOAD_ERROR` | Flag file/URL failed to load (after initial load) |
-| `UNKNOWN_FIELD` | Unknown field in flag file (lenient mode) |
-| `INSECURE_SOURCE` | URL source uses HTTP instead of HTTPS |
-| `POLL_INTERVAL_CLAMPED` | pollInterval was below 5000ms minimum |
-| `LISTENER_ERROR` | An event listener threw an exception |
+| Code                    | When                                                   |
+| ----------------------- | ------------------------------------------------------ |
+| `FLAG_NOT_FOUND`        | `isEnabled`/`getVariant` called with unknown flag name |
+| `INVALID_FLAG_NAME`     | Empty or whitespace-only flag name                     |
+| `LOAD_ERROR`            | Flag file/URL failed to load (after initial load)      |
+| `UNKNOWN_FIELD`         | Unknown field in flag file (lenient mode)              |
+| `INSECURE_SOURCE`       | URL source uses HTTP instead of HTTPS                  |
+| `POLL_INTERVAL_CLAMPED` | pollInterval was below 5000ms minimum                  |
+| `LISTENER_ERROR`        | An event listener threw an exception                   |
 
 ## Flag File Schema
 
@@ -476,13 +477,13 @@ flags: ...
 
 ## Runtime Support
 
-| Runtime | Support |
-|---------|---------|
-| Node.js 18+ | ✅ File, URL, inline |
-| Bun | ✅ File, URL, inline |
-| Deno | ✅ File, URL, inline |
-| Cloudflare Workers | ✅ URL, inline |
-| Browsers (ES2020+) | ✅ URL, inline |
+| Runtime            | Support              |
+| ------------------ | -------------------- |
+| Node.js 18+        | ✅ File, URL, inline |
+| Bun                | ✅ File, URL, inline |
+| Deno               | ✅ File, URL, inline |
+| Cloudflare Workers | ✅ URL, inline       |
+| Browsers (ES2020+) | ✅ URL, inline       |
 
 ## Design Principles
 

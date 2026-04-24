@@ -16,7 +16,7 @@ Returns `true` or `false`. **Never throws** — returns `false` for unknown flag
 6. Otherwise → `enabled` value
 
 ```typescript
-ff.isEnabled('my-flag');                         // Global state only
+ff.isEnabled('my-flag'); // Global state only
 ff.isEnabled('my-flag', { userId: 'user-123' }); // With rollout + rules
 ff.isEnabled('my-flag', { userId: 'u1', plan: 'pro' }); // With targeting
 ```
@@ -29,7 +29,7 @@ Rollout uses MurmurHash3 for deterministic bucketing. The same `(flagName, userI
 flags:
   new-feature:
     enabled: true
-    rollout: 25  # 25% of users
+    rollout: 25 # 25% of users
 ```
 
 - `rollout: 0` → disabled for all users (even if `enabled: true`)
@@ -46,6 +46,7 @@ const variant = ff.getVariant('experiment', { userId: 'user-123' });
 ```
 
 ### Returns `null` when:
+
 - Flag doesn't exist
 - Flag is disabled
 - No variants defined

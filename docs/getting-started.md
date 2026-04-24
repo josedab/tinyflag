@@ -60,7 +60,7 @@ const ff = new TinyFlag({ source: './flags.yml' });
 ```typescript
 const ff = new TinyFlag({
   source: 'https://cdn.example.com/flags.json',
-  headers: { 'Authorization': 'Bearer <token>' },
+  headers: { Authorization: 'Bearer <token>' },
   pollInterval: 30_000, // Re-fetch every 30s
 });
 ```

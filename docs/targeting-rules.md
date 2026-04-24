@@ -6,9 +6,9 @@ Rules let you target specific user segments. Each flag can have multiple rules e
 
 ```yaml
 rules:
-  - conditions:        # All conditions must match (AND logic)
-      field: value     # Condition on a UserContext field
-    enabled: true      # What happens when rule matches
+  - conditions: # All conditions must match (AND logic)
+      field: value # Condition on a UserContext field
+    enabled: true # What happens when rule matches
 ```
 
 ## Operators
@@ -17,14 +17,14 @@ rules:
 
 ```yaml
 conditions:
-  plan: pro            # context.plan === 'pro'
+  plan: pro # context.plan === 'pro'
 ```
 
 ### Glob Pattern
 
 ```yaml
 conditions:
-  email: '*@company.com'   # Matches alice@company.com
+  email: '*@company.com' # Matches alice@company.com
 ```
 
 Only `*` wildcard is supported. A pattern without `*` is treated as equality.
@@ -33,8 +33,8 @@ Only `*` wildcard is supported. A pattern without `*` is treated as equality.
 
 ```yaml
 conditions:
-  age: { $gte: 18 }       # context.age >= 18
-  score: { $lt: 100 }     # context.score < 100
+  age: { $gte: 18 } # context.age >= 18
+  score: { $lt: 100 } # context.score < 100
 ```
 
 Supported: `$gt`, `$gte`, `$lt`, `$lte`. Returns false for non-numeric context values.
@@ -43,14 +43,14 @@ Supported: `$gt`, `$gte`, `$lt`, `$lte`. Returns false for non-numeric context v
 
 ```yaml
 conditions:
-  country: { $in: [US, CA, UK] }   # context.country is one of these
+  country: { $in: [US, CA, UK] } # context.country is one of these
 ```
 
 ### Negation
 
 ```yaml
 conditions:
-  plan: { $not: free }     # context.plan !== 'free'
+  plan: { $not: free } # context.plan !== 'free'
 ```
 
 ## Rule Effects
@@ -60,13 +60,13 @@ When a rule matches, it can:
 ```yaml
 rules:
   - conditions: { plan: pro }
-    enabled: true          # Enable the flag for this segment
+    enabled: true # Enable the flag for this segment
 
   - conditions: { plan: pro }
-    rollout: 80            # Override rollout to 80% for pros
+    rollout: 80 # Override rollout to 80% for pros
 
   - conditions: { role: beta }
-    variant: new-ui        # Force a specific variant
+    variant: new-ui # Force a specific variant
 ```
 
 ## Evaluation Rules
@@ -86,7 +86,7 @@ rules:
   - conditions:
       email: '*@company.com'
     enabled: true
-rollout: 0  # Disabled for everyone else
+rollout: 0 # Disabled for everyone else
 ```
 
 ### Geo-Targeted Rollout
@@ -99,7 +99,7 @@ rules:
   - conditions:
       country: { $in: [UK, DE, FR] }
     rollout: 50
-rollout: 10  # 10% elsewhere
+rollout: 10 # 10% elsewhere
 ```
 
 ### Premium Feature Gate
@@ -112,5 +112,5 @@ rules:
   - conditions:
       plan: pro
     rollout: 50
-rollout: 0  # Free users don't get it
+rollout: 0 # Free users don't get it
 ```

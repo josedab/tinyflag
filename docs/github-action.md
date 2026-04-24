@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for diff
+          fetch-depth: 0 # Required for diff
       - uses: tinyflag/validate-action@v1
         with:
           flags-file: flags.yml
@@ -37,7 +37,7 @@ jobs:
 
 ## Inputs
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `flags-file` | No | `flags.yml` | Path to the flags file |
-| `github-token` | No | `${{ github.token }}` | Token for posting PR comments |
+| Input          | Required | Default               | Description                   |
+| -------------- | -------- | --------------------- | ----------------------------- |
+| `flags-file`   | No       | `flags.yml`           | Path to the flags file        |
+| `github-token` | No       | `${{ github.token }}` | Token for posting PR comments |

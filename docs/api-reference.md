@@ -8,39 +8,47 @@
 const ff = new TinyFlag(options: TinyFlagOptions);
 ```
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `source` | `string \| FlagConfig` | **required** | File path (.yml/.yaml/.json), URL (http/https), or inline config |
-| `headers` | `Record<string, string>` | — | HTTP headers for URL source |
-| `pollInterval` | `number` | `60000` | URL polling interval (ms). Minimum: 5000 |
-| `watch` | `boolean` | `true` | Watch file for changes (file source only) |
-| `strict` | `boolean` | `false` | Reject unknown fields |
-| `deduplicate` | `boolean` | `true` | Deduplicate exposure events per (flag, userId) |
+| Option         | Type                     | Default      | Description                                                      |
+| -------------- | ------------------------ | ------------ | ---------------------------------------------------------------- |
+| `source`       | `string \| FlagConfig`   | **required** | File path (.yml/.yaml/.json), URL (http/https), or inline config |
+| `headers`      | `Record<string, string>` | —            | HTTP headers for URL source                                      |
+| `pollInterval` | `number`                 | `60000`      | URL polling interval (ms). Minimum: 5000                         |
+| `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                        |
+| `strict`       | `boolean`                | `false`      | Reject unknown fields                                            |
+| `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId)                   |
 
 ### Methods
 
 #### `init(): Promise<void>`
+
 Load flags from source. Must be called before evaluating flags. Throws on invalid source or schema errors.
 
 #### `isEnabled(flagName: string, context?: UserContext): boolean`
+
 Check if a flag is enabled. **Never throws** — returns `false` for unknown flags and emits an `error` event.
 
 #### `getVariant(flagName: string, context?: UserContext): string | null`
+
 Get the assigned variant. **Never throws** — returns `null` for unknown flags, disabled flags, or missing userId.
 
 #### `on(event: string, handler: Function): void`
+
 Register an event listener for `'exposure'`, `'change'`, or `'error'` events.
 
 #### `off(event: string, handler: Function): void`
+
 Remove a previously registered event listener.
 
 #### `reload(newSource?: string | FlagConfig): Promise<void>`
+
 Manually reload flags. Optionally provide a new source.
 
 #### `getFlags(): Record<string, FlagDefinition>`
+
 Get a read-only snapshot of all current flag definitions.
 
 #### `destroy(): void`
+
 Clean up file watchers, polling timers, and event listeners.
 
 ## Events
@@ -67,7 +75,7 @@ Emitted when flag definitions change (via reload, file watcher, or URL polling).
 interface ChangeEvent {
   flag: string;
   previous: FlagDefinition | undefined; // undefined = flag was added
-  current: FlagDefinition | undefined;  // undefined = flag was removed
+  current: FlagDefinition | undefined; // undefined = flag was removed
   timestamp: number;
 }
 ```
@@ -84,15 +92,15 @@ interface ErrorEvent {
 }
 ```
 
-| Code | Description |
-|------|-------------|
-| `FLAG_NOT_FOUND` | Unknown flag name |
-| `INVALID_FLAG_NAME` | Empty flag name |
-| `LOAD_ERROR` | Failed to reload flags |
-| `UNKNOWN_FIELD` | Unknown field in flag file (lenient mode) |
-| `INSECURE_SOURCE` | HTTP URL (not HTTPS) |
-| `POLL_INTERVAL_CLAMPED` | pollInterval below 5s minimum |
-| `LISTENER_ERROR` | Event listener threw an exception |
+| Code                    | Description                               |
+| ----------------------- | ----------------------------------------- |
+| `FLAG_NOT_FOUND`        | Unknown flag name                         |
+| `INVALID_FLAG_NAME`     | Empty flag name                           |
+| `LOAD_ERROR`            | Failed to reload flags                    |
+| `UNKNOWN_FIELD`         | Unknown field in flag file (lenient mode) |
+| `INSECURE_SOURCE`       | HTTP URL (not HTTPS)                      |
+| `POLL_INTERVAL_CLAMPED` | pollInterval below 5s minimum             |
+| `LISTENER_ERROR`        | Event listener threw an exception         |
 
 ## Types
 

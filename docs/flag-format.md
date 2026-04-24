@@ -5,15 +5,15 @@ TinyFlag reads flag definitions from YAML or JSON files. The flag file is the si
 ## Schema
 
 ```yaml
-version: 1                      # Schema version (currently: 1)
+version: 1 # Schema version (currently: 1)
 flags:
-  <flag-name>:                   # kebab-case, 1-128 chars
-    enabled: boolean             # Required — global on/off switch
-    description?: string         # Optional — human-readable purpose
-    tags?: string[]              # Optional — categorization labels
-    rollout?: number             # Optional — 0-100, percentage of users
-    rules?: Rule[]               # Optional — targeting rules
-    variants?: Variant[]         # Optional — A/B test variants
+  <flag-name>: # kebab-case, 1-128 chars
+    enabled: boolean # Required — global on/off switch
+    description?: string # Optional — human-readable purpose
+    tags?: string[] # Optional — categorization labels
+    rollout?: number # Optional — 0-100, percentage of users
+    rules?: Rule[] # Optional — targeting rules
+    variants?: Variant[] # Optional — A/B test variants
 ```
 
 ### Flag Names
@@ -27,20 +27,20 @@ Flag names must be kebab-case: lowercase letters, digits, and hyphens. Cannot st
 
 ```yaml
 rules:
-  - conditions:              # All conditions must match (AND logic)
-      plan: pro              # Equality
+  - conditions: # All conditions must match (AND logic)
+      plan: pro # Equality
       email: '*@company.com' # Glob pattern
-    enabled: true            # Override enabled state
-    rollout: 80              # Override rollout %
-    variant: premium         # Force a variant
+    enabled: true # Override enabled state
+    rollout: 80 # Override rollout %
+    variant: premium # Force a variant
 ```
 
 ### Variants
 
 ```yaml
 variants:
-  - name: control            # Variant identifier
-    weight: 50               # Relative weight (not absolute %)
+  - name: control # Variant identifier
+    weight: 50 # Relative weight (not absolute %)
   - name: new-flow
     weight: 50
 ```

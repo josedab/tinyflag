@@ -31,6 +31,7 @@ const { config } = parseFlagConfig(parseYaml(yaml));
 ```
 
 This ensures:
+
 - No YAML parsing on the client (smaller bundle)
 - Flags are available immediately on first render (no flash)
 - Hydration is consistent between server and client

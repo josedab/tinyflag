@@ -90,12 +90,14 @@ ff.on('change', (event) => {
 ### Flags not loading
 
 1. **`init()` not awaited:** Always `await ff.init()` before evaluating flags.
+
    ```ts
    const ff = new TinyFlag({ source: './flags.yml' });
    await ff.init(); // Don't forget this!
    ```
 
 2. **Wrong file path:** Paths are resolved relative to `process.cwd()`, not the source file. Use an absolute path if unsure:
+
    ```ts
    import { resolve } from 'path';
    const ff = new TinyFlag({ source: resolve(__dirname, '../flags.yml') });
@@ -124,6 +126,6 @@ ff.on('change', (event) => {
 
 ## Getting Help
 
-- [GitHub Issues](https://github.com/tinyflag/tinyflag/issues) — Bug reports and feature requests
+- [GitHub Issues](https://github.com/josedab/tinyflag/issues) — Bug reports and feature requests
 - [API Reference](./api-reference.md) — Full SDK API documentation
 - [Flag Format](./flag-format.md) — YAML/JSON flag configuration reference

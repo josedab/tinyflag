@@ -15,28 +15,31 @@ The SDK **trusts the flag file**. If you control the file, you control the flags
 ⚠️ **Never store secrets in flag files.** Flag files are designed to be committed to Git — they are visible to anyone with repo access.
 
 Bad:
+
 ```yaml
 flags:
   api-v2:
     enabled: true
     rules:
       - conditions:
-          api-key: sk_live_12345  # ❌ Secret in flag file!
+          api-key: sk_live_12345 # ❌ Secret in flag file!
 ```
 
 Good:
+
 ```yaml
 flags:
   api-v2:
     enabled: true
     rules:
       - conditions:
-          plan: enterprise  # ✅ Non-sensitive attribute
+          plan: enterprise # ✅ Non-sensitive attribute
 ```
 
 ## Exposure Event Privacy
 
 The `exposure` event contains `userId`. The SDK:
+
 - **Does NOT store** user data
 - **Does NOT transmit** data to any external service
 - **Only emits** events to consumer-registered listeners
@@ -50,7 +53,7 @@ For authenticated flag sources:
 ```typescript
 const ff = new TinyFlag({
   source: 'https://api.example.com/flags.json',
-  headers: { 'Authorization': 'Bearer <token>' },
+  headers: { Authorization: 'Bearer <token>' },
 });
 ```
 
