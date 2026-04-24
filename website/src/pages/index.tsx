@@ -305,6 +305,168 @@ function FrameworksSection() {
   );
 }
 
+const advancedCapabilities = [
+  {
+    icon: '🧪',
+    title: 'A/B Experiments',
+    description: 'Track conversions, compute confidence intervals, and declare winners with built-in Bayesian and frequentist analysis.',
+    to: '/docs/tools/experiments',
+  },
+  {
+    icon: '🚀',
+    title: 'Progressive Rollouts',
+    description: 'Multi-stage canary → ring → GA pipelines with health-check gates and automatic rollback.',
+    to: '/docs/tools/progressive',
+  },
+  {
+    icon: '🔔',
+    title: 'Webhooks & Event Bus',
+    description: 'Push flag changes to Kafka, AWS SNS, Google PubSub, or any HTTP endpoint with HMAC signing.',
+    to: '/docs/tools/webhooks',
+  },
+  {
+    icon: '🛡️',
+    title: 'Governance & RBAC',
+    description: 'Role-based access control, approval workflows, and tamper-proof audit trails with HMAC hash chains.',
+    to: '/docs/tools/governance',
+  },
+  {
+    icon: '🧠',
+    title: 'Flag Intelligence',
+    description: 'Anomaly detection, rollout recommendations, and automated cleanup suggestions from evaluation data.',
+    to: '/docs/tools/intelligence',
+  },
+  {
+    icon: '🎰',
+    title: 'Bandit Optimizer',
+    description: 'Thompson Sampling multi-armed bandit that auto-tunes variant weights to maximize conversions.',
+    to: '/docs/tools/bandit',
+  },
+];
+
+function AdvancedSection() {
+  return (
+    <section className="features-section">
+      <div className="container">
+        <Heading as="h2" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+          Enterprise-Grade, Zero-Dependency
+        </Heading>
+        <p
+          style={{
+            textAlign: 'center',
+            color: 'var(--ifm-color-emphasis-600)',
+            marginBottom: '2rem',
+            maxWidth: '640px',
+            margin: '0 auto 2rem',
+          }}
+        >
+          Advanced capabilities built into the core — no extra services, no extra dependencies.
+        </p>
+        <div className="features-grid">
+          {advancedCapabilities.map((cap) => (
+            <Link
+              key={cap.title}
+              to={cap.to}
+              className="feature-card"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <div className="feature-card__icon">{cap.icon}</div>
+              <h3>{cap.title}</h3>
+              <p>{cap.description}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ArchitectureSection() {
+  return (
+    <section className="comparison-section">
+      <div className="container">
+        <Heading as="h2" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+          How It All Fits Together
+        </Heading>
+        <p
+          style={{
+            textAlign: 'center',
+            color: 'var(--ifm-color-emphasis-600)',
+            marginBottom: '2rem',
+            maxWidth: '640px',
+            margin: '0 auto 2rem',
+          }}
+        >
+          One core library, four module layers. Import only what you need — tree-shaking drops the rest.
+        </p>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 1rem' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '0.75rem',
+              textAlign: 'center',
+              fontSize: '0.9rem',
+            }}
+          >
+            {[
+              { label: '⚡ Runtime', items: ['CachedClient', 'Multi-tenant', 'Merge', 'Rollout Strategies'], color: '#3498db' },
+              { label: '🚀 Delivery', items: ['Progressive Rollouts', 'Sync', 'Signing', 'Audit'], color: '#2ecc71' },
+              { label: '📊 Optimization', items: ['Experiments', 'Intelligence', 'Correlation', 'Bandit'], color: '#e67e22' },
+              { label: '🔍 Verification', items: ['Replay', 'Perf Testing', 'Governance', 'Webhooks'], color: '#9b59b6' },
+            ].map((col) => (
+              <div key={col.label}>
+                <div
+                  style={{
+                    background: col.color,
+                    color: '#fff',
+                    padding: '0.5rem',
+                    borderRadius: '8px 8px 0 0',
+                    fontWeight: 600,
+                  }}
+                >
+                  {col.label}
+                </div>
+                <div
+                  style={{
+                    border: `2px solid ${col.color}33`,
+                    borderTop: 'none',
+                    borderRadius: '0 0 8px 8px',
+                    padding: '0.5rem',
+                  }}
+                >
+                  {col.items.map((item) => (
+                    <div key={item} style={{ padding: '0.25rem 0', fontSize: '0.85rem' }}>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div
+            style={{
+              marginTop: '0.75rem',
+              background: 'var(--ifm-color-primary)',
+              color: '#fff',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              textAlign: 'center',
+              fontWeight: 700,
+              fontSize: '1rem',
+            }}
+          >
+            🚩 TinyFlag Core — Loader · Evaluator · Events · MurmurHash3 · YAML Parser
+          </div>
+          <p style={{ textAlign: 'center', marginTop: '1rem', opacity: 0.6, fontSize: '0.85rem' }}>
+            <Link to="/docs/architecture">View full architecture →</Link>
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home(): ReactNode {
   return (
     <Layout
@@ -317,6 +479,8 @@ export default function Home(): ReactNode {
         <ComparisonSection />
         <CodeExampleSection />
         <FrameworksSection />
+        <AdvancedSection />
+        <ArchitectureSection />
       </main>
     </Layout>
   );
