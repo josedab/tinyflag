@@ -116,3 +116,158 @@ npx tinyflag diff v1.0.0..v1.1.0
       rollout: 10% → 50%
   - legacy-nav (removed)
 ```
+
+## `lint`
+
+Lint flag definitions for best practices and common issues.
+
+```bash
+npx tinyflag lint <file> [options]
+```
+
+| Option             | Description                                    |
+| ------------------ | ---------------------------------------------- |
+| `--format <fmt>`   | Output format: `json` or `sarif`               |
+| `--config <path>`  | Path to lint configuration file                |
+| `--json`           | Output structured JSON                         |
+
+**Exit codes:** `0` when clean, `1` when errors are found.
+
+### Examples
+
+```bash
+npx tinyflag lint ./flags.yml
+npx tinyflag lint ./flags.yml --format sarif
+```
+
+## `eval`
+
+Evaluate a flag from the command line — useful for debugging and CI/CD.
+
+```bash
+npx tinyflag eval <flag> --file <file> [options]
+```
+
+| Option              | Description                                         |
+| ------------------- | --------------------------------------------------- |
+| `--file <path>`     | Path to the flags file (**required**)                |
+| `--persona <name>`  | Evaluate using a named persona from the file         |
+| `--context key=val` | Pass context key-value pairs (repeatable)            |
+| `--json`            | Output structured JSON                               |
+
+### Examples
+
+```bash
+npx tinyflag eval new-checkout --file ./flags.yml
+npx tinyflag eval new-checkout --file ./flags.yml --context userId=user-123 plan=pro
+npx tinyflag eval new-checkout --file ./flags.yml --persona pro-user
+```
+
+## `stale`
+
+Scan source code for unused flag references and identify stale flags.
+
+```bash
+npx tinyflag stale [dir] --flags <file> [options]
+```
+
+| Option                  | Description                                       |
+| ----------------------- | ------------------------------------------------- |
+| `--flags <path>`        | Path to the flags file (**required**)              |
+| `--ci`                  | Exit with code 1 if stale flags found              |
+| `--no-ref-days <n>`     | Days without reference to consider stale           |
+| `--exclude-tags <tags>` | Comma-separated tags to exclude from staleness     |
+| `--json`                | Output structured JSON                             |
+
+### Examples
+
+```bash
+npx tinyflag stale ./src --flags ./flags.yml
+npx tinyflag stale . --flags ./flags.yml --ci --no-ref-days 30
+npx tinyflag stale . --flags ./flags.yml --exclude-tags permanent,core
+```
+
+## `sign`
+
+Cryptographically sign a flag file with Ed25519.
+
+```bash
+npx tinyflag sign <file> --key <private-key-path>
+```
+
+| Option          | Description                        |
+| --------------- | ---------------------------------- |
+| `--key <path>`  | Path to Ed25519 private key        |
+
+Creates a `.sig` file alongside the flag file.
+
+### Examples
+
+```bash
+npx tinyflag sign ./flags.yml --key ./keys/tinyflag.key
+```
+
+## `verify`
+
+Verify a flag file's signature against one or more public keys.
+
+```bash
+npx tinyflag verify <file> --pub <key-path...> [options]
+```
+
+| Option        | Description                                 |
+| ------------- | ------------------------------------------- |
+| `--pub <path>`| Path(s) to Ed25519 public key(s)            |
+| `--lenient`   | Warn instead of fail on missing signatures  |
+| `--json`      | Output structured JSON                      |
+
+### Examples
+
+```bash
+npx tinyflag verify ./flags.yml --pub ./keys/tinyflag.pub
+npx tinyflag verify ./flags.yml --pub ./keys/current.pub ./keys/previous.pub
+npx tinyflag verify ./flags.yml --pub ./keys/tinyflag.pub --lenient
+```
+
+## `keygen`
+
+Generate an Ed25519 key pair for flag signing.
+
+```bash
+npx tinyflag keygen [-o <prefix>]
+```
+
+| Option        | Description                                |
+| ------------- | ------------------------------------------ |
+| `-o <prefix>` | Output file prefix (default: `tinyflag`)   |
+
+Creates `<prefix>.key` (private) and `<prefix>.pub` (public).
+
+### Examples
+
+```bash
+npx tinyflag keygen
+npx tinyflag keygen -o ./keys/production
+```
+
+## `pull` / `push`
+
+Sync flag files with remote HTTP endpoints.
+
+```bash
+npx tinyflag pull <url> -o <output> [--force]
+npx tinyflag push <url> <file> [--force]
+```
+
+| Option     | Description                          |
+| ---------- | ------------------------------------ |
+| `-o <path>`| Output path for pull (default: `flags.yml`) |
+| `--force`  | Skip ETag caching / overwrite        |
+| `--json`   | Output structured JSON               |
+
+### Examples
+
+```bash
+npx tinyflag pull https://cdn.example.com/flags.yml -o ./flags.yml
+npx tinyflag push https://api.example.com/flags ./flags.yml
+```
