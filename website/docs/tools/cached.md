@@ -1,5 +1,5 @@
 ---
-sidebar_position: 8
+sidebar_position: 9
 title: CachedTinyFlag
 description: Client with real-time updates via WebSocket push or HTTP polling.
 ---

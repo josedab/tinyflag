@@ -1,5 +1,5 @@
 ---
-sidebar_position: 5
+sidebar_position: 6
 title: Flag Signing
 description: Cryptographically sign flag files to ensure integrity and prevent tampering.
 ---

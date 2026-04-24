@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 title: Replay & Debugging
 description: Record and replay flag evaluations to detect regressions when flag definitions change.
 ---

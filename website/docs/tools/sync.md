@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 7
 title: Flag Sync
 description: Pull and push flag files from remote endpoints with optimistic locking.
 ---
