@@ -33,13 +33,15 @@ export function createTinyFlag(options: CreateTinyFlagOptions): {
   instance: TinyFlag;
   destroy: () => void;
 } {
-  const instance = options.instance ?? new TinyFlag({
-    source: options.source,
-    headers: options.headers,
-    pollInterval: options.pollInterval,
-    watch: options.watch,
-    strict: options.strict,
-  });
+  const instance =
+    options.instance ??
+    new TinyFlag({
+      source: options.source,
+      headers: options.headers,
+      pollInterval: options.pollInterval,
+      watch: options.watch,
+      strict: options.strict,
+    });
 
   globalInstance = instance;
   globalContext.set(options.context);
@@ -64,9 +66,7 @@ export function createTinyFlag(options: CreateTinyFlagOptions): {
 
 function getInstanceOrThrow(): TinyFlag {
   if (!globalInstance) {
-    throw new Error(
-      'flag()/variant() requires createTinyFlag() to be called first.',
-    );
+    throw new Error('flag()/variant() requires createTinyFlag() to be called first.');
   }
   return globalInstance;
 }
@@ -76,13 +76,10 @@ function getInstanceOrThrow(): TinyFlag {
  * Use with `$` syntax: `{#if $showFeature}...{/if}`
  */
 export function flag(flagName: string): Readable<boolean> {
-  return derived(
-    [globalVersion, globalContext],
-    ([$version, $context]) => {
-      const instance = getInstanceOrThrow();
-      return instance.isEnabled(flagName, $context);
-    },
-  );
+  return derived([globalVersion, globalContext], ([$version, $context]) => {
+    const instance = getInstanceOrThrow();
+    return instance.isEnabled(flagName, $context);
+  });
 }
 
 /**
@@ -90,13 +87,10 @@ export function flag(flagName: string): Readable<boolean> {
  * Use with `$` syntax: `{#if $variant === 'new-flow'}...{/if}`
  */
 export function variant(flagName: string): Readable<string | null> {
-  return derived(
-    [globalVersion, globalContext],
-    ([$version, $context]) => {
-      const instance = getInstanceOrThrow();
-      return instance.getVariant(flagName, $context);
-    },
-  );
+  return derived([globalVersion, globalContext], ([$version, $context]) => {
+    const instance = getInstanceOrThrow();
+    return instance.getVariant(flagName, $context);
+  });
 }
 
 /**

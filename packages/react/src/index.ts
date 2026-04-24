@@ -65,10 +65,7 @@ export function TinyFlagProvider({
     };
   }, [instance, externalInstance]);
 
-  const value = useMemo(
-    () => ({ instance, version, context }),
-    [instance, version, context],
-  );
+  const value = useMemo(() => ({ instance, version, context }), [instance, version, context]);
 
   return React.createElement(TinyFlagContext.Provider, { value }, children);
 }
@@ -78,7 +75,7 @@ function useTinyFlag(): TinyFlagContextValue {
   if (!ctx) {
     throw new Error(
       'useFlag/useVariant must be used inside <TinyFlagProvider>. ' +
-      'Wrap your app with <TinyFlagProvider source="...">.',
+        'Wrap your app with <TinyFlagProvider source="...">.',
     );
   }
   return ctx;

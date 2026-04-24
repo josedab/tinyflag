@@ -41,18 +41,22 @@ export interface ProvideTinyFlagOptions {
  * Call in a parent component's setup function.
  */
 export function provideTinyFlag(options: ProvideTinyFlagOptions): TinyFlag {
-  const instance = options.instance ?? new TinyFlag({
-    source: options.source,
-    headers: options.headers,
-    pollInterval: options.pollInterval,
-    watch: options.watch,
-    strict: options.strict,
-  });
+  const instance =
+    options.instance ??
+    new TinyFlag({
+      source: options.source,
+      headers: options.headers,
+      pollInterval: options.pollInterval,
+      watch: options.watch,
+      strict: options.strict,
+    });
 
   const version = ref(0);
   const context = ref(options.context);
 
-  const handleChange = () => { version.value++; };
+  const handleChange = () => {
+    version.value++;
+  };
 
   onMounted(() => {
     if (!options.instance) {
@@ -75,9 +79,7 @@ export function provideTinyFlag(options: ProvideTinyFlagOptions): TinyFlag {
 function useTinyFlagInjection(): TinyFlagInjection {
   const injection = inject(TINYFLAG_KEY);
   if (!injection) {
-    throw new Error(
-      'useFlag/useVariant requires provideTinyFlag() in a parent component.',
-    );
+    throw new Error('useFlag/useVariant requires provideTinyFlag() in a parent component.');
   }
   return injection;
 }
