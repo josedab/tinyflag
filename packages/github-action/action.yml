@@ -55,7 +55,7 @@ runs:
         $DIFF_OUTPUT
         \`\`\`
 
-        *Posted by [TinyFlag Validate Action](https://github.com/tinyflag/tinyflag)*
+        *Posted by [TinyFlag Validate Action](https://github.com/josedab/tinyflag)*
         EOF
         )
 
