@@ -57,7 +57,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/tinyflag-social-card.png',
+    image: 'img/tinyflag-social-card.svg',
     colorMode: {
       defaultMode: 'light',
       respectPrefersColorScheme: true,

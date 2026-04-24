@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="50%" stop-color="#16213e"/>
+      <stop offset="100%" stop-color="#0f3460"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Flag icon -->
+  <g transform="translate(480, 120) scale(2.5)">
+    <rect x="10" y="8" width="6" height="48" rx="3" fill="#e74c3c"/>
+    <path d="M16 8 L52 8 Q56 8 56 12 L56 28 Q56 32 52 32 L16 32 Z" fill="#e74c3c"/>
+    <path d="M16 12 L48 12 Q50 12 50 14 L50 26 Q50 28 48 28 L16 28 Z" fill="#ff6b6b" opacity="0.4"/>
+  </g>
+  <!-- Title -->
+  <text x="600" y="380" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="72" font-weight="800" fill="#ffffff">TinyFlag</text>
+  <!-- Tagline -->
+  <text x="600" y="440" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="28" fill="#ffffffcc">Feature flags that fit in your pocket</text>
+  <!-- Features -->
+  <text x="600" y="510" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="20" fill="#ffffff88">Zero Dependencies · Git-Native · &lt; 8KB · Runs Everywhere</text>
+</svg>
