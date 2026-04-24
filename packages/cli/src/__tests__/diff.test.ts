@@ -46,9 +46,9 @@ describe('diffConfigs', () => {
     const after = { flags: { b: { enabled: true }, c: { enabled: true } } };
     const changes = diffConfigs(before, after);
     expect(changes).toHaveLength(3);
-    expect(changes.map(c => c.type)).toContain('added');
-    expect(changes.map(c => c.type)).toContain('removed');
-    expect(changes.map(c => c.type)).toContain('modified');
+    expect(changes.map((c) => c.type)).toContain('added');
+    expect(changes.map((c) => c.type)).toContain('removed');
+    expect(changes.map((c) => c.type)).toContain('modified');
   });
 });
 

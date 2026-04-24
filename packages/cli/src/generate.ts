@@ -15,9 +15,7 @@ export function generateTypes(config: FlagConfig): string {
     let variantType = 'never';
 
     if (flag.variants && flag.variants.length > 0) {
-      variantType = flag.variants
-        .map((v) => `'${v.name}'`)
-        .join(' | ');
+      variantType = flag.variants.map((v) => `'${v.name}'`).join(' | ');
     }
 
     lines.push(`  '${name}': { variants: ${variantType} };`);

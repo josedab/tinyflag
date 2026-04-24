@@ -9,10 +9,7 @@ export interface FlagChange {
 /** Compare two flag configs and return a list of changes. */
 export function diffConfigs(before: FlagConfig, after: FlagConfig): FlagChange[] {
   const changes: FlagChange[] = [];
-  const allNames = new Set([
-    ...Object.keys(before.flags),
-    ...Object.keys(after.flags),
-  ]);
+  const allNames = new Set([...Object.keys(before.flags), ...Object.keys(after.flags)]);
 
   for (const name of [...allNames].sort()) {
     const prev = before.flags[name];
@@ -64,9 +61,7 @@ function diffFlag(before: FlagDefinition, after: FlagDefinition): string[] {
 export function formatChanges(changes: FlagChange[], fromRef?: string, toRef?: string): string {
   if (changes.length === 0) return 'No flag changes.';
 
-  const header = fromRef && toRef
-    ? `🚩 Flag changes (${fromRef} → ${toRef}):`
-    : '🚩 Flag changes:';
+  const header = fromRef && toRef ? `🚩 Flag changes (${fromRef} → ${toRef}):` : '🚩 Flag changes:';
   const lines = [header];
   for (const change of changes) {
     switch (change.type) {

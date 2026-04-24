@@ -156,21 +156,31 @@ function handleDiff(args: string[]): void {
   }
 
   try {
-    beforeContent = execSync(`git show ${ref1}:${flagsFile}`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    beforeContent = execSync(`git show ${ref1}:${flagsFile}`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
   } catch {
-    console.error(`Error: Could not read ${flagsFile} from ref "${ref1}". Check that the ref and file path exist.`);
+    console.error(
+      `Error: Could not read ${flagsFile} from ref "${ref1}". Check that the ref and file path exist.`,
+    );
     process.exit(1);
   }
 
   try {
-    afterContent = execSync(`git show ${ref2}:${flagsFile}`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] });
+    afterContent = execSync(`git show ${ref2}:${flagsFile}`, {
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
   } catch {
     // If ref2 is HEAD, try reading the working copy
     if (ref2 === 'HEAD') {
       try {
         afterContent = readFileSync(flagsFile, 'utf-8');
       } catch {
-        console.error(`Error: Could not read ${flagsFile} from ref "${ref2}" or working directory.`);
+        console.error(
+          `Error: Could not read ${flagsFile} from ref "${ref2}" or working directory.`,
+        );
         process.exit(1);
       }
     } else {
