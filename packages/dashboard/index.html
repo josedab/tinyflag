@@ -1,273 +1,740 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🚩 TinyFlag Dashboard</title>
-<style>
-:root{--bg:#fff;--fg:#1a1a2e;--card:#f8f9fa;--border:#e2e8f0;--enabled:#22c55e;--disabled:#ef4444;--accent:#3b82f6;--muted:#64748b;--radius:8px}
-@media(prefers-color-scheme:dark){:root{--bg:#0f172a;--fg:#e2e8f0;--card:#1e293b;--border:#334155;--muted:#94a3b8}}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--fg);max-width:900px;margin:0 auto;padding:16px}
-header{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:16px}
-h1{font-size:1.5rem}
-.source-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-.source-bar input[type=text]{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);font-size:14px}
-.source-bar button,.upload-btn{padding:8px 16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--accent);color:#fff;cursor:pointer;font-size:14px;white-space:nowrap}
-.source-bar button:hover,.upload-btn:hover{opacity:0.9}
-.search-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.search-bar input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);font-size:14px}
-.search-bar select{padding:8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg)}
-.flag-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:8px}
-.flag-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.flag-name{font-weight:600;font-size:1rem;font-family:monospace}
-.badge{padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;text-transform:uppercase}
-.badge-enabled{background:var(--enabled);color:#fff}
-.badge-disabled{background:var(--disabled);color:#fff}
-.flag-desc{color:var(--muted);font-size:14px;margin-bottom:8px}
-.flag-meta{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-.rollout-bar{width:120px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle}
-.rollout-fill{height:100%;background:var(--accent);border-radius:4px}
-.tag{background:var(--border);padding:1px 6px;border-radius:4px;font-size:12px;margin-right:4px}
-.details{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:13px}
-.details pre{background:var(--bg);padding:8px;border-radius:4px;overflow-x:auto;font-size:12px;margin-top:4px}
-.summary{font-size:14px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);margin-top:16px}
-.state-msg{text-align:center;padding:40px;color:var(--muted)}
-.error-banner{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:var(--radius);padding:12px;margin-bottom:16px}
-@media(prefers-color-scheme:dark){.error-banner{background:#450a0a;color:#fca5a5;border-color:#7f1d1d}}
-.paste-area{width:100%;min-height:120px;padding:8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);color:var(--fg);font-family:monospace;font-size:12px;margin-bottom:8px;resize:vertical}
-.hidden{display:none}
-.toggle-details{cursor:pointer;color:var(--accent);font-size:13px;border:none;background:none;padding:0}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.sr-only:focus{position:static;width:auto;height:auto;padding:8px 16px;margin:0;overflow:visible;clip:auto;white-space:normal;background:var(--accent);color:#fff;z-index:100}
-</style>
-</head>
-<body>
-<a href="#flagList" class="sr-only">Skip to flags</a>
-<header role="banner">
-  <h1>🚩 TinyFlag Dashboard</h1>
-</header>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🚩 TinyFlag Dashboard</title>
+    <style>
+      :root {
+        --bg: #fff;
+        --fg: #1a1a2e;
+        --card: #f8f9fa;
+        --border: #e2e8f0;
+        --enabled: #22c55e;
+        --disabled: #ef4444;
+        --accent: #3b82f6;
+        --muted: #64748b;
+        --radius: 8px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --fg: #e2e8f0;
+          --card: #1e293b;
+          --border: #334155;
+          --muted: #94a3b8;
+        }
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 16px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 16px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .source-bar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      .source-bar input[type='text'] {
+        flex: 1;
+        min-width: 200px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        color: var(--fg);
+        font-size: 14px;
+      }
+      .source-bar button,
+      .upload-btn {
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .source-bar button:hover,
+      .upload-btn:hover {
+        opacity: 0.9;
+      }
+      .search-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .search-bar input {
+        flex: 1;
+        min-width: 200px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        color: var(--fg);
+        font-size: 14px;
+      }
+      .search-bar select {
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        color: var(--fg);
+      }
+      .flag-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 8px;
+      }
+      .flag-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .flag-name {
+        font-weight: 600;
+        font-size: 1rem;
+        font-family: monospace;
+      }
+      .badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .badge-enabled {
+        background: var(--enabled);
+        color: #fff;
+      }
+      .badge-disabled {
+        background: var(--disabled);
+        color: #fff;
+      }
+      .flag-desc {
+        color: var(--muted);
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+      .flag-meta {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .rollout-bar {
+        width: 120px;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      .rollout-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 4px;
+      }
+      .tag {
+        background: var(--border);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        margin-right: 4px;
+      }
+      .details {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .details pre {
+        background: var(--bg);
+        padding: 8px;
+        border-radius: 4px;
+        overflow-x: auto;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .summary {
+        font-size: 14px;
+        color: var(--muted);
+        padding: 8px 0;
+        border-top: 1px solid var(--border);
+        margin-top: 16px;
+      }
+      .state-msg {
+        text-align: center;
+        padding: 40px;
+        color: var(--muted);
+      }
+      .error-banner {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        border-radius: var(--radius);
+        padding: 12px;
+        margin-bottom: 16px;
+      }
+      @media (prefers-color-scheme: dark) {
+        .error-banner {
+          background: #450a0a;
+          color: #fca5a5;
+          border-color: #7f1d1d;
+        }
+      }
+      .paste-area {
+        width: 100%;
+        min-height: 120px;
+        padding: 8px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--card);
+        color: var(--fg);
+        font-family: monospace;
+        font-size: 12px;
+        margin-bottom: 8px;
+        resize: vertical;
+      }
+      .hidden {
+        display: none;
+      }
+      .toggle-details {
+        cursor: pointer;
+        color: var(--accent);
+        font-size: 13px;
+        border: none;
+        background: none;
+        padding: 0;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      .sr-only:focus {
+        position: static;
+        width: auto;
+        height: auto;
+        padding: 8px 16px;
+        margin: 0;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+        background: var(--accent);
+        color: #fff;
+        z-index: 100;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#flagList" class="sr-only">Skip to flags</a>
+    <header role="banner">
+      <h1>🚩 TinyFlag Dashboard</h1>
+    </header>
 
-<main role="main">
-<nav aria-label="Flag source" class="source-bar">
-  <label for="urlInput" class="sr-only">Flags URL</label>
-  <input type="text" id="urlInput" placeholder="Enter flags URL (e.g., https://raw.githubusercontent.com/.../flags.yml)" aria-label="Flags file URL">
-  <button onclick="loadFromUrl()" aria-label="Load flags from URL">Load URL</button>
-  <label class="upload-btn" role="button" tabindex="0" aria-label="Upload flags file" onkeydown="if(event.key==='Enter')this.querySelector('input').click()">Upload File<input type="file" accept=".yml,.yaml,.json" onchange="loadFromFile(event)" style="display:none" aria-hidden="true"></label>
-</nav>
+    <main role="main">
+      <nav aria-label="Flag source" class="source-bar">
+        <label for="urlInput" class="sr-only">Flags URL</label>
+        <input
+          type="text"
+          id="urlInput"
+          placeholder="Enter flags URL (e.g., https://raw.githubusercontent.com/.../flags.yml)"
+          aria-label="Flags file URL"
+        />
+        <button onclick="loadFromUrl()" aria-label="Load flags from URL">Load URL</button>
+        <label
+          class="upload-btn"
+          role="button"
+          tabindex="0"
+          aria-label="Upload flags file"
+          onkeydown="if (event.key === 'Enter') this.querySelector('input').click();"
+          >Upload File<input
+            type="file"
+            accept=".yml,.yaml,.json"
+            onchange="loadFromFile(event)"
+            style="display: none"
+            aria-hidden="true"
+        /></label>
+      </nav>
 
-<section id="pasteSection" aria-label="Paste flags">
-  <label for="pasteArea" class="sr-only">Paste YAML or JSON flags</label>
-  <textarea class="paste-area" id="pasteArea" placeholder="Or paste YAML/JSON flags here..." aria-label="Paste YAML or JSON flags"></textarea>
-  <button onclick="loadFromPaste()" style="margin-bottom:16px" class="upload-btn">Parse Pasted Content</button>
-</section>
+      <section id="pasteSection" aria-label="Paste flags">
+        <label for="pasteArea" class="sr-only">Paste YAML or JSON flags</label>
+        <textarea
+          class="paste-area"
+          id="pasteArea"
+          placeholder="Or paste YAML/JSON flags here..."
+          aria-label="Paste YAML or JSON flags"
+        ></textarea>
+        <button onclick="loadFromPaste()" style="margin-bottom: 16px" class="upload-btn">
+          Parse Pasted Content
+        </button>
+      </section>
 
-<div id="errorBanner" class="error-banner hidden" role="alert" aria-live="assertive"><span id="errorText"></span> <button onclick="retryLoad()" class="upload-btn" style="margin-left:8px;padding:4px 12px">Retry</button></div>
+      <div id="errorBanner" class="error-banner hidden" role="alert" aria-live="assertive">
+        <span id="errorText"></span>
+        <button
+          onclick="retryLoad()"
+          class="upload-btn"
+          style="margin-left: 8px; padding: 4px 12px"
+        >
+          Retry
+        </button>
+      </div>
 
-<section id="searchSection" class="hidden" aria-label="Search and filter flags">
-  <div class="search-bar">
-    <label for="searchInput" class="sr-only">Search flags</label>
-    <input type="text" id="searchInput" placeholder="🔍 Search flags..." oninput="renderFlags()" aria-label="Search flags by name">
-    <label for="filterEnabled" class="sr-only">Filter by state</label>
-    <select id="filterEnabled" onchange="renderFlags()" aria-label="Filter flags by enabled state">
-      <option value="all">All</option>
-      <option value="enabled">Enabled</option>
-      <option value="disabled">Disabled</option>
-    </select>
-    <label style="display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer"><input type="checkbox" id="editMode" onchange="renderFlags()" aria-label="Toggle edit mode"> Edit mode</label>
-    <button onclick="downloadFlags()" class="upload-btn" id="downloadBtn" style="display:none" aria-label="Download flags as YAML">⬇ Download YAML</button>
-  </div>
-</section>
+      <section id="searchSection" class="hidden" aria-label="Search and filter flags">
+        <div class="search-bar">
+          <label for="searchInput" class="sr-only">Search flags</label>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="🔍 Search flags..."
+            oninput="renderFlags()"
+            aria-label="Search flags by name"
+          />
+          <label for="filterEnabled" class="sr-only">Filter by state</label>
+          <select
+            id="filterEnabled"
+            onchange="renderFlags()"
+            aria-label="Filter flags by enabled state"
+          >
+            <option value="all">All</option>
+            <option value="enabled">Enabled</option>
+            <option value="disabled">Disabled</option>
+          </select>
+          <label
+            style="display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer"
+            ><input
+              type="checkbox"
+              id="editMode"
+              onchange="renderFlags()"
+              aria-label="Toggle edit mode"
+            />
+            Edit mode</label
+          >
+          <button
+            onclick="downloadFlags()"
+            class="upload-btn"
+            id="downloadBtn"
+            style="display: none"
+            aria-label="Download flags as YAML"
+          >
+            ⬇ Download YAML
+          </button>
+        </div>
+      </section>
 
-<section id="flagList" role="list" aria-label="Feature flags" tabindex="-1"></section>
-<div id="summary" class="summary hidden" aria-live="polite"></div>
-</main>
+      <section id="flagList" role="list" aria-label="Feature flags" tabindex="-1"></section>
+      <div id="summary" class="summary hidden" aria-live="polite"></div>
+    </main>
 
-<script>
-/* Minimal YAML parser (handles flag files) */
-function miniYaml(s){
-  if(!s||!s.trim())return null;
-  s=s.replace(/^\uFEFF/,'').replace(/^---\s*\n/,'');
-  const BOOL_T=new Set(['true','yes','on']),BOOL_F=new Set(['false','no','off']);
-  function scalar(v){v=v.trim();if(!v||v==='~'||v==='null')return null;if(BOOL_T.has(v.toLowerCase()))return true;if(BOOL_F.has(v.toLowerCase()))return false;if((v[0]==='"'&&v.slice(-1)==='"')||(v[0]==="'"&&v.slice(-1)==="'"))return v.slice(1,-1);if(/^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(v))return Number(v);return v;}
-  function flow(v){v=v.trim();if(v[0]==='['&&v.slice(-1)===']'){const inner=v.slice(1,-1).trim();if(!inner)return[];return splitFlow(inner).map(i=>flow(i.trim()));}if(v[0]==='{'&&v.slice(-1)==='}'){const inner=v.slice(1,-1).trim();if(!inner)return{};const r={};splitFlow(inner).forEach(i=>{const c=i.indexOf(':');if(c>-1)r[i.slice(0,c).trim()]=flow(i.slice(c+1).trim());});return r;}return scalar(v);}
-  function splitFlow(s){const items=[];let d=0,c='',sq=false,dq=false;for(const ch of s){if(ch==="'"&&!dq)sq=!sq;else if(ch==='"'&&!sq)dq=!dq;if(!sq&&!dq){if(ch==='['||ch==='{')d++;else if(ch===']'||ch==='}')d--;else if(ch===','&&d===0){items.push(c);c='';continue;}}c+=ch;}if(c.trim())items.push(c);return items;}
-  function stripComment(l){let sq=false,dq=false;for(let i=0;i<l.length;i++){if(l[i]==="'"&&!dq)sq=!sq;else if(l[i]==='"'&&!sq)dq=!dq;else if(l[i]==='#'&&!sq&&!dq)return l.slice(0,i).trimEnd();}return l;}
-  const lines=s.split('\n').map((r,i)=>{const t=r.trimStart();if(!t||t[0]==='#')return null;return{indent:r.length-t.length,content:stripComment(t),ln:i+1};}).filter(Boolean);
-  function parseBlock(i,base){if(i>=lines.length)return[null,i];const l=lines[i];if(l.content.startsWith('- '))return parseSeq(i,l.indent);if(l.content==='-')return parseSeq(i,l.indent);if(l.content.includes(':'))return parseMap(i,l.indent);return[scalar(l.content),i+1];}
-  function parseSeq(i,base){const r=[];while(i<lines.length){const l=lines[i];if(l.indent<base||l.indent>base)break;if(l.content.startsWith('- ')){const v=l.content.slice(2).trim();if(!v){if(i+1<lines.length&&lines[i+1].indent>l.indent){const[c,n]=parseBlock(i+1,l.indent);r.push(c);i=n;}else{r.push(null);i++;}}else if(v[0]==='['||v[0]==='{'){r.push(flow(v));i++;}else if(v.includes(': ')||v.endsWith(':')){const tmp=[{indent:l.indent+2,content:v,ln:l.ln}];let j=i+1;while(j<lines.length&&lines[j].indent>l.indent){tmp.push(lines[j]);j++;}const sv=lines;lines.splice(0);lines.push(...tmp);const[c]=parseMap(0,l.indent+2);lines.splice(0);lines.push(...sv);r.push(c);i=j;}else{r.push(scalar(v));i++;}}else if(l.content==='-'){if(i+1<lines.length&&lines[i+1].indent>l.indent){const[c,n]=parseBlock(i+1,l.indent);r.push(c);i=n;}else{r.push(null);i++;}}else break;}return[r,i];}
-  function parseMap(i,base){const r={};while(i<lines.length){const l=lines[i];if(l.indent<base)break;if(l.indent>base){i++;continue;}const ci=l.content.indexOf(':');if(ci===-1){i++;continue;}const k=l.content.slice(0,ci).trim(),after=l.content.slice(ci+1).trim();if(!after){if(i+1<lines.length&&lines[i+1].indent>base){const[c,n]=parseBlock(i+1,base);r[k]=c;i=n;}else{r[k]=null;i++;}}else if(after[0]==='['||after[0]==='{'){r[k]=flow(after);i++;}else{r[k]=scalar(after);i++;}}return[r,i];}
-  const[result]=parseBlock(0,lines[0].indent);return result;
-}
+    <script>
+      /* Minimal YAML parser (handles flag files) */
+      function miniYaml(s) {
+        if (!s || !s.trim()) return null;
+        s = s.replace(/^\uFEFF/, '').replace(/^---\s*\n/, '');
+        const BOOL_T = new Set(['true', 'yes', 'on']),
+          BOOL_F = new Set(['false', 'no', 'off']);
+        function scalar(v) {
+          v = v.trim();
+          if (!v || v === '~' || v === 'null') return null;
+          if (BOOL_T.has(v.toLowerCase())) return true;
+          if (BOOL_F.has(v.toLowerCase())) return false;
+          if ((v[0] === '"' && v.slice(-1) === '"') || (v[0] === "'" && v.slice(-1) === "'"))
+            return v.slice(1, -1);
+          if (/^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(v)) return Number(v);
+          return v;
+        }
+        function flow(v) {
+          v = v.trim();
+          if (v[0] === '[' && v.slice(-1) === ']') {
+            const inner = v.slice(1, -1).trim();
+            if (!inner) return [];
+            return splitFlow(inner).map((i) => flow(i.trim()));
+          }
+          if (v[0] === '{' && v.slice(-1) === '}') {
+            const inner = v.slice(1, -1).trim();
+            if (!inner) return {};
+            const r = {};
+            splitFlow(inner).forEach((i) => {
+              const c = i.indexOf(':');
+              if (c > -1) r[i.slice(0, c).trim()] = flow(i.slice(c + 1).trim());
+            });
+            return r;
+          }
+          return scalar(v);
+        }
+        function splitFlow(s) {
+          const items = [];
+          let d = 0,
+            c = '',
+            sq = false,
+            dq = false;
+          for (const ch of s) {
+            if (ch === "'" && !dq) sq = !sq;
+            else if (ch === '"' && !sq) dq = !dq;
+            if (!sq && !dq) {
+              if (ch === '[' || ch === '{') d++;
+              else if (ch === ']' || ch === '}') d--;
+              else if (ch === ',' && d === 0) {
+                items.push(c);
+                c = '';
+                continue;
+              }
+            }
+            c += ch;
+          }
+          if (c.trim()) items.push(c);
+          return items;
+        }
+        function stripComment(l) {
+          let sq = false,
+            dq = false;
+          for (let i = 0; i < l.length; i++) {
+            if (l[i] === "'" && !dq) sq = !sq;
+            else if (l[i] === '"' && !sq) dq = !dq;
+            else if (l[i] === '#' && !sq && !dq) return l.slice(0, i).trimEnd();
+          }
+          return l;
+        }
+        const lines = s
+          .split('\n')
+          .map((r, i) => {
+            const t = r.trimStart();
+            if (!t || t[0] === '#') return null;
+            return { indent: r.length - t.length, content: stripComment(t), ln: i + 1 };
+          })
+          .filter(Boolean);
+        function parseBlock(i, base) {
+          if (i >= lines.length) return [null, i];
+          const l = lines[i];
+          if (l.content.startsWith('- ')) return parseSeq(i, l.indent);
+          if (l.content === '-') return parseSeq(i, l.indent);
+          if (l.content.includes(':')) return parseMap(i, l.indent);
+          return [scalar(l.content), i + 1];
+        }
+        function parseSeq(i, base) {
+          const r = [];
+          while (i < lines.length) {
+            const l = lines[i];
+            if (l.indent < base || l.indent > base) break;
+            if (l.content.startsWith('- ')) {
+              const v = l.content.slice(2).trim();
+              if (!v) {
+                if (i + 1 < lines.length && lines[i + 1].indent > l.indent) {
+                  const [c, n] = parseBlock(i + 1, l.indent);
+                  r.push(c);
+                  i = n;
+                } else {
+                  r.push(null);
+                  i++;
+                }
+              } else if (v[0] === '[' || v[0] === '{') {
+                r.push(flow(v));
+                i++;
+              } else if (v.includes(': ') || v.endsWith(':')) {
+                const tmp = [{ indent: l.indent + 2, content: v, ln: l.ln }];
+                let j = i + 1;
+                while (j < lines.length && lines[j].indent > l.indent) {
+                  tmp.push(lines[j]);
+                  j++;
+                }
+                const sv = lines;
+                lines.splice(0);
+                lines.push(...tmp);
+                const [c] = parseMap(0, l.indent + 2);
+                lines.splice(0);
+                lines.push(...sv);
+                r.push(c);
+                i = j;
+              } else {
+                r.push(scalar(v));
+                i++;
+              }
+            } else if (l.content === '-') {
+              if (i + 1 < lines.length && lines[i + 1].indent > l.indent) {
+                const [c, n] = parseBlock(i + 1, l.indent);
+                r.push(c);
+                i = n;
+              } else {
+                r.push(null);
+                i++;
+              }
+            } else break;
+          }
+          return [r, i];
+        }
+        function parseMap(i, base) {
+          const r = {};
+          while (i < lines.length) {
+            const l = lines[i];
+            if (l.indent < base) break;
+            if (l.indent > base) {
+              i++;
+              continue;
+            }
+            const ci = l.content.indexOf(':');
+            if (ci === -1) {
+              i++;
+              continue;
+            }
+            const k = l.content.slice(0, ci).trim(),
+              after = l.content.slice(ci + 1).trim();
+            if (!after) {
+              if (i + 1 < lines.length && lines[i + 1].indent > base) {
+                const [c, n] = parseBlock(i + 1, base);
+                r[k] = c;
+                i = n;
+              } else {
+                r[k] = null;
+                i++;
+              }
+            } else if (after[0] === '[' || after[0] === '{') {
+              r[k] = flow(after);
+              i++;
+            } else {
+              r[k] = scalar(after);
+              i++;
+            }
+          }
+          return [r, i];
+        }
+        const [result] = parseBlock(0, lines[0].indent);
+        return result;
+      }
 
-let flags = null;
-let allTags = new Set();
+      let flags = null;
+      let allTags = new Set();
 
-function showError(msg) {
-  const el = document.getElementById('errorBanner');
-  document.getElementById('errorText').textContent = msg;
-  el.classList.remove('hidden');
-}
-function hideError() {
-  document.getElementById('errorBanner').classList.add('hidden');
-}
+      function showError(msg) {
+        const el = document.getElementById('errorBanner');
+        document.getElementById('errorText').textContent = msg;
+        el.classList.remove('hidden');
+      }
+      function hideError() {
+        document.getElementById('errorBanner').classList.add('hidden');
+      }
 
-function parseFlags(text, isJson) {
-  try {
-    const raw = isJson ? JSON.parse(text) : miniYaml(text);
-    if (!raw || !raw.flags) throw new Error('Missing "flags" field');
-    flags = raw.flags;
-    allTags = new Set();
-    Object.values(flags).forEach(f => (f.tags || []).forEach(t => allTags.add(t)));
-    hideError();
-    document.getElementById('searchSection').classList.remove('hidden');
-    document.getElementById('pasteSection').classList.add('hidden');
-    renderFlags();
-  } catch (e) {
-    showError('Failed to parse: ' + e.message);
-  }
-}
+      function parseFlags(text, isJson) {
+        try {
+          const raw = isJson ? JSON.parse(text) : miniYaml(text);
+          if (!raw || !raw.flags) throw new Error('Missing "flags" field');
+          flags = raw.flags;
+          allTags = new Set();
+          Object.values(flags).forEach((f) => (f.tags || []).forEach((t) => allTags.add(t)));
+          hideError();
+          document.getElementById('searchSection').classList.remove('hidden');
+          document.getElementById('pasteSection').classList.add('hidden');
+          renderFlags();
+        } catch (e) {
+          showError('Failed to parse: ' + e.message);
+        }
+      }
 
-async function loadFromUrl() {
-  const url = document.getElementById('urlInput').value.trim();
-  if (!url) return showError('Enter a URL');
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    parseFlags(text, url.includes('.json'));
-  } catch (e) {
-    showError('Failed to fetch: ' + e.message);
-  }
-}
+      async function loadFromUrl() {
+        const url = document.getElementById('urlInput').value.trim();
+        if (!url) return showError('Enter a URL');
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const text = await res.text();
+          parseFlags(text, url.includes('.json'));
+        } catch (e) {
+          showError('Failed to fetch: ' + e.message);
+        }
+      }
 
-function loadFromFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = () => parseFlags(reader.result, file.name.endsWith('.json'));
-  reader.readAsText(file);
-}
+      function loadFromFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => parseFlags(reader.result, file.name.endsWith('.json'));
+        reader.readAsText(file);
+      }
 
-function loadFromPaste() {
-  const text = document.getElementById('pasteArea').value.trim();
-  if (!text) return showError('Paste some YAML or JSON');
-  parseFlags(text, text.trim()[0] === '{');
-}
+      function loadFromPaste() {
+        const text = document.getElementById('pasteArea').value.trim();
+        if (!text) return showError('Paste some YAML or JSON');
+        parseFlags(text, text.trim()[0] === '{');
+      }
 
-function renderFlags() {
-  if (!flags) return;
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  const filter = document.getElementById('filterEnabled').value;
-  const editing = document.getElementById('editMode').checked;
-  document.getElementById('downloadBtn').style.display = editing ? 'inline-block' : 'none';
-  const entries = Object.entries(flags).filter(([name, f]) => {
-    if (search && !name.toLowerCase().includes(search) && !(f.description || '').toLowerCase().includes(search)) return false;
-    if (filter === 'enabled' && !f.enabled) return false;
-    if (filter === 'disabled' && f.enabled) return false;
-    return true;
-  });
+      function renderFlags() {
+        if (!flags) return;
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const filter = document.getElementById('filterEnabled').value;
+        const editing = document.getElementById('editMode').checked;
+        document.getElementById('downloadBtn').style.display = editing ? 'inline-block' : 'none';
+        const entries = Object.entries(flags).filter(([name, f]) => {
+          if (
+            search &&
+            !name.toLowerCase().includes(search) &&
+            !(f.description || '').toLowerCase().includes(search)
+          )
+            return false;
+          if (filter === 'enabled' && !f.enabled) return false;
+          if (filter === 'disabled' && f.enabled) return false;
+          return true;
+        });
 
-  const list = document.getElementById('flagList');
-  if (entries.length === 0) {
-    list.innerHTML = '<div class="state-msg">No flags match your search.</div>';
-    document.getElementById('summary').classList.add('hidden');
-    return;
-  }
+        const list = document.getElementById('flagList');
+        if (entries.length === 0) {
+          list.innerHTML = '<div class="state-msg">No flags match your search.</div>';
+          document.getElementById('summary').classList.add('hidden');
+          return;
+        }
 
-  list.innerHTML = entries.map(([name, f], idx) => {
-    const badge = editing
-      ? `<button onclick="toggleFlag('${esc(name)}')" class="badge ${f.enabled?'badge-enabled':'badge-disabled'}" style="cursor:pointer">${f.enabled?'enabled':'disabled'} ✏️</button>`
-      : (f.enabled ? '<span class="badge badge-enabled">enabled</span>' : '<span class="badge badge-disabled">disabled</span>');
-    const desc = f.description ? `<div class="flag-desc">${esc(f.description)}</div>` : '';
-    const tags = (f.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
-    const rollout = f.rollout !== undefined
-      ? (editing
-        ? `<span>Rollout: <input type="range" min="0" max="100" value="${f.rollout}" oninput="updateRollout('${esc(name)}',this.value)" style="width:100px;vertical-align:middle"> ${f.rollout}%</span>`
-        : `<span>Rollout: <span class="rollout-bar"><span class="rollout-fill" style="width:${f.rollout}%"></span></span> ${f.rollout}%</span>`)
-      : '';
-    const rules = f.rules ? `<span>${f.rules.length} rule${f.rules.length !== 1 ? 's' : ''}</span>` : '';
-    const variants = f.variants ? `<span>${f.variants.length} variant${f.variants.length !== 1 ? 's' : ''}</span>` : '';
-    const detailId = 'detail-' + idx;
-    const hasDetails = f.rules || f.variants;
+        list.innerHTML = entries
+          .map(([name, f], idx) => {
+            const badge = editing
+              ? `<button onclick="toggleFlag('${esc(name)}')" class="badge ${f.enabled ? 'badge-enabled' : 'badge-disabled'}" style="cursor:pointer">${f.enabled ? 'enabled' : 'disabled'} ✏️</button>`
+              : f.enabled
+                ? '<span class="badge badge-enabled">enabled</span>'
+                : '<span class="badge badge-disabled">disabled</span>';
+            const desc = f.description ? `<div class="flag-desc">${esc(f.description)}</div>` : '';
+            const tags = (f.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('');
+            const rollout =
+              f.rollout !== undefined
+                ? editing
+                  ? `<span>Rollout: <input type="range" min="0" max="100" value="${f.rollout}" oninput="updateRollout('${esc(name)}',this.value)" style="width:100px;vertical-align:middle"> ${f.rollout}%</span>`
+                  : `<span>Rollout: <span class="rollout-bar"><span class="rollout-fill" style="width:${f.rollout}%"></span></span> ${f.rollout}%</span>`
+                : '';
+            const rules = f.rules
+              ? `<span>${f.rules.length} rule${f.rules.length !== 1 ? 's' : ''}</span>`
+              : '';
+            const variants = f.variants
+              ? `<span>${f.variants.length} variant${f.variants.length !== 1 ? 's' : ''}</span>`
+              : '';
+            const detailId = 'detail-' + idx;
+            const hasDetails = f.rules || f.variants;
 
-    let detailHtml = '';
-    if (hasDetails) {
-      let inner = '';
-      if (f.rules) inner += '<strong>Rules:</strong><pre>' + esc(JSON.stringify(f.rules, null, 2)) + '</pre>';
-      if (f.variants) inner += '<strong>Variants:</strong><pre>' + esc(JSON.stringify(f.variants, null, 2)) + '</pre>';
-      detailHtml = `<div id="${detailId}" class="details hidden">${inner}</div>`;
-    }
+            let detailHtml = '';
+            if (hasDetails) {
+              let inner = '';
+              if (f.rules)
+                inner +=
+                  '<strong>Rules:</strong><pre>' + esc(JSON.stringify(f.rules, null, 2)) + '</pre>';
+              if (f.variants)
+                inner +=
+                  '<strong>Variants:</strong><pre>' +
+                  esc(JSON.stringify(f.variants, null, 2)) +
+                  '</pre>';
+              detailHtml = `<div id="${detailId}" class="details hidden">${inner}</div>`;
+            }
 
-    const toggleBtn = hasDetails
-      ? `<button class="toggle-details" onclick="document.getElementById('${detailId}').classList.toggle('hidden')">Details ▶</button>`
-      : '';
+            const toggleBtn = hasDetails
+              ? `<button class="toggle-details" onclick="document.getElementById('${detailId}').classList.toggle('hidden')">Details ▶</button>`
+              : '';
 
-    return `<article class="flag-card" role="listitem" aria-label="Flag: ${esc(name)}">
+            return `<article class="flag-card" role="listitem" aria-label="Flag: ${esc(name)}">
       <div class="flag-header"><span class="flag-name">${esc(name)}</span>${badge}</div>
       ${desc}
       <div class="flag-meta">${rollout}${rules}${variants}${tags ? '<span>' + tags + '</span>' : ''}${toggleBtn}</div>
       ${detailHtml}
     </article>`;
-  }).join('');
+          })
+          .join('');
 
-  const total = Object.keys(flags).length;
-  const enabled = Object.values(flags).filter(f => f.enabled).length;
-  const summaryEl = document.getElementById('summary');
-  summaryEl.textContent = `Total: ${total} flags · ${enabled} enabled · ${total - enabled} disabled`;
-  summaryEl.classList.remove('hidden');
-}
+        const total = Object.keys(flags).length;
+        const enabled = Object.values(flags).filter((f) => f.enabled).length;
+        const summaryEl = document.getElementById('summary');
+        summaryEl.textContent = `Total: ${total} flags · ${enabled} enabled · ${total - enabled} disabled`;
+        summaryEl.classList.remove('hidden');
+      }
 
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+      function esc(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
 
-function retryLoad() {
-  const url = document.getElementById('urlInput').value.trim();
-  if (url) loadFromUrl();
-}
+      function retryLoad() {
+        const url = document.getElementById('urlInput').value.trim();
+        if (url) loadFromUrl();
+      }
 
-function toggleFlag(name) {
-  if (flags && flags[name]) {
-    flags[name].enabled = !flags[name].enabled;
-    renderFlags();
-  }
-}
+      function toggleFlag(name) {
+        if (flags && flags[name]) {
+          flags[name].enabled = !flags[name].enabled;
+          renderFlags();
+        }
+      }
 
-function updateRollout(name, value) {
-  if (flags && flags[name]) {
-    flags[name].rollout = parseInt(value, 10);
-    renderFlags();
-  }
-}
+      function updateRollout(name, value) {
+        if (flags && flags[name]) {
+          flags[name].rollout = parseInt(value, 10);
+          renderFlags();
+        }
+      }
 
-function downloadFlags() {
-  if (!flags) return;
-  const lines = ['version: 1', 'flags:'];
-  for (const [name, f] of Object.entries(flags)) {
-    lines.push(`  ${name}:`);
-    lines.push(`    enabled: ${f.enabled}`);
-    if (f.description) lines.push(`    description: ${f.description}`);
-    if (f.rollout !== undefined) lines.push(`    rollout: ${f.rollout}`);
-    if (f.tags && f.tags.length) lines.push(`    tags: [${f.tags.join(', ')}]`);
-    if (f.rules) lines.push(`    rules: ${JSON.stringify(f.rules)}`);
-    if (f.variants) {
-      lines.push('    variants:');
-      for (const v of f.variants) lines.push(`      - name: ${v.name}\n        weight: ${v.weight}`);
-    }
-  }
-  const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/yaml' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'flags.yml';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
+      function downloadFlags() {
+        if (!flags) return;
+        const lines = ['version: 1', 'flags:'];
+        for (const [name, f] of Object.entries(flags)) {
+          lines.push(`  ${name}:`);
+          lines.push(`    enabled: ${f.enabled}`);
+          if (f.description) lines.push(`    description: ${f.description}`);
+          if (f.rollout !== undefined) lines.push(`    rollout: ${f.rollout}`);
+          if (f.tags && f.tags.length) lines.push(`    tags: [${f.tags.join(', ')}]`);
+          if (f.rules) lines.push(`    rules: ${JSON.stringify(f.rules)}`);
+          if (f.variants) {
+            lines.push('    variants:');
+            for (const v of f.variants)
+              lines.push(`      - name: ${v.name}\n        weight: ${v.weight}`);
+          }
+        }
+        const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/yaml' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'flags.yml';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
 
-// Check URL params for auto-load
-const params = new URLSearchParams(location.search);
-if (params.get('url')) {
-  document.getElementById('urlInput').value = params.get('url');
-  loadFromUrl();
-}
-</script>
-</body>
+      // Check URL params for auto-load
+      const params = new URLSearchParams(location.search);
+      if (params.get('url')) {
+        document.getElementById('urlInput').value = params.get('url');
+        loadFromUrl();
+      }
+    </script>
+  </body>
 </html>
