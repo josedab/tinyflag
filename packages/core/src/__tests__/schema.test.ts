@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateConfig, parseFlagConfig } from '../schema.js';
+import { parseFlagConfig } from '../parser.js';
+import { validateConfig } from '../schema.js';
 
 describe('validateConfig', () => {
   it('accepts valid minimal config', () => {

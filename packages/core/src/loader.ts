@@ -1,6 +1,6 @@
 import type { FlagConfig, TinyFlagOptions, ValidationError } from './types.js';
 import { parseYaml } from './yaml.js';
-import { parseFlagConfig } from './schema.js';
+import { parseFlagConfig } from './parser.js';
 import { mergeFlagConfigs } from './merge.js';
 
 export type SourceType = 'file' | 'url' | 'inline' | 'multi';

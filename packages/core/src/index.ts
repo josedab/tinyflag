@@ -24,7 +24,8 @@ export type {
   SegmentDefinition,
 } from './types.js';
 export { parseYaml } from './yaml.js';
-export { validateConfig, parseFlagConfig } from './schema.js';
+export { validateConfig } from './schema.js';
+export { parseFlagConfig } from './parser.js';
 export { mergeFlagConfigs, diffEnvConfigs, formatEnvDiff } from './merge.js';
 export type { EnvDiffEntry } from './merge.js';
 export {

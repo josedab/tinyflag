@@ -5,7 +5,6 @@ import {
   validateFlagName,
   validateFlagDefinition,
 } from './validators.js';
-export { parseFlagConfig } from './parser.js';
 
 /**
  * Validate a parsed flag configuration object against the TinyFlag schema.

@@ -1,7 +1,7 @@
 import type { FlagConfig, FlagDefinition, UserContext, TinyFlagEvents } from './types.js';
 import { evaluateFlag, evaluateVariant, setEvaluationContext } from './evaluator.js';
 import { EventEmitter } from './events.js';
-import { parseFlagConfig } from './schema.js';
+import { parseFlagConfig } from './parser.js';
 import { debug } from './debug.js';
 
 export interface CachedTinyFlagOptions {
