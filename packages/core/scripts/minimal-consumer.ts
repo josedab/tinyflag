@@ -1,1 +1,1 @@
-export { TinyFlag } from '../src/index.js';
+export { TinyFlag } from '../src/runtime.js';

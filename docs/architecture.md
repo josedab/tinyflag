@@ -159,3 +159,7 @@ Flag definitions live in YAML/JSON files committed to Git. This means:
 - **Output**: Dual ESM + CJS via `package.json` `exports` map
 - **Target**: ES2020
 - **Tree-shaking**: Framework bindings are separate packages — unused ones are never bundled
+- **Core subpaths**: `tinyflag/runtime` contains the evaluation SDK, while operational
+  capabilities are also available through `tinyflag/signing`, `tinyflag/sync`,
+  `tinyflag/progressive`, `tinyflag/correlation`, `tinyflag/governance`, and
+  `tinyflag/webhooks`. Root exports remain available for compatibility.

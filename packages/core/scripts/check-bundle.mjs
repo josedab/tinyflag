@@ -11,6 +11,15 @@ const MAX_GZIP_BYTES = 11264;
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const entry = join(packageRoot, 'scripts', 'minimal-consumer.ts');
 const tempDir = await mkdtemp(join(tmpdir(), 'tinyflag-bundle-'));
+const entrypoints = [
+  'runtime',
+  'signing',
+  'sync',
+  'progressive',
+  'correlation',
+  'governance',
+  'webhooks',
+];
 
 async function bundle(format) {
   const outDir = join(tempDir, format);
@@ -47,6 +56,11 @@ try {
 
   if (typeof esmModule.TinyFlag !== 'function' || typeof cjsModule.TinyFlag !== 'function') {
     throw new Error('TinyFlag is not resolvable from both published module formats');
+  }
+
+  for (const entrypoint of entrypoints) {
+    await import(join(packageRoot, 'dist', `${entrypoint}.js`));
+    createRequire(import.meta.url)(join(packageRoot, 'dist', `${entrypoint}.cjs`));
   }
 
   const [esmSize, cjsSize] = await Promise.all([bundle('esm'), bundle('cjs')]);

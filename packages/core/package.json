@@ -38,6 +38,76 @@
         "types": "./dist/testing.d.cts",
         "default": "./dist/testing.cjs"
       }
+    },
+    "./runtime": {
+      "import": {
+        "types": "./dist/runtime.d.ts",
+        "default": "./dist/runtime.js"
+      },
+      "require": {
+        "types": "./dist/runtime.d.cts",
+        "default": "./dist/runtime.cjs"
+      }
+    },
+    "./signing": {
+      "import": {
+        "types": "./dist/signing.d.ts",
+        "default": "./dist/signing.js"
+      },
+      "require": {
+        "types": "./dist/signing.d.cts",
+        "default": "./dist/signing.cjs"
+      }
+    },
+    "./sync": {
+      "import": {
+        "types": "./dist/sync.d.ts",
+        "default": "./dist/sync.js"
+      },
+      "require": {
+        "types": "./dist/sync.d.cts",
+        "default": "./dist/sync.cjs"
+      }
+    },
+    "./progressive": {
+      "import": {
+        "types": "./dist/progressive.d.ts",
+        "default": "./dist/progressive.js"
+      },
+      "require": {
+        "types": "./dist/progressive.d.cts",
+        "default": "./dist/progressive.cjs"
+      }
+    },
+    "./correlation": {
+      "import": {
+        "types": "./dist/correlation.d.ts",
+        "default": "./dist/correlation.js"
+      },
+      "require": {
+        "types": "./dist/correlation.d.cts",
+        "default": "./dist/correlation.cjs"
+      }
+    },
+    "./governance": {
+      "import": {
+        "types": "./dist/governance.d.ts",
+        "default": "./dist/governance.js"
+      },
+      "require": {
+        "types": "./dist/governance.d.cts",
+        "default": "./dist/governance.cjs"
+      }
+    },
+    "./webhooks": {
+      "import": {
+        "types": "./dist/webhooks.d.ts",
+        "default": "./dist/webhooks.js"
+      },
+      "require": {
+        "types": "./dist/webhooks.d.cts",
+        "default": "./dist/webhooks.cjs"
+      }
     }
   },
   "files": [
