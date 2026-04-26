@@ -12,6 +12,7 @@ import type {
   RolloutStrategy,
 } from './types.js';
 import { validateConfig } from './schema.js';
+import { KNOWN_FLAG_FIELDS, KNOWN_ROOT_FIELDS } from './schema-fields.js';
 
 /**
  * Parse and validate a raw configuration object into a typed `FlagConfig`.
@@ -48,9 +49,8 @@ export function parseFlagConfig(
 
   // Detect unknown root fields in lenient mode
   if (!strict) {
-    const knownRootFields = new Set(['version', 'flags', 'personas', 'segments', 'tenants']);
     for (const key of Object.keys(obj)) {
-      if (!knownRootFields.has(key)) {
+      if (!KNOWN_ROOT_FIELDS.has(key)) {
         warnings.push({ path: key, message: `Unknown field "${key}" (ignored)` });
       }
     }
@@ -110,20 +110,8 @@ export function parseFlagConfig(
 
     // Detect unknown flag fields in lenient mode
     if (!strict) {
-      const knownFields = new Set([
-        'enabled',
-        'description',
-        'tags',
-        'rollout',
-        'rules',
-        'variants',
-        'schedule',
-        'requires',
-        'lifecycle',
-        'config',
-      ]);
       for (const key of Object.keys(d)) {
-        if (!knownFields.has(key)) {
+        if (!KNOWN_FLAG_FIELDS.has(key)) {
           warnings.push({
             path: `flags.${name}.${key}`,
             message: `Unknown field "${key}" (ignored)`,

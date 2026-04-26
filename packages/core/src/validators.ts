@@ -2,6 +2,12 @@
  * Flag configuration field validation functions.
  */
 import type { ValidationError } from './types.js';
+import {
+  FLAG_LIFECYCLE_STATES,
+  KNOWN_FLAG_FIELDS,
+  KNOWN_SCHEDULE_FIELDS,
+  ROLLOUT_STRATEGY_TYPES,
+} from './schema-fields.js';
 
 const FLAG_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 const MAX_FLAG_NAME_LENGTH = 128;
@@ -205,9 +211,8 @@ export function validateFlagDefinition(
           });
         }
       }
-      const knownScheduleFields = new Set(['enableAt', 'disableAt']);
       for (const key of Object.keys(schedule)) {
-        if (!knownScheduleFields.has(key)) {
+        if (!KNOWN_SCHEDULE_FIELDS.has(key)) {
           errors.push({
             path: `${prefix}.schedule.${key}`,
             message: `Unknown schedule field "${key}"`,
@@ -227,16 +232,18 @@ export function validateFlagDefinition(
       errors.push({ path: `${prefix}.lifecycle`, message: '"lifecycle" must be an object' });
     } else {
       const lc = flag.lifecycle as Record<string, unknown>;
-      const validStates = ['draft', 'active', 'sunset', 'archived'];
       if (lc.state === undefined) {
         errors.push({
           path: `${prefix}.lifecycle.state`,
           message: 'Missing required field "state"',
         });
-      } else if (typeof lc.state !== 'string' || !validStates.includes(lc.state)) {
+      } else if (
+        typeof lc.state !== 'string' ||
+        !FLAG_LIFECYCLE_STATES.includes(lc.state as (typeof FLAG_LIFECYCLE_STATES)[number])
+      ) {
         errors.push({
           path: `${prefix}.lifecycle.state`,
-          message: `"state" must be one of: ${validStates.join(', ')}`,
+          message: `"state" must be one of: ${FLAG_LIFECYCLE_STATES.join(', ')}`,
         });
       }
       if (lc.state === 'sunset' && lc.sunsetAt === undefined) {
@@ -269,20 +276,8 @@ export function validateFlagDefinition(
   }
 
   if (strict) {
-    const knownFields = new Set([
-      'enabled',
-      'description',
-      'tags',
-      'rollout',
-      'rules',
-      'variants',
-      'schedule',
-      'requires',
-      'lifecycle',
-      'config',
-    ]);
     for (const key of Object.keys(flag)) {
-      if (!knownFields.has(key)) {
+      if (!KNOWN_FLAG_FIELDS.has(key)) {
         errors.push({ path: `${prefix}.${key}`, message: `Unknown field "${key}"` });
       }
     }
@@ -294,11 +289,14 @@ export function validateRolloutStrategy(
   strategy: Record<string, unknown>,
   errors: ValidationError[],
 ): void {
-  const validTypes = ['ramp', 'ring', 'cohort'];
-  if (!strategy.type || typeof strategy.type !== 'string' || !validTypes.includes(strategy.type)) {
+  if (
+    !strategy.type ||
+    typeof strategy.type !== 'string' ||
+    !ROLLOUT_STRATEGY_TYPES.includes(strategy.type as (typeof ROLLOUT_STRATEGY_TYPES)[number])
+  ) {
     errors.push({
       path: `${prefix}.rollout.type`,
-      message: `"type" must be one of: ${validTypes.join(', ')}`,
+      message: `"type" must be one of: ${ROLLOUT_STRATEGY_TYPES.join(', ')}`,
     });
     return;
   }

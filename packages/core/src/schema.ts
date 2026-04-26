@@ -5,6 +5,7 @@ import {
   validateFlagName,
   validateFlagDefinition,
 } from './validators.js';
+import { KNOWN_ROOT_FIELDS } from './schema-fields.js';
 
 /**
  * Validate a parsed flag configuration object against the TinyFlag schema.
@@ -60,10 +61,9 @@ export function validateConfig(config: unknown, strict: boolean = false): Valida
     return errors;
   }
 
-  const knownRootFields = new Set(['version', 'flags', 'personas', 'segments', 'tenants']);
   if (strict) {
     for (const key of Object.keys(obj)) {
-      if (!knownRootFields.has(key)) {
+      if (!KNOWN_ROOT_FIELDS.has(key)) {
         errors.push({ path: key, message: `Unknown field "${key}"` });
       }
     }
