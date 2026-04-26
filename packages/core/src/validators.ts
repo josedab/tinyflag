@@ -84,49 +84,71 @@ export function validateFlagDefinition(
   }
 
   const flag = def as Record<string, unknown>;
+  validateEnabled(prefix, flag.enabled, errors);
+  validateDescription(prefix, flag.description, errors);
+  validateTags(prefix, flag.tags, errors);
+  validateRollout(prefix, flag.rollout, errors);
+  validateRules(prefix, flag.rules, errors);
+  validateFlagVariants(prefix, flag.variants, errors);
+  validateRequires(prefix, flag.requires, errors);
+  validateSchedule(prefix, flag.schedule, errors);
+  validateLifecycle(prefix, flag.lifecycle, errors);
+  validateConfigField(prefix, flag.config, errors);
 
-  // enabled — required
-  if (flag.enabled === undefined) {
+  if (strict) {
+    for (const key of Object.keys(flag)) {
+      if (!KNOWN_FLAG_FIELDS.has(key)) {
+        errors.push({ path: `${prefix}.${key}`, message: `Unknown field "${key}"` });
+      }
+    }
+  }
+}
+
+function validateEnabled(prefix: string, enabled: unknown, errors: ValidationError[]): void {
+  if (enabled === undefined) {
     errors.push({ path: `${prefix}.enabled`, message: 'Missing required field "enabled"' });
-  } else if (typeof flag.enabled !== 'boolean') {
+  } else if (typeof enabled !== 'boolean') {
     errors.push({ path: `${prefix}.enabled`, message: '"enabled" must be a boolean' });
   }
+}
 
-  // description
-  if (flag.description !== undefined && typeof flag.description !== 'string') {
+function validateDescription(
+  prefix: string,
+  description: unknown,
+  errors: ValidationError[],
+): void {
+  if (description !== undefined && typeof description !== 'string') {
     errors.push({ path: `${prefix}.description`, message: '"description" must be a string' });
   }
+}
 
-  // tags
-  if (flag.tags !== undefined) {
-    if (!Array.isArray(flag.tags)) {
+function validateTags(prefix: string, tags: unknown, errors: ValidationError[]): void {
+  if (tags !== undefined) {
+    if (!Array.isArray(tags)) {
       errors.push({ path: `${prefix}.tags`, message: '"tags" must be an array of strings' });
     } else {
-      for (let i = 0; i < flag.tags.length; i++) {
-        if (typeof flag.tags[i] !== 'string') {
+      for (let i = 0; i < tags.length; i++) {
+        if (typeof tags[i] !== 'string') {
           errors.push({ path: `${prefix}.tags[${i}]`, message: 'Tag must be a string' });
         }
       }
     }
   }
+}
 
-  // rollout — simple number (0-100) or advanced strategy object
-  if (flag.rollout !== undefined) {
-    if (typeof flag.rollout === 'number') {
-      if (!Number.isInteger(flag.rollout)) {
+function validateRollout(prefix: string, rollout: unknown, errors: ValidationError[]): void {
+  if (rollout !== undefined) {
+    if (typeof rollout === 'number') {
+      if (!Number.isInteger(rollout)) {
         errors.push({ path: `${prefix}.rollout`, message: '"rollout" must be an integer' });
-      } else if (flag.rollout < 0 || flag.rollout > 100) {
+      } else if (rollout < 0 || rollout > 100) {
         errors.push({
           path: `${prefix}.rollout`,
-          message: `"rollout" must be 0-100, got ${flag.rollout}`,
+          message: `"rollout" must be 0-100, got ${rollout}`,
         });
       }
-    } else if (
-      typeof flag.rollout === 'object' &&
-      flag.rollout !== null &&
-      !Array.isArray(flag.rollout)
-    ) {
-      validateRolloutStrategy(prefix, flag.rollout as Record<string, unknown>, errors);
+    } else if (typeof rollout === 'object' && rollout !== null && !Array.isArray(rollout)) {
+      validateRolloutStrategy(prefix, rollout as Record<string, unknown>, errors);
     } else {
       errors.push({
         path: `${prefix}.rollout`,
@@ -135,37 +157,40 @@ export function validateFlagDefinition(
       });
     }
   }
+}
 
-  // rules
-  if (flag.rules !== undefined) {
-    if (!Array.isArray(flag.rules)) {
+function validateRules(prefix: string, rules: unknown, errors: ValidationError[]): void {
+  if (rules !== undefined) {
+    if (!Array.isArray(rules)) {
       errors.push({ path: `${prefix}.rules`, message: '"rules" must be an array' });
     } else {
-      for (let i = 0; i < flag.rules.length; i++) {
-        validateRule(`${prefix}.rules[${i}]`, flag.rules[i], errors);
+      for (let i = 0; i < rules.length; i++) {
+        validateRule(`${prefix}.rules[${i}]`, rules[i], errors);
       }
     }
   }
+}
 
-  // variants
-  if (flag.variants !== undefined) {
-    if (!Array.isArray(flag.variants)) {
+function validateFlagVariants(prefix: string, variants: unknown, errors: ValidationError[]): void {
+  if (variants !== undefined) {
+    if (!Array.isArray(variants)) {
       errors.push({ path: `${prefix}.variants`, message: '"variants" must be an array' });
     } else {
-      validateVariants(`${prefix}.variants`, flag.variants, errors);
+      validateVariants(`${prefix}.variants`, variants, errors);
     }
   }
+}
 
-  // requires
-  if (flag.requires !== undefined) {
-    if (!Array.isArray(flag.requires)) {
+function validateRequires(prefix: string, requires: unknown, errors: ValidationError[]): void {
+  if (requires !== undefined) {
+    if (!Array.isArray(requires)) {
       errors.push({
         path: `${prefix}.requires`,
         message: '"requires" must be an array of flag name strings',
       });
     } else {
-      for (let i = 0; i < flag.requires.length; i++) {
-        if (typeof flag.requires[i] !== 'string' || flag.requires[i] === '') {
+      for (let i = 0; i < requires.length; i++) {
+        if (typeof requires[i] !== 'string' || requires[i] === '') {
           errors.push({
             path: `${prefix}.requires[${i}]`,
             message: 'Required flag name must be a non-empty string',
@@ -174,17 +199,14 @@ export function validateFlagDefinition(
       }
     }
   }
+}
 
-  // schedule
-  if (flag.schedule !== undefined) {
-    if (
-      typeof flag.schedule !== 'object' ||
-      flag.schedule === null ||
-      Array.isArray(flag.schedule)
-    ) {
+function validateSchedule(prefix: string, value: unknown, errors: ValidationError[]): void {
+  if (value !== undefined) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
       errors.push({ path: `${prefix}.schedule`, message: '"schedule" must be an object' });
     } else {
-      const schedule = flag.schedule as Record<string, unknown>;
+      const schedule = value as Record<string, unknown>;
       if (schedule.enableAt !== undefined) {
         if (typeof schedule.enableAt !== 'string') {
           errors.push({
@@ -221,17 +243,14 @@ export function validateFlagDefinition(
       }
     }
   }
+}
 
-  // lifecycle
-  if (flag.lifecycle !== undefined) {
-    if (
-      typeof flag.lifecycle !== 'object' ||
-      flag.lifecycle === null ||
-      Array.isArray(flag.lifecycle)
-    ) {
+function validateLifecycle(prefix: string, value: unknown, errors: ValidationError[]): void {
+  if (value !== undefined) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
       errors.push({ path: `${prefix}.lifecycle`, message: '"lifecycle" must be an object' });
     } else {
-      const lc = flag.lifecycle as Record<string, unknown>;
+      const lc = value as Record<string, unknown>;
       if (lc.state === undefined) {
         errors.push({
           path: `${prefix}.lifecycle.state`,
@@ -267,19 +286,12 @@ export function validateFlagDefinition(
       }
     }
   }
+}
 
-  // config
-  if (flag.config !== undefined) {
-    if (typeof flag.config !== 'object' || flag.config === null || Array.isArray(flag.config)) {
+function validateConfigField(prefix: string, value: unknown, errors: ValidationError[]): void {
+  if (value !== undefined) {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
       errors.push({ path: `${prefix}.config`, message: '"config" must be an object' });
-    }
-  }
-
-  if (strict) {
-    for (const key of Object.keys(flag)) {
-      if (!KNOWN_FLAG_FIELDS.has(key)) {
-        errors.push({ path: `${prefix}.${key}`, message: `Unknown field "${key}"` });
-      }
     }
   }
 }
