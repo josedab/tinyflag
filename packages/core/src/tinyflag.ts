@@ -15,6 +15,7 @@ import {
   loadFromInline,
   type SourceType,
 } from './loader.js';
+import { debug, setDebug } from './debug.js';
 
 const MIN_POLL_INTERVAL = 5_000;
 const DEFAULT_POLL_INTERVAL = 60_000;
@@ -52,6 +53,12 @@ export class TinyFlag {
       watch: options.watch ?? true,
     };
     this.sourceType = detectSourceType(options.source);
+
+    if (options.debug) {
+      setDebug(true);
+    }
+
+    debug('initialized', { sourceType: this.sourceType, strict: this.options.strict });
 
     // Warn about HTTP (not HTTPS) for URL sources
     if (
@@ -103,6 +110,8 @@ export class TinyFlag {
     const normalizedContext = normalizeContext(context);
     const result = evaluateFlag(normalizedName, flag, normalizedContext);
 
+    debug(`isEnabled("${normalizedName}") → ${result}`, context ? { context } : undefined);
+
     this.trackExposure(normalizedName, flag, result, normalizedContext);
 
     return result;
@@ -135,6 +144,8 @@ export class TinyFlag {
     const normalizedContext = normalizeContext(context);
     const variant = evaluateVariant(normalizedName, flag, normalizedContext);
     const enabled = evaluateFlag(normalizedName, flag, normalizedContext);
+
+    debug(`getVariant("${normalizedName}") → ${variant}`, context ? { context } : undefined);
 
     this.trackExposure(normalizedName, flag, enabled, normalizedContext, variant);
 
@@ -229,6 +240,7 @@ export class TinyFlag {
       }
 
       this.config = config;
+      debug(`loaded ${Object.keys(config.flags).length} flags from ${this.sourceType}`);
     } catch (error) {
       if (!this.initialized) {
         throw error; // Rethrow on initial load

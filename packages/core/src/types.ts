@@ -67,6 +67,8 @@ export interface TinyFlagOptions {
   strict?: boolean;
   /** Deduplicate exposure events per (flag, userId) pair. Default: true. */
   deduplicate?: boolean;
+  /** Enable debug logging (also enabled via DEBUG=tinyflag env var). Default: false. */
+  debug?: boolean;
 }
 
 /** Event emitted when a flag is evaluated with a userId. */

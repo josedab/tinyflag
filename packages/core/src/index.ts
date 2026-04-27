@@ -14,3 +14,4 @@ export type {
 } from './types.js';
 export { parseYaml } from './yaml.js';
 export { validateConfig, parseFlagConfig } from './schema.js';
+export { setDebug } from './debug.js';
