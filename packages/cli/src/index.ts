@@ -14,10 +14,14 @@ Commands:
   diff <ref1>..<ref2> [--file f]  Show flag changes between git refs
   help                            Show this help message
 
+Options:
+  --json                          Output structured JSON instead of human-readable text
+
 Examples:
   npx tinyflag generate ./flags.yml
   npx tinyflag generate ./flags.yml -o ./src/flags.d.ts
   npx tinyflag validate ./flags.yml
+  npx tinyflag validate ./flags.yml --json
   npx tinyflag diff main..HEAD
   npx tinyflag diff main..HEAD --file config/flags.yml
 `.trim();
@@ -30,17 +34,20 @@ function main(): void {
     process.exit(0);
   }
 
-  const command = args[0];
+  const jsonMode = args.includes('--json');
+  const filteredArgs = args.filter((a) => a !== '--json');
+
+  const command = filteredArgs[0];
 
   switch (command) {
     case 'generate':
-      handleGenerate(args.slice(1));
+      handleGenerate(filteredArgs.slice(1), jsonMode);
       break;
     case 'validate':
-      handleValidate(args.slice(1));
+      handleValidate(filteredArgs.slice(1), jsonMode);
       break;
     case 'diff':
-      handleDiff(args.slice(1));
+      handleDiff(filteredArgs.slice(1), jsonMode);
       break;
     default:
       console.error(`Unknown command: ${command}\n`);
@@ -49,7 +56,7 @@ function main(): void {
   }
 }
 
-function handleGenerate(args: string[]): void {
+function handleGenerate(args: string[], jsonMode: boolean): void {
   const filePath = args[0];
   if (!filePath) {
     console.error('Error: Missing flags file path\n');
@@ -61,6 +68,12 @@ function handleGenerate(args: string[]): void {
   const outputPath = outputIdx !== -1 ? args[outputIdx + 1] : undefined;
 
   const config = loadAndValidate(filePath);
+
+  if (jsonMode) {
+    console.log(JSON.stringify({ command: 'generate', file: filePath, flags: config.flags }, null, 2));
+    return;
+  }
+
   const types = generateTypes(config);
 
   if (outputPath) {
@@ -76,7 +89,7 @@ function handleGenerate(args: string[]): void {
   }
 }
 
-function handleValidate(args: string[]): void {
+function handleValidate(args: string[], jsonMode: boolean): void {
   const filePath = args[0];
   if (!filePath) {
     console.error('Error: Missing flags file path\n');
@@ -84,7 +97,19 @@ function handleValidate(args: string[]): void {
     process.exit(1);
   }
 
-  loadAndValidate(filePath);
+  const config = loadAndValidate(filePath);
+
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      command: 'validate',
+      file: filePath,
+      valid: true,
+      flagCount: Object.keys(config.flags).length,
+      flags: Object.keys(config.flags).sort(),
+    }, null, 2));
+    return;
+  }
+
   console.log(`✅ ${filePath} is valid`);
 }
 
@@ -133,7 +158,7 @@ function loadAndValidate(filePath: string): ReturnType<typeof parseFlagConfig>['
   return config;
 }
 
-function handleDiff(args: string[]): void {
+function handleDiff(args: string[], jsonMode: boolean): void {
   const refSpec = args[0];
   if (!refSpec || !refSpec.includes('..')) {
     console.error('Error: Expected ref format: <ref1>..<ref2> (e.g., main..HEAD)\n');
@@ -205,6 +230,11 @@ function handleDiff(args: string[]): void {
   const before = parseFlags(beforeContent!, ref1);
   const after = parseFlags(afterContent!, ref2);
   const changes = diffConfigs(before, after);
+
+  if (jsonMode) {
+    console.log(JSON.stringify({ command: 'diff', from: ref1, to: ref2, file: flagsFile, changes }, null, 2));
+    return;
+  }
 
   console.log(formatChanges(changes, ref1, ref2));
 }
