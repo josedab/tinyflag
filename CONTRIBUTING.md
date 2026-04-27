@@ -66,3 +66,76 @@ cd packages/core && npx vitest run src/__tests__/evaluator.test.ts
 
 - Use GitHub Issues
 - Include: TinyFlag version, runtime (Node/Bun/Deno/browser), minimal reproduction
+
+## Creating a New Framework Integration
+
+TinyFlag ships React, Vue, and Svelte bindings. They all follow the same pattern—adapt TinyFlag's core to the framework's reactivity model.
+
+### 1. Scaffold the Package
+
+```bash
+mkdir packages/<framework>
+```
+
+Create `packages/<framework>/package.json` following the existing bindings:
+
+```jsonc
+{
+  "name": "tinyflag-<framework>",
+  "version": "0.1.0",
+  "type": "module",
+  "peerDependencies": {
+    "<framework>": ">=<minimum-version>",
+    "tinyflag": "workspace:*"
+  },
+  "devDependencies": {
+    "<framework>": "^<version>",
+    "tinyflag": "workspace:*",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "dev": "vitest --watch",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  }
+}
+```
+
+Add a `tsconfig.json` and `tsup.config.ts` matching any existing binding (e.g., `packages/react/`).
+
+### 2. Required Exports
+
+Every integration must export:
+
+| Export                   | Purpose                                        |
+| ------------------------ | ---------------------------------------------- |
+| Provider / `provide*`    | Initialize TinyFlag and share it with the tree |
+| `useFlag(name)`          | Returns reactive boolean for a flag            |
+| `useVariant(name)`       | Returns reactive string or null for a variant  |
+| `useTinyFlagInstance()`  | Escape hatch to access the raw `TinyFlag` instance |
+
+### 3. Implementation Checklist
+
+- **Accept a pre-initialized `instance`** — this enables SSR (e.g., Next.js server components, Nuxt plugins, SvelteKit hooks)
+- **Accept a `context` object** — user context for targeting / rollout
+- **Listen to `'change'` events** — trigger re-renders when flags are reloaded
+- **Clean up on unmount** — remove listeners and call `destroy()` if the integration created the instance
+- **Never throw** — follow core's convention: `isEnabled` returns `false`, `getVariant` returns `null` on error
+
+### 4. Testing
+
+Add tests in `packages/<framework>/src/__tests__/`. Test at minimum:
+
+- Provider renders children
+- `useFlag` returns correct boolean
+- `useVariant` returns correct variant
+- Throws when used outside the provider
+- Re-renders on flag change events
+
+### 5. Add to Workspace
+
+Ensure the package directory is picked up by `pnpm-workspace.yaml` (the existing `packages/*` glob should cover it automatically).
