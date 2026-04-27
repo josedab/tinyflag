@@ -13,6 +13,7 @@ This example demonstrates basic TinyFlag usage in a standalone Node.js script.
 
 - Node.js >= 18
 - [tsx](https://github.com/privatenumber/tsx) (or any TypeScript runner)
+- From the repo root, run `pnpm install && pnpm -r build` first
 
 ## Run
 

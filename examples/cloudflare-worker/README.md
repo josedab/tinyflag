@@ -13,6 +13,7 @@ This example demonstrates using TinyFlag in a Cloudflare Worker with inline flag
 
 - [Wrangler](https://developers.cloudflare.com/workers/wrangler/) CLI
 - Cloudflare account (for deployment)
+- From the repo root, run `pnpm install && pnpm -r build` first
 
 ## Run Locally
 

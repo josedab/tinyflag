@@ -12,6 +12,7 @@ This example demonstrates using TinyFlag with the Deno runtime.
 ## Prerequisites
 
 - [Deno](https://deno.land/) v1.x or later
+- From the repo root, run `pnpm install && pnpm -r build` first
 
 ## Run
 

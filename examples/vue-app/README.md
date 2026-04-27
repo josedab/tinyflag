@@ -2,6 +2,10 @@
 
 This example demonstrates how to use TinyFlag with Vue 3 composables and Nuxt SSR.
 
+## Prerequisites
+
+> If running from the monorepo, run `pnpm install && pnpm -r build` from the repo root first.
+
 ## Setup
 
 ```bash

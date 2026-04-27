@@ -2,6 +2,10 @@
 
 This example demonstrates how to use TinyFlag with SvelteKit for SSR feature flags.
 
+## Prerequisites
+
+> If running from the monorepo, run `pnpm install && pnpm -r build` from the repo root first.
+
 ## Setup
 
 ```bash
