@@ -1,0 +1,7 @@
+{
+  "name": "tinyflag-github-action",
+  "private": true,
+  "version": "0.1.0",
+  "description": "GitHub Action that validates flags.yml and posts flag change summaries on PRs",
+  "license": "MIT"
+}

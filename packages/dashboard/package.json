@@ -1,0 +1,11 @@
+{
+  "name": "tinyflag-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Static HTML dashboard for viewing and editing TinyFlag feature flags",
+  "license": "MIT",
+  "scripts": {
+    "dev": "npx serve .",
+    "serve": "npx serve ."
+  }
+}
