@@ -30,7 +30,11 @@ function check(label, fn) {
 }
 
 function cmd(command) {
-  return execSync(command, { encoding: 'utf-8', cwd: ROOT, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  return execSync(command, {
+    encoding: 'utf-8',
+    cwd: ROOT,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }).trim();
 }
 
 console.log('\n🩺 TinyFlag Doctor\n');

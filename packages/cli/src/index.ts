@@ -70,7 +70,9 @@ function handleGenerate(args: string[], jsonMode: boolean): void {
   const config = loadAndValidate(filePath);
 
   if (jsonMode) {
-    console.log(JSON.stringify({ command: 'generate', file: filePath, flags: config.flags }, null, 2));
+    console.log(
+      JSON.stringify({ command: 'generate', file: filePath, flags: config.flags }, null, 2),
+    );
     return;
   }
 
@@ -100,13 +102,19 @@ function handleValidate(args: string[], jsonMode: boolean): void {
   const config = loadAndValidate(filePath);
 
   if (jsonMode) {
-    console.log(JSON.stringify({
-      command: 'validate',
-      file: filePath,
-      valid: true,
-      flagCount: Object.keys(config.flags).length,
-      flags: Object.keys(config.flags).sort(),
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          command: 'validate',
+          file: filePath,
+          valid: true,
+          flagCount: Object.keys(config.flags).length,
+          flags: Object.keys(config.flags).sort(),
+        },
+        null,
+        2,
+      ),
+    );
     return;
   }
 
@@ -232,7 +240,9 @@ function handleDiff(args: string[], jsonMode: boolean): void {
   const changes = diffConfigs(before, after);
 
   if (jsonMode) {
-    console.log(JSON.stringify({ command: 'diff', from: ref1, to: ref2, file: flagsFile, changes }, null, 2));
+    console.log(
+      JSON.stringify({ command: 'diff', from: ref1, to: ref2, file: flagsFile, changes }, null, 2),
+    );
     return;
   }
 

@@ -86,22 +86,22 @@ Create `packages/<framework>/package.json` following the existing bindings:
   "type": "module",
   "peerDependencies": {
     "<framework>": ">=<minimum-version>",
-    "tinyflag": "workspace:*"
+    "tinyflag": "workspace:*",
   },
   "devDependencies": {
     "<framework>": "^<version>",
     "tinyflag": "workspace:*",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
   },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
     "dev": "vitest --watch",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
-  }
+    "clean": "rm -rf dist",
+  },
 }
 ```
 
@@ -111,12 +111,12 @@ Add a `tsconfig.json` and `tsup.config.ts` matching any existing binding (e.g., 
 
 Every integration must export:
 
-| Export                   | Purpose                                        |
-| ------------------------ | ---------------------------------------------- |
-| Provider / `provide*`    | Initialize TinyFlag and share it with the tree |
-| `useFlag(name)`          | Returns reactive boolean for a flag            |
-| `useVariant(name)`       | Returns reactive string or null for a variant  |
-| `useTinyFlagInstance()`  | Escape hatch to access the raw `TinyFlag` instance |
+| Export                  | Purpose                                            |
+| ----------------------- | -------------------------------------------------- |
+| Provider / `provide*`   | Initialize TinyFlag and share it with the tree     |
+| `useFlag(name)`         | Returns reactive boolean for a flag                |
+| `useVariant(name)`      | Returns reactive string or null for a variant      |
+| `useTinyFlagInstance()` | Escape hatch to access the raw `TinyFlag` instance |
 
 ### 3. Implementation Checklist
 
