@@ -1,0 +1,13 @@
+# Default owners for everything in the repo
+* @josedab
+
+# Core SDK
+packages/core/ @josedab
+
+# CLI
+packages/cli/ @josedab
+
+# Framework integrations
+packages/react/ @josedab
+packages/vue/ @josedab
+packages/svelte/ @josedab
