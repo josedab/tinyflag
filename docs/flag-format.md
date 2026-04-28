@@ -65,13 +65,45 @@ The same schema works in JSON:
 
 ## JSON Schema
 
-For IDE autocompletion, reference the JSON Schema:
+A JSON Schema file (`flags.schema.json`) is included in the package for IDE autocompletion and validation.
+
+### VS Code (YAML Extension)
+
+Install the [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml) by Red Hat, then add a schema comment at the top of your flag file:
 
 ```yaml
 # yaml-language-server: $schema=./node_modules/tinyflag/flags.schema.json
 version: 1
-flags: ...
+flags:
+  my-flag:
+    enabled: true
 ```
+
+Alternatively, configure it globally in `.vscode/settings.json`:
+
+```json
+{
+  "yaml.schemas": {
+    "./node_modules/tinyflag/flags.schema.json": ["flags.yml", "flags.yaml"]
+  }
+}
+```
+
+### VS Code (JSON files)
+
+For JSON flag files, add a `$schema` property:
+
+```json
+{
+  "$schema": "./node_modules/tinyflag/flags.schema.json",
+  "version": 1,
+  "flags": {}
+}
+```
+
+### JetBrains IDEs
+
+Go to **Settings → Languages & Frameworks → Schemas and DTDs → JSON Schema Mappings**, add a new mapping pointing to `node_modules/tinyflag/flags.schema.json` and map it to your flag file pattern (e.g., `flags.yml`).
 
 ## Validation
 
