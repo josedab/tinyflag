@@ -16,6 +16,7 @@ import {
   type SourceType,
 } from './loader.js';
 import { debug, setDebug } from './debug.js';
+import { murmurhash3 } from './hash.js';
 
 const MIN_POLL_INTERVAL = 5_000;
 const DEFAULT_POLL_INTERVAL = 60_000;
@@ -41,6 +42,7 @@ export class TinyFlag {
   private etag?: string;
   private lastModified?: string;
   private exposureCache = new Set<string>();
+  private overrides = new Map<string, boolean | string>();
 
   constructor(options: TinyFlagOptions) {
     if (!options.source) {
@@ -107,6 +109,9 @@ export class TinyFlag {
       return false;
     }
 
+    const overrideValue = this.overrides.get(normalizedName);
+    if (typeof overrideValue === 'boolean') return overrideValue;
+
     const normalizedContext = normalizeContext(context);
     const result = evaluateFlag(normalizedName, flag, normalizedContext);
 
@@ -140,6 +145,10 @@ export class TinyFlag {
       });
       return null;
     }
+
+    const overrideValue = this.overrides.get(normalizedName);
+    if (typeof overrideValue === 'string') return overrideValue;
+    if (overrideValue === false) return null;
 
     const normalizedContext = normalizeContext(context);
     const variant = evaluateVariant(normalizedName, flag, normalizedContext);
@@ -176,6 +185,19 @@ export class TinyFlag {
     return this.config.flags;
   }
 
+  /**
+   * Override a flag's value for testing/development.
+   * Boolean values override isEnabled; string values override getVariant.
+   */
+  override(flagName: string, value: boolean | string): void {
+    this.overrides.set(flagName, value);
+  }
+
+  /** Remove all flag overrides. */
+  clearOverrides(): void {
+    this.overrides.clear();
+  }
+
   /** Clean up resources (file watchers, polling timers). */
   destroy(): void {
     if (this.pollTimer) {
@@ -188,6 +210,7 @@ export class TinyFlag {
     }
     this.emitter.removeAllListeners();
     this.exposureCache.clear();
+    this.overrides.clear();
   }
 
   private async load(): Promise<void> {
@@ -264,7 +287,7 @@ export class TinyFlag {
       const prev = previous[key];
       const curr = current[key];
 
-      if (JSON.stringify(prev) !== JSON.stringify(curr)) {
+      if (hashFlag(prev) !== hashFlag(curr)) {
         this.emitter.emit('change', {
           flag: key,
           previous: prev,
@@ -289,6 +312,7 @@ export class TinyFlag {
     if (deduplicate) {
       const cacheKey = `${flagName}:${context.userId}`;
       if (this.exposureCache.has(cacheKey)) return;
+      if (this.exposureCache.size >= 10_000) this.exposureCache.clear();
       this.exposureCache.add(cacheKey);
     }
 
@@ -344,4 +368,9 @@ function normalizeContext(context?: UserContext): UserContext | undefined {
     return Object.keys(rest).length > 0 ? rest : undefined;
   }
   return context;
+}
+
+function hashFlag(flag: FlagDefinition | undefined): number {
+  if (flag === undefined) return 0;
+  return murmurhash3(JSON.stringify(flag));
 }
