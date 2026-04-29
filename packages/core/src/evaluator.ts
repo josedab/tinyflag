@@ -57,13 +57,19 @@ function matchCondition(contextValue: unknown, expected: unknown): boolean {
   return contextValue === expected;
 }
 
+const globCache = new Map<string, RegExp>();
+
 /**
  * Simple glob matching: only the * wildcard is supported.
- * Converts glob to regex for matching.
+ * Caches compiled regex patterns to avoid recompilation.
  */
 function globMatch(pattern: string, value: string): boolean {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
+  let regex = globCache.get(pattern);
+  if (!regex) {
+    const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
+    globCache.set(pattern, regex);
+  }
   return regex.test(value);
 }
 
