@@ -123,13 +123,29 @@ export async function loadFromUrl(
     throw new Error(`Failed to fetch flags from "${url}": HTTP ${response.status}`);
   }
 
+  const contentType = response.headers.get('content-type') ?? '';
+  const ALLOWED_CONTENT_TYPES = [
+    'application/json',
+    'application/yaml',
+    'application/x-yaml',
+    'text/yaml',
+    'text/x-yaml',
+    'text/plain',
+    'text/html',
+    'application/octet-stream',
+  ];
+  if (contentType && !ALLOWED_CONTENT_TYPES.some((t) => contentType.includes(t))) {
+    throw new Error(
+      `Unexpected Content-Type "${contentType}" from "${url}". ` +
+        `Expected JSON, YAML, or plain text.`,
+    );
+  }
+
   const content = await response.text();
-  const extension = url.includes('.json') ? '.json' : '.yml';
-  const result = parseSource(
-    content,
-    `url:${url}${extension.startsWith('.') ? '' : extension}`,
-    strict,
-  );
+  const pathname = new URL(url).pathname;
+  const isJson = pathname.endsWith('.json') || contentType.includes('application/json');
+  const virtualPath = isJson ? `url:${url}.json` : `url:${url}.yml`;
+  const result = parseSource(content, virtualPath, strict);
   const newEtag = response.headers.get('etag') ?? undefined;
   const newLastModified = response.headers.get('last-modified') ?? undefined;
 
