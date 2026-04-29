@@ -53,6 +53,8 @@
     "vue": ">=3.3.0"
   },
   "devDependencies": {
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^29.0.2",
     "tinyflag": "workspace:*",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
