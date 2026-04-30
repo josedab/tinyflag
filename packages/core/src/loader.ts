@@ -60,7 +60,7 @@ export async function loadFromFile(filePath: string, strict: boolean): Promise<L
   let content: string;
   try {
     const fs = await import('fs');
-    content = fs.readFileSync(filePath, 'utf-8');
+    content = await fs.promises.readFile(filePath, 'utf-8');
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       throw new Error(`Flag file not found: "${filePath}"`);
@@ -89,6 +89,7 @@ export async function loadFromUrl(
   headers?: Record<string, string>,
   etag?: string,
   lastModified?: string,
+  fetchTimeout?: number,
 ): Promise<LoadResult & { etag?: string; lastModified?: string; notModified?: boolean }> {
   const requestHeaders: Record<string, string> = { ...headers };
   if (etag) {
@@ -99,7 +100,7 @@ export async function loadFromUrl(
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeout = setTimeout(() => controller.abort(), fetchTimeout ?? 5000);
 
   let response: Response;
   try {
@@ -131,7 +132,6 @@ export async function loadFromUrl(
     'text/yaml',
     'text/x-yaml',
     'text/plain',
-    'text/html',
     'application/octet-stream',
   ];
   if (contentType && !ALLOWED_CONTENT_TYPES.some((t) => contentType.includes(t))) {

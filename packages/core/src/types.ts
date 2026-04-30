@@ -69,6 +69,8 @@ export interface TinyFlagOptions {
   deduplicate?: boolean;
   /** Enable debug logging (also enabled via DEBUG=tinyflag env var). Default: false. */
   debug?: boolean;
+  /** Timeout in ms for fetching flags from a URL. Default: 5000. */
+  fetchTimeout?: number;
 }
 
 /** Event emitted when a flag is evaluated with a userId. */

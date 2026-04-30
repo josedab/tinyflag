@@ -233,6 +233,7 @@ export class TinyFlag {
             this.options.headers,
             this.etag,
             this.lastModified,
+            this.options.fetchTimeout,
           );
           if (result.notModified) return;
           config = result.config;
