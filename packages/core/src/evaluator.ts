@@ -68,6 +68,7 @@ function globMatch(pattern: string, value: string): boolean {
   if (!regex) {
     const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
     regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
+    if (globCache.size > 1000) globCache.clear();
     globCache.set(pattern, regex);
   }
   return regex.test(value);
