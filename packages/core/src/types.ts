@@ -31,13 +31,13 @@ export interface FlagDefinition {
   /** Human-readable description. */
   description?: string;
   /** Categorization tags. */
-  tags?: string[];
+  tags?: readonly string[];
   /** Percentage rollout (0–100). */
   rollout?: number;
   /** Targeting rules evaluated top-to-bottom. */
-  rules?: Rule[];
+  rules?: readonly Rule[];
   /** A/B test variants with relative weights. */
-  variants?: Variant[];
+  variants?: readonly Variant[];
 }
 
 /** Root flag configuration loaded from a source. */
