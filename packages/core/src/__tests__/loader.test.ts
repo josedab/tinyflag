@@ -7,8 +7,8 @@ import {
   loadFromUrl,
 } from '../loader.js';
 
-vi.mock('fs', () => ({
-  readFileSync: vi.fn((path: string) => {
+vi.mock('fs', () => {
+  const readFile = vi.fn(async (path: string) => {
     if (path === 'test-valid.yml') return 'version: 1\nflags:\n  f:\n    enabled: true';
     if (path === 'test-valid.json') return '{"version":1,"flags":{"f":{"enabled":true}}}';
     if (path === 'not-found.yml') {
@@ -22,8 +22,11 @@ vi.mock('fs', () => ({
       throw err;
     }
     throw new Error('Unknown test file');
-  }),
-}));
+  });
+  return {
+    promises: { readFile },
+  };
+});
 
 describe('detectSourceType', () => {
   it('detects file source from .yml extension', () => {
