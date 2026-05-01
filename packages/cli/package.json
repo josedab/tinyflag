@@ -25,6 +25,14 @@
   "bin": {
     "tinyflag": "./dist/index.js"
   },
+  "exports": {
+    "./lib": {
+      "import": {
+        "types": "./dist/lib.d.ts",
+        "default": "./dist/lib.js"
+      }
+    }
+  },
   "files": [
     "dist",
     "README.md"
