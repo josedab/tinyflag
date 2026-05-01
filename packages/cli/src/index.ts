@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, watch } from 'fs';
 import { execSync } from 'child_process';
 import { dirname } from 'path';
 import { parseYaml, parseFlagConfig } from 'tinyflag';
@@ -11,6 +11,7 @@ Usage: tinyflag <command> [options]
 Commands:
   generate <file> [-o <output>]   Generate TypeScript types from a flags file
   validate <file>                 Validate a flags file schema
+  validate <file> --watch         Validate and re-validate on file changes
   diff <ref1>..<ref2> [--file f]  Show flag changes between git refs
   help                            Show this help message
 
@@ -35,7 +36,8 @@ function main(): void {
   }
 
   const jsonMode = args.includes('--json');
-  const filteredArgs = args.filter((a) => a !== '--json');
+  const watchMode = args.includes('--watch');
+  const filteredArgs = args.filter((a) => a !== '--json' && a !== '--watch');
 
   const command = filteredArgs[0];
 
@@ -44,7 +46,7 @@ function main(): void {
       handleGenerate(filteredArgs.slice(1), jsonMode);
       break;
     case 'validate':
-      handleValidate(filteredArgs.slice(1), jsonMode);
+      handleValidate(filteredArgs.slice(1), jsonMode, watchMode);
       break;
     case 'diff':
       handleDiff(filteredArgs.slice(1), jsonMode);
@@ -91,11 +93,11 @@ function handleGenerate(args: string[], jsonMode: boolean): void {
   }
 }
 
-function handleValidate(args: string[], jsonMode: boolean): void {
+function handleValidate(args: string[], jsonMode: boolean, watchMode: boolean): void {
   const filePath = args[0];
   if (!filePath) {
     console.error('Error: Missing flags file path\n');
-    console.log('Usage: tinyflag validate <file>');
+    console.log('Usage: tinyflag validate <file> [--watch]');
     process.exit(1);
   }
 
@@ -115,10 +117,27 @@ function handleValidate(args: string[], jsonMode: boolean): void {
         2,
       ),
     );
-    return;
+    if (!watchMode) return;
   }
 
   console.log(`✅ ${filePath} is valid`);
+
+  if (watchMode) {
+    console.log(`👀 Watching ${filePath} for changes…`);
+    let debounce: ReturnType<typeof setTimeout> | undefined;
+    watch(filePath, (eventType) => {
+      if (eventType !== 'change' && eventType !== 'rename') return;
+      clearTimeout(debounce);
+      debounce = setTimeout(() => {
+        try {
+          loadAndValidate(filePath);
+          console.log(`✅ ${filePath} is valid`);
+        } catch (error) {
+          console.error((error as Error).message);
+        }
+      }, 100);
+    });
+  }
 }
 
 function loadAndValidate(filePath: string): ReturnType<typeof parseFlagConfig>['config'] {
