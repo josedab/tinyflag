@@ -1,10 +1,18 @@
-import { writable, derived, type Readable } from 'svelte/store';
+import { writable, derived, type Readable, type Writable } from 'svelte/store';
+import { getContext as svelteGetContext, setContext as svelteSetContext } from 'svelte';
 import { TinyFlag } from 'tinyflag';
 import type { TinyFlagOptions, UserContext } from 'tinyflag';
 
-let globalInstance: TinyFlag | null = null;
-let globalContext = writable<UserContext | undefined>(undefined);
-let globalVersion = writable(0);
+const TINYFLAG_CONTEXT_KEY = Symbol('tinyflag');
+
+interface TinyFlagContext {
+  instance: TinyFlag;
+  context: Writable<UserContext | undefined>;
+  version: Writable<number>;
+}
+
+// Module-level fallback for non-component contexts (e.g. tests)
+let fallbackCtx: TinyFlagContext | null = null;
 
 export interface CreateTinyFlagOptions {
   /** TinyFlag source — file path, URL, or inline FlagConfig. */
@@ -25,7 +33,8 @@ export interface CreateTinyFlagOptions {
 
 /**
  * Initialize TinyFlag for use with Svelte stores.
- * Call once at the root of your application.
+ * When called inside a Svelte component's script block, uses setContext
+ * for proper isolation in multi-instance scenarios.
  *
  * @returns The TinyFlag instance and a cleanup function.
  */
@@ -43,10 +52,24 @@ export function createTinyFlag(options: CreateTinyFlagOptions): {
       strict: options.strict,
     });
 
-  globalInstance = instance;
-  globalContext.set(options.context);
+  const ctxStore = writable<UserContext | undefined>(options.context);
+  const versionStore = writable(0);
 
-  const handleChange = () => globalVersion.update((v) => v + 1);
+  const tfCtx: TinyFlagContext = {
+    instance,
+    context: ctxStore,
+    version: versionStore,
+  };
+
+  // Store in Svelte component context when inside component init
+  try {
+    svelteSetContext(TINYFLAG_CONTEXT_KEY, tfCtx);
+  } catch {
+    // Outside component init — use module-level fallback
+  }
+  fallbackCtx = tfCtx;
+
+  const handleChange = () => versionStore.update((v) => v + 1);
   instance.on('change', handleChange);
 
   if (!options.instance) {
@@ -58,17 +81,28 @@ export function createTinyFlag(options: CreateTinyFlagOptions): {
     if (!options.instance) {
       instance.destroy();
     }
-    globalInstance = null;
+    if (fallbackCtx === tfCtx) {
+      fallbackCtx = null;
+    }
   };
 
   return { instance, destroy };
 }
 
-function getInstanceOrThrow(): TinyFlag {
-  if (!globalInstance) {
-    throw new Error('flag()/variant() requires createTinyFlag() to be called first.');
+function getTinyFlagContext(): TinyFlagContext {
+  // Prefer Svelte component context for proper isolation
+  try {
+    const ctx = svelteGetContext<TinyFlagContext | undefined>(TINYFLAG_CONTEXT_KEY);
+    if (ctx) return ctx;
+  } catch {
+    // Outside component init — fall through to module-level fallback
   }
-  return globalInstance;
+
+  if (fallbackCtx) return fallbackCtx;
+
+  throw new Error(
+    'flag()/variant()/setContext() requires createTinyFlag() to be called first.',
+  );
 }
 
 /**
@@ -76,8 +110,8 @@ function getInstanceOrThrow(): TinyFlag {
  * Use with `$` syntax: `{#if $showFeature}...{/if}`
  */
 export function flag(flagName: string): Readable<boolean> {
-  return derived([globalVersion, globalContext], ([$version, $context]) => {
-    const instance = getInstanceOrThrow();
+  const { instance, version, context } = getTinyFlagContext();
+  return derived([version, context], ([$version, $context]) => {
     return instance.isEnabled(flagName, $context);
   });
 }
@@ -87,8 +121,8 @@ export function flag(flagName: string): Readable<boolean> {
  * Use with `$` syntax: `{#if $variant === 'new-flow'}...{/if}`
  */
 export function variant(flagName: string): Readable<string | null> {
-  return derived([globalVersion, globalContext], ([$version, $context]) => {
-    const instance = getInstanceOrThrow();
+  const { instance, version, context } = getTinyFlagContext();
+  return derived([version, context], ([$version, $context]) => {
     return instance.getVariant(flagName, $context);
   });
 }
@@ -97,5 +131,6 @@ export function variant(flagName: string): Readable<string | null> {
  * Update the user context. Triggers re-evaluation of all flag/variant stores.
  */
 export function setContext(context: UserContext | undefined): void {
-  globalContext.set(context);
+  const ctx = getTinyFlagContext();
+  ctx.context.set(context);
 }
