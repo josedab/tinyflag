@@ -25,7 +25,7 @@ export interface TinyFlagProviderProps {
   strict?: boolean;
   /** Pre-initialized TinyFlag instance (for SSR). */
   instance?: TinyFlag;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 /**

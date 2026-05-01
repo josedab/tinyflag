@@ -8,7 +8,7 @@ import { TinyFlag } from 'tinyflag';
 afterEach(() => cleanup());
 
 function createInstance(
-  flags: Record<string, { enabled: boolean; variants?: { name: string; weight: number }[] }>,
+  flags: Record<string, { enabled: boolean; rollout?: number; variants?: { name: string; weight: number }[] }>,
 ) {
   return new TinyFlag({
     source: { flags },
