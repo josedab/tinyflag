@@ -185,6 +185,33 @@ export class TinyFlag {
   }
 
   /**
+   * Evaluate all flags against a context and return a map of results.
+   * Useful for SSR hydration and debugging.
+   */
+  getAllFlags(context?: UserContext): Record<string, { enabled: boolean; variant: string | null }> {
+    const normalizedContext = normalizeContext(context);
+    const result: Record<string, { enabled: boolean; variant: string | null }> = {};
+
+    for (const [flagName, flag] of Object.entries(this.config.flags)) {
+      const overrideValue = this.overrides.get(flagName);
+      if (typeof overrideValue === 'boolean') {
+        result[flagName] = { enabled: overrideValue, variant: null };
+        continue;
+      }
+      if (typeof overrideValue === 'string') {
+        result[flagName] = { enabled: true, variant: overrideValue };
+        continue;
+      }
+
+      const enabled = evaluateFlag(flagName, flag, normalizedContext);
+      const { variant } = evaluateVariant(flagName, flag, normalizedContext);
+      result[flagName] = { enabled, variant };
+    }
+
+    return result;
+  }
+
+  /**
    * Override a flag's value for testing/development.
    * Boolean values override isEnabled; string values override getVariant.
    */
