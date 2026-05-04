@@ -157,25 +157,29 @@ describe('evaluateFlag', () => {
 });
 
 describe('evaluateVariant', () => {
-  it('returns null for disabled flag', () => {
+  it('returns null variant for disabled flag', () => {
     const flag: FlagDefinition = {
       enabled: false,
       variants: [{ name: 'a', weight: 1 }],
     };
-    expect(evaluateVariant('f', flag, { userId: '1' })).toBeNull();
+    const result = evaluateVariant('f', flag, { userId: '1' });
+    expect(result.variant).toBeNull();
+    expect(result.enabled).toBe(false);
   });
 
-  it('returns null for flag without variants', () => {
-    expect(evaluateVariant('f', { enabled: true }, { userId: '1' })).toBeNull();
+  it('returns null variant for flag without variants', () => {
+    const result = evaluateVariant('f', { enabled: true }, { userId: '1' });
+    expect(result.variant).toBeNull();
+    expect(result.enabled).toBe(true);
   });
 
-  it('returns null when no userId', () => {
+  it('returns null variant when no userId', () => {
     const flag: FlagDefinition = {
       enabled: true,
       variants: [{ name: 'a', weight: 1 }],
     };
-    expect(evaluateVariant('f', flag)).toBeNull();
-    expect(evaluateVariant('f', flag, {})).toBeNull();
+    expect(evaluateVariant('f', flag).variant).toBeNull();
+    expect(evaluateVariant('f', flag, {}).variant).toBeNull();
   });
 
   it('returns deterministic variant', () => {
@@ -188,7 +192,7 @@ describe('evaluateVariant', () => {
     };
     const a = evaluateVariant('f', flag, { userId: '1' });
     const b = evaluateVariant('f', flag, { userId: '1' });
-    expect(a).toBe(b);
+    expect(a.variant).toBe(b.variant);
   });
 
   it('returns forced variant from matching rule', () => {
@@ -200,7 +204,9 @@ describe('evaluateVariant', () => {
         { name: 'premium', weight: 50 },
       ],
     };
-    expect(evaluateVariant('f', flag, { userId: '1', plan: 'pro' })).toBe('premium');
+    const result = evaluateVariant('f', flag, { userId: '1', plan: 'pro' });
+    expect(result.variant).toBe('premium');
+    expect(result.enabled).toBe(true);
   });
 
   it('falls through to hash variant when rule matches without forced variant', () => {
@@ -213,12 +219,14 @@ describe('evaluateVariant', () => {
       ],
     };
     const result = evaluateVariant('f', flag, { userId: '1', plan: 'pro' });
-    expect(['a', 'b']).toContain(result);
+    expect(['a', 'b']).toContain(result.variant);
   });
 
-  it('returns empty variants list → null', () => {
+  it('returns empty variants list → null variant', () => {
     const flag: FlagDefinition = { enabled: true, variants: [] };
-    expect(evaluateVariant('f', flag, { userId: '1' })).toBeNull();
+    const result = evaluateVariant('f', flag, { userId: '1' });
+    expect(result.variant).toBeNull();
+    expect(result.enabled).toBe(true);
   });
 });
 

@@ -151,8 +151,7 @@ export class TinyFlag {
     if (overrideValue === false) return null;
 
     const normalizedContext = normalizeContext(context);
-    const variant = evaluateVariant(normalizedName, flag, normalizedContext);
-    const enabled = evaluateFlag(normalizedName, flag, normalizedContext);
+    const { variant, enabled } = evaluateVariant(normalizedName, flag, normalizedContext);
 
     debug(`getVariant("${normalizedName}") → ${variant}`, context ? { context } : undefined);
 

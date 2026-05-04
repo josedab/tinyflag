@@ -137,28 +137,35 @@ export function evaluateFlag(
 
 /**
  * Core variant evaluation: determines which variant a user is assigned to.
- * Never throws — returns null for any error case.
+ * Also returns the flag's enabled state to avoid duplicate rule evaluation.
+ * Never throws — returns null variant for any error case.
  */
 export function evaluateVariant(
   flagName: string,
   flag: FlagDefinition,
   context?: UserContext,
-): string | null {
-  if (!flag.enabled) return null;
-  if (!flag.variants || flag.variants.length === 0) return null;
+): { variant: string | null; enabled: boolean } {
+  if (!flag.enabled) return { variant: null, enabled: false };
+  if (!flag.variants || flag.variants.length === 0) {
+    return { variant: null, enabled: evaluateFlag(flagName, flag, context) };
+  }
 
   // Check rules for forced variant
   if (flag.rules && flag.rules.length > 0 && context) {
     for (const rule of flag.rules) {
       if (matchRule(rule, context)) {
-        if (rule.variant) return rule.variant;
+        if (rule.variant) {
+          const ruleEnabled = rule.enabled !== undefined ? rule.enabled : true;
+          return { variant: rule.variant, enabled: ruleEnabled };
+        }
         break;
       }
     }
   }
 
   // Need userId for deterministic variant assignment
-  if (!context?.userId) return null;
+  if (!context?.userId) return { variant: null, enabled: evaluateFlag(flagName, flag, context) };
 
-  return selectVariant(flagName, context.userId, flag.variants);
+  const enabled = evaluateFlag(flagName, flag, context);
+  return { variant: selectVariant(flagName, context.userId, flag.variants), enabled };
 }
