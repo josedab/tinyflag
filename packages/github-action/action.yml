@@ -23,7 +23,7 @@ runs:
 
     - name: Install TinyFlag CLI
       shell: bash
-      run: npm install -g tinyflag-cli
+      run: npx tinyflag-cli@latest --help > /dev/null
 
     - name: Validate flags file
       shell: bash
