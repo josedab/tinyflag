@@ -216,7 +216,15 @@ export class TinyFlag {
    * Boolean values override isEnabled; string values override getVariant.
    */
   override(flagName: string, value: boolean | string): void {
-    this.overrides.set(flagName, value);
+    const normalizedName = flagName?.trim();
+    if (!normalizedName) {
+      this.emitter.emit('error', {
+        code: 'INVALID_FLAG_NAME',
+        message: 'Flag name is empty',
+      });
+      return;
+    }
+    this.overrides.set(normalizedName, value);
   }
 
   /** Remove all flag overrides. */
