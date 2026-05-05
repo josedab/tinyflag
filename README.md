@@ -23,6 +23,8 @@ Serverless, file-driven, zero-dependency feature flag SDK for JavaScript/TypeScr
 
 ## Quick Start (< 60 seconds)
 
+[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/josedab/tinyflag/tree/main/examples?file=basic.ts)
+
 ### 1. Install
 
 ```bash
