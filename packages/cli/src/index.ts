@@ -197,6 +197,12 @@ function handleDiff(args: string[], jsonMode: boolean): void {
   const flagsFile = fileIdx !== -1 ? args[fileIdx + 1] : 'flags.yml';
   const [ref1, ref2] = refSpec.split('..');
 
+  const SAFE_REF_PATTERN = /^[a-zA-Z0-9._\-\/~^]+$/;
+  if (!SAFE_REF_PATTERN.test(ref1) || !SAFE_REF_PATTERN.test(ref2)) {
+    console.error('Error: Invalid git ref. Refs must match /^[a-zA-Z0-9._\\-\\/~^]+$/.');
+    process.exit(1);
+  }
+
   let beforeContent: string;
   let afterContent: string;
 
