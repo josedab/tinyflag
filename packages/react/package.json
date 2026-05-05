@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "React hooks for TinyFlag feature flags",
   "license": "MIT",
+  "author": "josedab",
   "keywords": [
     "feature-flags",
     "feature-toggles",
@@ -39,7 +40,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup",
