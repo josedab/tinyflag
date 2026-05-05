@@ -383,8 +383,9 @@ describe('TinyFlag', () => {
   });
 
   describe('source detection (GAP 10)', () => {
-    it('throws for unrecognized source string', () => {
-      expect(() => new TinyFlag({ source: 'random-string' })).toThrow('Unrecognized source format');
+    it('treats unrecognized source string as file source', () => {
+      const ff = new TinyFlag({ source: 'random-string' });
+      expect(ff).toBeDefined();
     });
   });
 
@@ -637,7 +638,13 @@ describe('TinyFlag', () => {
       const ff = new TinyFlag({
         source: {
           flags: {
-            f: { enabled: true, variants: [{ name: 'a', weight: 50 }, { name: 'b', weight: 50 }] },
+            f: {
+              enabled: true,
+              variants: [
+                { name: 'a', weight: 50 },
+                { name: 'b', weight: 50 },
+              ],
+            },
           },
         },
       });

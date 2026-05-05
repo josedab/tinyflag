@@ -53,12 +53,12 @@ describe('detectSourceType', () => {
     expect(detectSourceType({ flags: {} })).toBe('inline');
   });
 
-  it('throws for unrecognized string format', () => {
-    expect(() => detectSourceType('random-string')).toThrow('Unrecognized source format');
+  it('treats unrecognized string format as file source', () => {
+    expect(detectSourceType('random-string')).toBe('file');
   });
 
-  it('throws for string without valid extension', () => {
-    expect(() => detectSourceType('config.txt')).toThrow('Unrecognized source format');
+  it('treats string without valid extension as file source', () => {
+    expect(detectSourceType('config.txt')).toBe('file');
   });
 });
 

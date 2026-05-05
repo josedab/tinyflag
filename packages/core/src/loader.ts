@@ -16,10 +16,8 @@ export function detectSourceType(source: string | FlagConfig): SourceType {
   if (typeof source !== 'string') return 'inline';
   if (source.startsWith('http://') || source.startsWith('https://')) return 'url';
   if (FILE_EXTENSIONS.some((ext) => source.endsWith(ext))) return 'file';
-  throw new Error(
-    `Unrecognized source format: "${source}". ` +
-      `Expected a file path ending in .yml/.yaml/.json, a URL starting with http(s)://, or an inline object.`,
-  );
+  // Extensionless local paths are treated as files (parsed as YAML, the more permissive parser)
+  return 'file';
 }
 
 /** Parse raw text content (YAML or JSON) into a FlagConfig. */
