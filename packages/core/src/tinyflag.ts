@@ -373,6 +373,9 @@ export class TinyFlag {
         });
       }
       this.pollTimer = setInterval(() => this.load(), interval);
+      if (typeof this.pollTimer === 'object' && 'unref' in this.pollTimer) {
+        this.pollTimer.unref();
+      }
     }
 
     if (this.sourceType === 'file' && this.options.watch) {
