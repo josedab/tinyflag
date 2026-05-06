@@ -12,6 +12,7 @@ Commands:
   generate <file> [-o <output>]   Generate TypeScript types from a flags file
   validate <file>                 Validate a flags file schema
   validate <file> --watch         Validate and re-validate on file changes
+  validate <file> --strict        Validate with strict mode (reject unknown fields)
   diff <ref1>..<ref2> [--file f]  Show flag changes between git refs
   help                            Show this help message
 
@@ -37,7 +38,8 @@ function main(): void {
 
   const jsonMode = args.includes('--json');
   const watchMode = args.includes('--watch');
-  const filteredArgs = args.filter((a) => a !== '--json' && a !== '--watch');
+  const strictMode = args.includes('--strict');
+  const filteredArgs = args.filter((a) => a !== '--json' && a !== '--watch' && a !== '--strict');
 
   const command = filteredArgs[0];
 
@@ -46,7 +48,7 @@ function main(): void {
       handleGenerate(filteredArgs.slice(1), jsonMode);
       break;
     case 'validate':
-      handleValidate(filteredArgs.slice(1), jsonMode, watchMode);
+      handleValidate(filteredArgs.slice(1), jsonMode, watchMode, strictMode);
       break;
     case 'diff':
       handleDiff(filteredArgs.slice(1), jsonMode);
@@ -93,15 +95,15 @@ function handleGenerate(args: string[], jsonMode: boolean): void {
   }
 }
 
-function handleValidate(args: string[], jsonMode: boolean, watchMode: boolean): void {
+function handleValidate(args: string[], jsonMode: boolean, watchMode: boolean, strictMode: boolean): void {
   const filePath = args[0];
   if (!filePath) {
     console.error('Error: Missing flags file path\n');
-    console.log('Usage: tinyflag validate <file> [--watch]');
+    console.log('Usage: tinyflag validate <file> [--watch] [--strict]');
     process.exit(1);
   }
 
-  const config = loadAndValidate(filePath);
+  const config = loadAndValidate(filePath, strictMode);
 
   if (jsonMode) {
     console.log(
@@ -130,7 +132,7 @@ function handleValidate(args: string[], jsonMode: boolean, watchMode: boolean): 
       clearTimeout(debounce);
       debounce = setTimeout(() => {
         try {
-          loadAndValidate(filePath);
+          loadAndValidate(filePath, strictMode);
           console.log(`✅ ${filePath} is valid`);
         } catch (error) {
           console.error((error as Error).message);
@@ -140,7 +142,7 @@ function handleValidate(args: string[], jsonMode: boolean, watchMode: boolean): 
   }
 }
 
-function loadAndValidate(filePath: string): ReturnType<typeof parseFlagConfig>['config'] {
+function loadAndValidate(filePath: string, strict: boolean = false): ReturnType<typeof parseFlagConfig>['config'] {
   let content: string;
   try {
     content = readFileSync(filePath, 'utf-8');
@@ -173,7 +175,7 @@ function loadAndValidate(filePath: string): ReturnType<typeof parseFlagConfig>['
     }
   }
 
-  const { config, errors } = parseFlagConfig(raw);
+  const { config, errors } = parseFlagConfig(raw, strict);
   if (errors.length > 0) {
     console.error(`❌ ${filePath} validation failed:`);
     for (const err of errors) {
