@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { TinyFlag } from 'tinyflag';
 import type { TinyFlagOptions, UserContext, FlagConfig } from 'tinyflag';
 
