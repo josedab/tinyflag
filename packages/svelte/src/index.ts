@@ -112,6 +112,7 @@ function getTinyFlagContext(): TinyFlagContext {
 export function flag(flagName: string): Readable<boolean> {
   const { instance, version, context } = getTinyFlagContext();
   return derived([version, context], ([$version, $context]) => {
+    void $version;
     return instance.isEnabled(flagName, $context);
   });
 }
@@ -123,6 +124,7 @@ export function flag(flagName: string): Readable<boolean> {
 export function variant(flagName: string): Readable<string | null> {
   const { instance, version, context } = getTinyFlagContext();
   return derived([version, context], ([$version, $context]) => {
+    void $version;
     return instance.getVariant(flagName, $context);
   });
 }
