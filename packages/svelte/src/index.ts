@@ -136,3 +136,10 @@ export function setContext(context: UserContext | undefined): void {
   const ctx = getTinyFlagContext();
   ctx.context.set(context);
 }
+
+/**
+ * Get the TinyFlag instance for advanced use cases.
+ */
+export function useTinyFlagInstance(): TinyFlag {
+  return getTinyFlagContext().instance;
+}
