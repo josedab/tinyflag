@@ -65,6 +65,114 @@ Remove all flag overrides.
 
 Clean up file watchers, polling timers, and event listeners.
 
+## Utility Functions
+
+### `parseYaml(input: string): unknown`
+
+Parse a YAML string into a JavaScript object. Returns `null` for empty input. Throws an `Error` with a descriptive message if parsing fails.
+
+```typescript
+import { parseYaml } from 'tinyflag';
+
+const raw = parseYaml(`
+version: 1
+flags:
+  new-checkout:
+    enabled: true
+    rollout: 50
+`);
+// raw = { version: 1, flags: { 'new-checkout': { enabled: true, rollout: 50 } } }
+```
+
+| Parameter | Type     | Description              |
+| --------- | -------- | ------------------------ |
+| `input`   | `string` | YAML string to parse     |
+
+**Returns:** `unknown` — the parsed JavaScript value, or `null` if the input is empty.
+
+---
+
+### `validateConfig(config: unknown, strict?: boolean): ValidationError[]`
+
+Validate a parsed flag configuration object. Returns an array of validation errors (empty array means the configuration is valid).
+
+```typescript
+import { parseYaml, validateConfig } from 'tinyflag';
+
+const raw = parseYaml(yamlString);
+const errors = validateConfig(raw);
+
+if (errors.length > 0) {
+  errors.forEach((e) => console.error(`${e.path}: ${e.message}`));
+} else {
+  console.log('Configuration is valid');
+}
+
+// Strict mode rejects unknown fields
+const strictErrors = validateConfig(raw, true);
+```
+
+| Parameter | Type      | Default | Description                            |
+| --------- | --------- | ------- | -------------------------------------- |
+| `config`  | `unknown` | —       | Parsed configuration object to validate |
+| `strict`  | `boolean` | `false` | When `true`, rejects unknown fields    |
+
+**Returns:** `ValidationError[]` — array of validation errors. Empty if valid.
+
+---
+
+### `parseFlagConfig(raw: unknown, strict?: boolean): { config: FlagConfig; errors: ValidationError[]; warnings: ValidationError[] }`
+
+Parse and validate a raw configuration object into a typed `FlagConfig`. Combines validation and type-safe parsing in one step.
+
+```typescript
+import { parseYaml, parseFlagConfig } from 'tinyflag';
+
+const raw = parseYaml(yamlString);
+const { config, errors, warnings } = parseFlagConfig(raw);
+
+if (errors.length > 0) {
+  console.error('Invalid config:', errors);
+} else {
+  console.log('Flags:', Object.keys(config.flags));
+  warnings.forEach((w) => console.warn(`${w.path}: ${w.message}`));
+}
+```
+
+| Parameter | Type      | Default | Description                            |
+| --------- | --------- | ------- | -------------------------------------- |
+| `raw`     | `unknown` | —       | Parsed configuration object            |
+| `strict`  | `boolean` | `false` | When `true`, rejects unknown fields    |
+
+**Returns:** An object with:
+- `config` — `FlagConfig` (typed flag definitions; empty `{ flags: {} }` if errors)
+- `errors` — `ValidationError[]` (fatal validation errors)
+- `warnings` — `ValidationError[]` (non-fatal warnings, e.g., unknown fields in lenient mode)
+
+---
+
+### `setDebug(enabled: boolean): void`
+
+Enable or disable debug logging programmatically. Debug logging can also be enabled via the `DEBUG=tinyflag` environment variable or the `debug: true` constructor option.
+
+```typescript
+import { setDebug } from 'tinyflag';
+
+// Enable debug logging
+setDebug(true);
+
+// ... perform operations — debug output will be logged to console.debug ...
+
+// Disable when done
+setDebug(false);
+```
+
+| Parameter | Type      | Description                       |
+| --------- | --------- | --------------------------------- |
+| `enabled` | `boolean` | `true` to enable, `false` to disable |
+
+---
+
 ## Events
 
 ### `exposure`
@@ -148,5 +256,142 @@ interface Variant {
 interface FlagConfig {
   version?: number;
   flags: Record<string, FlagDefinition>;
+}
+```
+
+## Loader Utilities
+
+Low-level functions used internally by TinyFlag for loading and parsing flag sources. These are exported from `packages/core/src/loader.ts` but are **not re-exported from the public API** — they are intended for advanced use cases such as custom loaders or build-time tooling.
+
+```typescript
+import { detectSourceType, parseSource, loadFromFile, loadFromUrl, loadFromInline } from 'tinyflag/loader';
+```
+
+### `detectSourceType(source: string | FlagConfig): SourceType`
+
+Determine the source type from a source value.
+
+```typescript
+detectSourceType('./flags.yml');        // → 'file'
+detectSourceType('https://cdn.example.com/flags.json'); // → 'url'
+detectSourceType({ flags: {} });        // → 'inline'
+```
+
+| Parameter | Type                    | Description      |
+| --------- | ----------------------- | ---------------- |
+| `source`  | `string \| FlagConfig`  | The flag source  |
+
+**Returns:** `SourceType` — one of `'file'`, `'url'`, or `'inline'`.
+
+---
+
+### `parseSource(content: string, filePath: string, strict: boolean): LoadResult`
+
+Parse raw text content (YAML or JSON) into a validated `FlagConfig`. The file extension of `filePath` determines the parser: `.json` uses `JSON.parse`, everything else uses the built-in YAML parser.
+
+```typescript
+const yamlContent = `
+version: 1
+flags:
+  my-flag:
+    enabled: true
+`;
+const result = parseSource(yamlContent, 'flags.yml', false);
+console.log(result.config.flags['my-flag'].enabled); // true
+```
+
+| Parameter  | Type      | Description                                |
+| ---------- | --------- | ------------------------------------------ |
+| `content`  | `string`  | Raw YAML or JSON string                    |
+| `filePath` | `string`  | File path (used to detect JSON vs YAML)    |
+| `strict`   | `boolean` | Reject unknown fields when `true`          |
+
+**Returns:** `LoadResult` — `{ config: FlagConfig, warnings: ValidationError[] }`. Throws on parse or validation errors.
+
+---
+
+### `loadFromFile(filePath: string, strict: boolean): Promise<LoadResult>`
+
+Load flags from a local file path. Node.js, Bun, and Deno only — not available in browser or edge runtimes.
+
+```typescript
+const result = await loadFromFile('./flags.yml', false);
+console.log(Object.keys(result.config.flags));
+```
+
+| Parameter  | Type      | Description                            |
+| ---------- | --------- | -------------------------------------- |
+| `filePath` | `string`  | Path to the flags file                 |
+| `strict`   | `boolean` | Reject unknown fields when `true`      |
+
+**Returns:** `Promise<LoadResult>`. Throws if the file is not found, unreadable, or invalid.
+
+---
+
+### `loadFromUrl(url, strict, headers?, etag?, lastModified?, fetchTimeout?): Promise<LoadResult & { etag?, lastModified?, notModified? }>`
+
+Load flags from a URL. Supports conditional requests via `ETag` / `If-Modified-Since` headers for efficient polling.
+
+```typescript
+const result = await loadFromUrl('https://cdn.example.com/flags.yml', false);
+console.log(result.config.flags);
+
+// Subsequent polls with conditional headers
+const updated = await loadFromUrl(
+  'https://cdn.example.com/flags.yml',
+  false,
+  undefined,
+  result.etag,
+  result.lastModified,
+);
+if (updated.notModified) {
+  console.log('No changes');
+}
+```
+
+| Parameter      | Type                        | Default | Description                          |
+| -------------- | --------------------------- | ------- | ------------------------------------ |
+| `url`          | `string`                    | —       | URL to fetch flags from              |
+| `strict`       | `boolean`                   | —       | Reject unknown fields when `true`    |
+| `headers`      | `Record<string, string>`    | —       | Custom HTTP headers                  |
+| `etag`         | `string`                    | —       | ETag from previous response          |
+| `lastModified` | `string`                    | —       | Last-Modified from previous response |
+| `fetchTimeout` | `number`                    | `5000`  | Timeout in milliseconds              |
+
+**Returns:** `Promise<LoadResult & { etag?: string; lastModified?: string; notModified?: boolean }>`. Throws on network or validation errors.
+
+---
+
+### `loadFromInline(source: FlagConfig, strict: boolean): LoadResult`
+
+Validate and load flags from an inline object. Useful for serverless/edge environments.
+
+```typescript
+const result = loadFromInline({
+  version: 1,
+  flags: {
+    'my-flag': { enabled: true, rollout: 50 },
+  },
+}, false);
+console.log(result.config.flags);
+```
+
+| Parameter | Type         | Description                         |
+| --------- | ------------ | ----------------------------------- |
+| `source`  | `FlagConfig` | Inline flag configuration object    |
+| `strict`  | `boolean`    | Reject unknown fields when `true`   |
+
+**Returns:** `LoadResult` — `{ config: FlagConfig, warnings: ValidationError[] }`. Throws on validation errors.
+
+---
+
+### Loader Types
+
+```typescript
+type SourceType = 'file' | 'url' | 'inline';
+
+interface LoadResult {
+  config: FlagConfig;
+  warnings: ValidationError[];
 }
 ```
