@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Required for diff
-      - uses: tinyflag/validate-action@v1
+      - uses: josedab/tinyflag@v1
         with:
           flags-file: flags.yml
 ```
