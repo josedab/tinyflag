@@ -49,6 +49,10 @@ Returns a Svelte `Readable` store for the variant.
 
 Update the user context. Triggers re-evaluation of all stores.
 
+### `useTinyFlagInstance(): TinyFlag`
+
+Returns the TinyFlag instance for advanced use cases (e.g., subscribing to events, calling `override()`, or `getAllFlags()`).
+
 ## SvelteKit SSR
 
 ```ts
