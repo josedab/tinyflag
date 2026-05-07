@@ -16,6 +16,8 @@ const ff = new TinyFlag(options: TinyFlagOptions);
 | `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                        |
 | `strict`       | `boolean`                | `false`      | Reject unknown fields                                            |
 | `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId)                   |
+| `fetchTimeout` | `number`                 | `5000`       | Timeout in ms for fetching flags from a URL                      |
+| `debug`        | `boolean`                | `false`      | Enable debug logging (also enabled via `DEBUG=tinyflag` env var) |
 
 ### Methods
 
@@ -46,6 +48,18 @@ Manually reload flags. Optionally provide a new source.
 #### `getFlags(): Record<string, FlagDefinition>`
 
 Get a read-only snapshot of all current flag definitions.
+
+#### `getAllFlags(context?: UserContext): Record<string, { enabled: boolean; variant: string | null }>`
+
+Evaluate all flags against a context and return a map of results. Useful for SSR hydration and debugging. Overrides are applied.
+
+#### `override(flagName: string, value: boolean | string): void`
+
+Override a flag's value for testing or development. Boolean values override `isEnabled`; string values override `getVariant`. Emits an `error` event for empty flag names.
+
+#### `clearOverrides(): void`
+
+Remove all flag overrides.
 
 #### `destroy(): void`
 
