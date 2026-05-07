@@ -19,6 +19,95 @@ tinyflag/
 └── flags.schema.json  → JSON Schema
 ```
 
+## Component Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        User Application                         │
+└──────────┬──────────────────┬──────────────────┬────────────────┘
+           │                  │                  │
+     ┌─────▼─────┐     ┌─────▼─────┐     ┌──────▼─────┐
+     │  React     │     │  Vue      │     │  Svelte    │
+     │  Hooks     │     │  Compos-  │     │  Stores    │
+     │            │     │  ables    │     │            │
+     └─────┬──────┘     └─────┬─────┘     └──────┬─────┘
+           │                  │                  │
+           └──────────────────┼──────────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │   TinyFlag Core   │
+                    │   (tinyflag npm)  │
+                    └─────────┬─────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+  ┌─────▼─────┐      ┌───────▼───────┐     ┌───────▼───────┐
+  │  Loader   │      │  Evaluator    │     │  Event System │
+  │           │      │               │     │               │
+  │ • file    │      │ • isEnabled() │     │ • exposure    │
+  │ • url     │      │ • getVariant()│     │ • change      │
+  │ • inline  │      │ • rules       │     │ • error       │
+  └─────┬─────┘      │ • rollout     │     └───────────────┘
+        │             │ • overrides   │
+  ┌─────▼─────┐      └───────┬───────┘
+  │  Parser   │              │
+  │           │       ┌──────▼───────┐
+  │ • YAML    │       │  MurmurHash3 │
+  │   (custom)│       │  (custom)    │
+  │ • JSON    │       │              │
+  └─────┬─────┘       │ • rollout    │
+        │             │   bucketing  │
+  ┌─────▼─────┐       │ • variant    │
+  │  Schema   │       │   assignment │
+  │ Validator │       └──────────────┘
+  └───────────┘
+
+  ┌───────────────────────────────────────┐
+  │           CLI (tinyflag-cli)          │
+  │  • validate  • generate  • diff      │
+  └───────────────────────────────────────┘
+
+  ┌───────────────────────────────────────┐
+  │     GitHub Action (composite)         │
+  │  • validate flags  • PR comments      │
+  └───────────────────────────────────────┘
+```
+
+### Data Flow
+
+```
+flags.yml / URL / inline object
+        │
+        ▼
+    ┌────────┐    ┌──────────┐    ┌──────────────┐
+    │ Loader │───▶│  Parser  │───▶│  Validator   │
+    └────────┘    │(YAML/JSON)│   │ (schema.ts)  │
+                  └──────────┘    └──────┬───────┘
+                                         │
+                                         ▼
+                                  ┌──────────────┐
+                                  │  FlagConfig   │
+                                  │  (in-memory)  │
+                                  └──────┬───────┘
+                                         │
+                          ┌──────────────┼──────────────┐
+                          ▼              ▼              ▼
+                   isEnabled()    getVariant()    getAllFlags()
+                          │              │              │
+                          ▼              ▼              ▼
+                   ┌─────────────────────────────────────┐
+                   │         Evaluation Pipeline         │
+                   │  1. Check overrides                 │
+                   │  2. Check enabled flag              │
+                   │  3. Evaluate rules (conditions)     │
+                   │  4. Rollout check (MurmurHash3)     │
+                   │  5. Variant assignment (MurmurHash3)│
+                   └─────────────┬───────────────────────┘
+                                 │
+                                 ▼
+                          Emit exposure event
+```
+
 ## Key Decisions
 
 ### Zero Dependencies
