@@ -14,6 +14,14 @@ cd my-app
 npm install tinyflag tinyflag-vue
 ```
 
+## Run
+
+```bash
+npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
 ## Usage
 
 ### Component
@@ -44,3 +52,12 @@ export default defineNuxtPlugin(async () => {
   provideTinyFlag({ instance: ff, context: { userId: getUser().id } });
 });
 ```
+
+## Expected Behavior
+
+Once running, the app renders flag-controlled UI reactively:
+
+- **`useFlag('new-feature')` → `true`/`false`** — conditionally renders the new feature section
+- **`useVariant('theme-test')` → `"control"` or `"dark"`** — selects the active theme variant
+
+In SSR mode (Nuxt), the flag state is resolved on the server and hydrated to the client without flicker.

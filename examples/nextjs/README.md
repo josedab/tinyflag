@@ -14,6 +14,14 @@ cd my-app
 npm install tinyflag tinyflag-react
 ```
 
+## Run
+
+```bash
+npm run dev
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
 ## How It Works
 
 1. **Server-side**: Flags are loaded from `flags.yml` in the server component (`layout.tsx`)
@@ -39,3 +47,12 @@ This ensures:
 - No YAML parsing on the client (smaller bundle)
 - Flags are available immediately on first render (no flash)
 - Hydration is consistent between server and client
+
+## Expected Behavior
+
+Once running, the app renders flag-controlled UI immediately on page load:
+
+- **`useFlag('new-checkout')` → `true`/`false`** — toggles between the new and old checkout component
+- **`useVariant('dark-mode')` → `"control"` or `"dark"`** — selects the active variant
+
+Server-rendered HTML includes the correct flag state, so there is no flash of incorrect content on hydration.

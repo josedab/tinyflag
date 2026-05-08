@@ -14,6 +14,14 @@ cd my-app
 npm install tinyflag tinyflag-svelte
 ```
 
+## Run
+
+```bash
+npm run dev
+```
+
+Then open [http://localhost:5173](http://localhost:5173) in your browser.
+
 ## Usage
 
 ### Component
@@ -49,3 +57,12 @@ export async function handle({ event, resolve }) {
   return resolve(event);
 }
 ```
+
+## Expected Behavior
+
+Once running, the app renders flag-controlled UI via reactive stores:
+
+- **`$showFeature` → `true`/`false`** — conditionally renders the feature section
+- **`$theme` → `"control"` or `"dark"`** — selects the active theme variant
+
+In SSR mode, flags are evaluated on the server in the hook and hydrated to the client without flicker.
