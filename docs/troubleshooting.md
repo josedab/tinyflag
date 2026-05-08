@@ -124,6 +124,56 @@ ff.on('change', (event) => {
 - **Flag disabled:** If the flag is disabled or the user doesn't pass the rollout check, `getVariant()` returns `null`.
 - **Weights must be positive:** Variant weights of `0` effectively exclude that variant.
 
+## Enabling Debug Logging
+
+TinyFlag includes built-in debug logging that traces initialization, flag evaluation, source loading, and event dispatch. There are three ways to enable it:
+
+### Using `setDebug()` (Programmatic)
+
+```ts
+import { setDebug } from 'tinyflag';
+
+// Enable debug logging
+setDebug(true);
+
+const ff = new TinyFlag({ source: './flags.yml' });
+await ff.init();
+
+ff.isEnabled('new-checkout', { userId: 'user-1' });
+
+// Disable when done
+setDebug(false);
+```
+
+### Using the `debug` Constructor Option
+
+```ts
+const ff = new TinyFlag({
+  source: './flags.yml',
+  debug: true,
+});
+```
+
+### Using the `DEBUG` Environment Variable
+
+```bash
+DEBUG=tinyflag node app.js
+```
+
+### Expected Debug Output
+
+When debug logging is enabled, you'll see output like this in the console:
+
+```
+[tinyflag] Initializing with source type: file
+[tinyflag] Loading flags from file: ./flags.yml
+[tinyflag] Parsed 3 flags
+[tinyflag] Evaluating flag: new-checkout { userId: 'user-1' }
+[tinyflag] Rollout check: hash=42, rollout=50, result=true
+```
+
+Debug messages are logged via `console.debug()` and prefixed with `[tinyflag]`.
+
 ## Getting Help
 
 - [GitHub Issues](https://github.com/josedab/tinyflag/issues) — Bug reports and feature requests
