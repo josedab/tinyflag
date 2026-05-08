@@ -2,6 +2,10 @@
 
 Get your first feature flag running in under 60 seconds.
 
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) **≥ 18** (see `engines` in `package.json`)
+
 ## Installation
 
 ```bash
