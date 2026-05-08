@@ -54,7 +54,7 @@ ff.isEnabled('my-feture'); // typo → FLAG_NOT_FOUND emitted, returns false
 
 **Cause:** Your flag configuration contains fields that TinyFlag doesn't recognize.
 
-**Solution:** Review your `flags.yml` for typos in field names. Valid flag fields include: `enabled`, `description`, `rollout`, `variants`, `rules`, `metadata`.
+**Solution:** Review your `flags.yml` for typos in field names. Valid flag fields include: `enabled`, `description`, `rollout`, `variants`, `rules`, `tags`.
 
 ### `POLL_INTERVAL_CLAMPED`
 
