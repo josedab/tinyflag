@@ -40,7 +40,11 @@ if (ff.isEnabled('new-checkout', { userId: user.id })) {
 
 ## Documentation
 
-Full documentation, API reference, and framework integration guides are available in the [main repository](https://github.com/josedab/tinyflag).
+- [Getting Started](https://github.com/josedab/tinyflag/blob/main/docs/getting-started.md) — Quick start guide
+- [API Reference](https://github.com/josedab/tinyflag/blob/main/docs/api-reference.md) — Full SDK API
+- [Flag Format](https://github.com/josedab/tinyflag/blob/main/docs/flag-format.md) — YAML/JSON configuration reference
+- [Targeting Rules](https://github.com/josedab/tinyflag/blob/main/docs/targeting-rules.md) — Rule conditions and operators
+- [Troubleshooting](https://github.com/josedab/tinyflag/blob/main/docs/troubleshooting.md) — Common issues and solutions
 
 ## License
 

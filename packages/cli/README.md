@@ -43,7 +43,9 @@ npx tinyflag diff main..HEAD --file config/flags.yml
 
 ## Documentation
 
-Full documentation is available in the [main repository](https://github.com/josedab/tinyflag).
+- [CLI Documentation](https://github.com/josedab/tinyflag/blob/main/docs/cli.md) — Full CLI reference
+- [Flag Format](https://github.com/josedab/tinyflag/blob/main/docs/flag-format.md) — YAML/JSON configuration reference
+- [GitHub Action](https://github.com/josedab/tinyflag/blob/main/docs/github-action.md) — CI/CD integration
 
 ## License
 

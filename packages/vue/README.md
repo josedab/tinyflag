@@ -5,11 +5,18 @@ Vue composables for [TinyFlag](https://www.npmjs.com/package/tinyflag) feature f
 [![npm version](https://img.shields.io/npm/v/tinyflag-vue)](https://www.npmjs.com/package/tinyflag-vue)
 [![license](https://img.shields.io/npm/l/tinyflag-vue)](https://github.com/josedab/tinyflag/blob/main/LICENSE)
 
+## Compatibility
+
+- **Vue** 3.2+ (Composition API required)
+- **Nuxt** 3.x+
+
 ## Install
 
 ```bash
 npm install tinyflag tinyflag-vue
 ```
+
+> **Note:** `tinyflag` is a required peer dependency and must be installed alongside `tinyflag-vue`.
 
 ## Usage
 
@@ -39,7 +46,10 @@ export default defineNuxtPlugin(async () => {
 
 ## Documentation
 
-Full documentation is available in the [main repository](https://github.com/josedab/tinyflag).
+- [Vue Integration Guide](https://github.com/josedab/tinyflag/blob/main/docs/integrations/vue.md) — Full setup, SSR, and advanced usage
+- [API Reference](https://github.com/josedab/tinyflag/blob/main/docs/api-reference.md) — Core SDK API
+- [Flag Format](https://github.com/josedab/tinyflag/blob/main/docs/flag-format.md) — YAML/JSON configuration reference
+- [Troubleshooting](https://github.com/josedab/tinyflag/blob/main/docs/troubleshooting.md) — Common issues and solutions
 
 ## License
 
