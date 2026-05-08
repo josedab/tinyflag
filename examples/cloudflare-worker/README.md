@@ -22,3 +22,28 @@ npx wrangler dev examples/cloudflare-worker/index.ts
 ```
 
 Then visit `http://localhost:8787/?userId=user-1`.
+
+## Expected Output
+
+### Terminal
+
+```
+⬣ Listening on http://localhost:8787
+```
+
+### HTTP Response (`GET /?userId=user-1`)
+
+```json
+{
+  "message": "Hello from TinyFlag on Cloudflare Workers!",
+  "userId": "user-1",
+  "landingVariant": "control",
+  "flags": {
+    "new-landing": true,
+    "maintenance-mode": false
+  }
+}
+```
+
+- `new-landing` uses a 25% rollout with weighted variants (`control: 75`, `redesign: 25`)
+- `maintenance-mode` is disabled — when enabled, the worker returns a `503` response instead

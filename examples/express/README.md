@@ -20,3 +20,41 @@ This example demonstrates using TinyFlag in an Express-style API handler to gate
 ```bash
 npx tsx examples/express/server.ts
 ```
+
+## Expected Output
+
+```
+🚩 TinyFlag — Express.js Example
+
+Free user: {
+  "userId": "user-1",
+  "features": {
+    "new-api": true,
+    "premium-features": false
+  }
+}
+
+Pro user: {
+  "userId": "user-2",
+  "features": {
+    "new-api": false,
+    "premium-features": true
+  }
+}
+```
+
+The `new-api` flag uses a 30% rollout, so results vary by userId. The `premium-features` flag is only enabled for users with `plan: "pro"` or `plan: "enterprise"`.
+
+### HTTP Response Example
+
+If adapted into a real Express server (e.g., `GET /api/features?userId=user-2&plan=pro`):
+
+```json
+{
+  "userId": "user-2",
+  "features": {
+    "new-api": false,
+    "premium-features": true
+  }
+}
+```
