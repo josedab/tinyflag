@@ -35,6 +35,18 @@ rules:
     variant: premium # Force a variant
 ```
 
+### Tags
+
+```yaml
+flags:
+  new-checkout:
+    enabled: true
+    tags: [beta, checkout]
+    rollout: 50
+```
+
+Tags are optional string arrays for categorization and filtering (e.g., in the dashboard or custom tooling).
+
 ### Variants
 
 ```yaml
