@@ -16,19 +16,16 @@ import {
   getEvaluationWarnings,
 } from './evaluator.js';
 import type { EvaluationEnv, EvaluationWarning } from './evaluator.js';
-import {
-  detectSourceType,
-  loadFromFile,
-  loadFromUrl,
-  loadFromInline,
-  loadMultiSource,
-  type SourceType,
-} from './loader.js';
 import { debug, setDebug } from './debug.js';
 import { murmurhash3 } from './hash.js';
-
-const MIN_POLL_INTERVAL = 5_000;
-const DEFAULT_POLL_INTERVAL = 60_000;
+import {
+  normalizeContext,
+  normalizeFlagName,
+  resolveAllFlagsOverride,
+  resolveEnabledOverride,
+  resolveVariantOverride,
+} from './facade-resolution.js';
+import { FlagSourceController, type ResolvedTinyFlagOptions } from './source-controller.js';
 
 /**
  * TinyFlag — serverless, file-driven, zero-dependency feature flag SDK.
@@ -42,14 +39,10 @@ const DEFAULT_POLL_INTERVAL = 60_000;
  */
 export class TinyFlag {
   private config: FlagConfig = { flags: {} };
-  private readonly options: Required<Pick<TinyFlagOptions, 'strict' | 'watch'>> & TinyFlagOptions;
+  private readonly options: ResolvedTinyFlagOptions;
   private readonly emitter = new EventEmitter();
-  private sourceType: SourceType;
+  private readonly sourceController: FlagSourceController;
   private initialized = false;
-  private pollTimer?: ReturnType<typeof setInterval>;
-  private watcher?: { close(): void };
-  private etag?: string;
-  private lastModified?: string;
   private exposureCache = new Map<string, true>();
   private static readonly EXPOSURE_CACHE_MAX = 10_000;
   private static readonly EXPOSURE_CACHE_EVICT = 2_000; // evict oldest 20% at capacity
@@ -83,17 +76,20 @@ export class TinyFlag {
       strict: options.strict ?? false,
       watch: options.watch ?? true,
     };
-    this.sourceType = detectSourceType(options.source);
+    this.sourceController = new FlagSourceController(this.options);
 
     if (options.debug) {
       setDebug(true);
     }
 
-    debug('initialized', { sourceType: this.sourceType, strict: this.options.strict });
+    debug('initialized', {
+      sourceType: this.sourceController.sourceType,
+      strict: this.options.strict,
+    });
 
     // Warn about HTTP (not HTTPS) for URL sources
     if (
-      this.sourceType === 'url' &&
+      this.sourceController.sourceType === 'url' &&
       typeof options.source === 'string' &&
       options.source.startsWith('http://')
     ) {
@@ -111,7 +107,10 @@ export class TinyFlag {
   async init(): Promise<void> {
     await this.load();
     this.initialized = true;
-    this.startAutoRefresh();
+    this.sourceController.startAutoRefresh(
+      () => this.load(),
+      (code, message) => this.emitter.emit('error', { code, message }),
+    );
   }
 
   /**
@@ -119,7 +118,7 @@ export class TinyFlag {
    * Never throws — returns false for unknown flags or errors.
    */
   isEnabled(flagName: string, context?: UserContext): boolean {
-    const normalizedName = flagName?.trim();
+    const normalizedName = normalizeFlagName(flagName);
     if (!normalizedName) {
       this.emitter.emit('error', {
         code: 'INVALID_FLAG_NAME',
@@ -139,15 +138,13 @@ export class TinyFlag {
     }
 
     // Priority: env var > override() > flag file
-    const envOverride = getEnvVarOverride(normalizedName);
-    if (envOverride !== undefined) {
-      const result = typeof envOverride.value === 'boolean' ? envOverride.value : true;
-      debug(`isEnabled("${normalizedName}") → ${result} (env var override)`);
-      return result;
+    const override = resolveEnabledOverride(normalizedName, this.overrides);
+    if (override) {
+      if (override.source === 'environment') {
+        debug(`isEnabled("${normalizedName}") → ${override.value} (env var override)`);
+      }
+      return override.value;
     }
-
-    const overrideValue = this.overrides.get(normalizedName);
-    if (typeof overrideValue === 'boolean') return overrideValue;
 
     const normalizedContext = normalizeContext(context);
     const warnings: EvaluationWarning[] = [];
@@ -170,7 +167,7 @@ export class TinyFlag {
    * Never throws — returns null for unknown flags, disabled flags, or errors.
    */
   getVariant(flagName: string, context?: UserContext): string | null {
-    const normalizedName = flagName?.trim();
+    const normalizedName = normalizeFlagName(flagName);
     if (!normalizedName) {
       this.emitter.emit('error', {
         code: 'INVALID_FLAG_NAME',
@@ -190,18 +187,13 @@ export class TinyFlag {
     }
 
     // Priority: env var > override() > flag file
-    const envOverride = getEnvVarOverride(normalizedName);
-    if (envOverride !== undefined) {
-      if (typeof envOverride.value === 'string') {
-        debug(`getVariant("${normalizedName}") → ${envOverride.value} (env var override)`);
-        return envOverride.value;
+    const override = resolveVariantOverride(normalizedName, this.overrides);
+    if (override) {
+      if (override.source === 'environment' && override.value !== null) {
+        debug(`getVariant("${normalizedName}") → ${override.value} (env var override)`);
       }
-      if (envOverride.value === false) return null;
+      return override.value;
     }
-
-    const overrideValue = this.overrides.get(normalizedName);
-    if (typeof overrideValue === 'string') return overrideValue;
-    if (overrideValue === false) return null;
 
     const normalizedContext = normalizeContext(context);
     const { variant, enabled } = evaluateVariant(
@@ -231,8 +223,7 @@ export class TinyFlag {
   /** Manually reload flags from the source. */
   async reload(newSource?: string | FlagConfig | Array<string | FlagConfig>): Promise<void> {
     if (newSource !== undefined) {
-      (this.options as TinyFlagOptions).source = newSource;
-      this.sourceType = detectSourceType(newSource);
+      this.sourceController.setSource(newSource);
     }
     await this.load();
   }
@@ -251,26 +242,9 @@ export class TinyFlag {
     const result: Record<string, { enabled: boolean; variant: string | null }> = {};
 
     for (const [flagName, flag] of Object.entries(this.config.flags)) {
-      // Priority: env var > override() > flag file
-      const envOverride = getEnvVarOverride(flagName);
-      if (envOverride !== undefined) {
-        if (typeof envOverride.value === 'boolean') {
-          result[flagName] = { enabled: envOverride.value, variant: null };
-          continue;
-        }
-        if (typeof envOverride.value === 'string') {
-          result[flagName] = { enabled: true, variant: envOverride.value };
-          continue;
-        }
-      }
-
-      const overrideValue = this.overrides.get(flagName);
-      if (typeof overrideValue === 'boolean') {
-        result[flagName] = { enabled: overrideValue, variant: null };
-        continue;
-      }
-      if (typeof overrideValue === 'string') {
-        result[flagName] = { enabled: true, variant: overrideValue };
+      const override = resolveAllFlagsOverride(flagName, this.overrides);
+      if (override) {
+        result[flagName] = override;
         continue;
       }
 
@@ -287,7 +261,7 @@ export class TinyFlag {
    * Boolean values override isEnabled; string values override getVariant.
    */
   override(flagName: string, value: boolean | string): void {
-    const normalizedName = flagName?.trim();
+    const normalizedName = normalizeFlagName(flagName);
     if (!normalizedName) {
       this.emitter.emit('error', {
         code: 'INVALID_FLAG_NAME',
@@ -312,7 +286,7 @@ export class TinyFlag {
     personaName: string,
     additionalContext?: UserContext,
   ): boolean {
-    const normalizedName = flagName?.trim();
+    const normalizedName = normalizeFlagName(flagName);
     if (!normalizedName) {
       this.emitter.emit('error', { code: 'INVALID_FLAG_NAME', message: 'Flag name is empty' });
       return false;
@@ -350,7 +324,7 @@ export class TinyFlag {
    * Returns null if the flag is not found, disabled, or has no config.
    */
   getConfig<T = Record<string, unknown>>(flagName: string, context?: UserContext): T | null {
-    const normalizedName = flagName?.trim();
+    const normalizedName = normalizeFlagName(flagName);
     if (!normalizedName) {
       this.emitter.emit('error', {
         code: 'INVALID_FLAG_NAME',
@@ -378,14 +352,7 @@ export class TinyFlag {
 
   /** Clean up resources (file watchers, polling timers). */
   destroy(): void {
-    if (this.pollTimer) {
-      clearInterval(this.pollTimer);
-      this.pollTimer = undefined;
-    }
-    if (this.watcher) {
-      this.watcher.close();
-      this.watcher = undefined;
-    }
+    this.sourceController.destroy();
     this.emitter.removeAllListeners();
     this.exposureCache.clear();
     this.overrides.clear();
@@ -393,55 +360,10 @@ export class TinyFlag {
 
   private async load(): Promise<void> {
     try {
-      const { source, strict } = this.options;
-      let config: FlagConfig;
-      let warnings: { path: string; message: string }[] = [];
-
-      switch (this.sourceType) {
-        case 'file': {
-          const result = await loadFromFile(source as string, strict);
-          config = result.config;
-          warnings = result.warnings;
-          break;
-        }
-        case 'url': {
-          const result = await loadFromUrl(
-            source as string,
-            strict,
-            this.options.headers,
-            this.etag,
-            this.lastModified,
-            this.options.fetchTimeout,
-            this.options.retries,
-            this.options.retryDelay,
-          );
-          if (result.notModified) return;
-          config = result.config;
-          warnings = result.warnings;
-          this.etag = result.etag;
-          this.lastModified = result.lastModified;
-          break;
-        }
-        case 'inline': {
-          const result = loadFromInline(source as FlagConfig, strict);
-          config = result.config;
-          warnings = result.warnings;
-          break;
-        }
-        case 'multi': {
-          const result = await loadMultiSource(
-            source as Array<string | FlagConfig>,
-            strict,
-            this.options.headers,
-            this.options.fetchTimeout,
-            this.options.retries,
-            this.options.retryDelay,
-          );
-          config = result.config;
-          warnings = result.warnings;
-          break;
-        }
-      }
+      const pendingResult = this.sourceController.load();
+      const result = pendingResult instanceof Promise ? await pendingResult : pendingResult;
+      if (!result) return;
+      const { config, warnings } = result;
 
       // Emit warnings for unknown fields
       for (const w of warnings) {
@@ -469,7 +391,9 @@ export class TinyFlag {
         });
       }
 
-      debug(`loaded ${Object.keys(config.flags).length} flags from ${this.sourceType}`);
+      debug(
+        `loaded ${Object.keys(config.flags).length} flags from ${this.sourceController.sourceType}`,
+      );
     } catch (error) {
       if (!this.initialized) {
         throw error; // Rethrow on initial load
@@ -544,80 +468,6 @@ export class TinyFlag {
     };
 
     this.emitter.emit('exposure', event);
-  }
-
-  private startAutoRefresh(): void {
-    if (this.sourceType === 'url') {
-      let interval = this.options.pollInterval ?? DEFAULT_POLL_INTERVAL;
-      if (interval < MIN_POLL_INTERVAL) {
-        interval = MIN_POLL_INTERVAL;
-        this.emitter.emit('error', {
-          code: 'POLL_INTERVAL_CLAMPED',
-          message: `pollInterval clamped to minimum of ${MIN_POLL_INTERVAL}ms`,
-        });
-      }
-      this.pollTimer = setInterval(() => this.load(), interval);
-      if (typeof this.pollTimer === 'object' && 'unref' in this.pollTimer) {
-        this.pollTimer.unref();
-      }
-    }
-
-    if (this.sourceType === 'file' && this.options.watch) {
-      this.startFileWatcher();
-    }
-  }
-
-  private async startFileWatcher(): Promise<void> {
-    try {
-      const fs = await import('fs');
-      const filePath = this.options.source as string;
-      this.watcher = fs.watch(filePath, { persistent: false }, (eventType) => {
-        if (eventType === 'change' || eventType === 'rename') {
-          // Debounce slightly for editors that do delete+create
-          setTimeout(() => this.load(), 100);
-        }
-      });
-    } catch {
-      // File watching not available in this runtime — that's OK
-    }
-  }
-}
-
-function normalizeContext(context?: UserContext): UserContext | undefined {
-  if (context === null || context === undefined) return undefined;
-  if (context.userId === '') {
-    const { userId, ...rest } = context;
-    return Object.keys(rest).length > 0 ? rest : undefined;
-  }
-  return context;
-}
-
-/**
- * Convert a kebab-case flag name to UPPER_SNAKE_CASE env var name.
- * e.g., "new-checkout" → "TINYFLAG_NEW_CHECKOUT"
- */
-function flagNameToEnvVar(flagName: string): string {
-  return 'TINYFLAG_' + flagName.replace(/-/g, '_').toUpperCase();
-}
-
-/**
- * Check for an environment variable override for a flag.
- * Returns the override value or undefined if not set.
- * Supports: "true"/"false" for boolean, any other string as variant name.
- */
-function getEnvVarOverride(flagName: string): { value: boolean | string } | undefined {
-  try {
-    if (typeof process === 'undefined' || !process.env) return undefined;
-    const envKey = flagNameToEnvVar(flagName);
-    const envValue = process.env[envKey];
-    if (envValue === undefined || envValue === '') return undefined;
-
-    const lower = envValue.toLowerCase();
-    if (lower === 'true') return { value: true };
-    if (lower === 'false') return { value: false };
-    return { value: envValue }; // variant name
-  } catch {
-    return undefined;
   }
 }
 
