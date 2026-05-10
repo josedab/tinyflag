@@ -113,3 +113,40 @@ jobs:
       - run: pnpm -r build
       - name: Test with Deno
         run: cd packages/core && deno test --allow-read --allow-env src/__tests__/
+
+  test-go-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.21.x'
+      - name: Test Go SDK
+        working-directory: sdks/go
+        run: go test ./...
+
+  test-rust-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+      - name: Test Rust SDK
+        working-directory: sdks/rust
+        run: cargo test
+
+  test-jvm-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: sdks/jvm/**/*.gradle*
+      - name: Test JVM SDK
+        working-directory: sdks/jvm
+        run: ./gradlew test
