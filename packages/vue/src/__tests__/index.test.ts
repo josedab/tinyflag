@@ -177,4 +177,40 @@ describe('tinyflag-vue', () => {
     expect(result).toBe(ff);
     ff.destroy();
   });
+
+  it('flag reloads propagate current values to computed consumers', async () => {
+    const ff = createInstance({
+      'flag-a': { enabled: true },
+      'flag-b': { enabled: true },
+    });
+    await ff.init();
+
+    const Child = defineComponent({
+      setup() {
+        const flagA = useFlag('flag-a');
+        const flagB = useFlag('flag-b');
+        return () => h('div', `${flagA.value}:${flagB.value}`);
+      },
+    });
+
+    const Parent = defineComponent({
+      setup() {
+        provideTinyFlag({ source: { flags: {} }, instance: ff });
+        return () => h(Child);
+      },
+    });
+
+    const wrapper = mount(Parent);
+    await ff.reload({
+      flags: {
+        'flag-a': { enabled: false },
+        'flag-b': { enabled: true },
+      },
+    });
+    await nextTick();
+
+    expect(wrapper.text()).toBe('false:true');
+    wrapper.unmount();
+    ff.destroy();
+  });
 });

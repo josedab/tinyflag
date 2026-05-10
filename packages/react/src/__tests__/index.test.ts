@@ -160,6 +160,46 @@ describe('tinyflag-react', () => {
     ff.destroy();
   });
 
+  it('flag reloads propagate current values to hook consumers', async () => {
+    const ff = createInstance({
+      'flag-a': { enabled: true },
+      'flag-b': { enabled: true },
+    });
+    await ff.init();
+
+    function Consumer() {
+      const flagA = useFlag('flag-a');
+      const flagB = useFlag('flag-b');
+      return React.createElement(
+        'div',
+        null,
+        React.createElement('span', { 'data-testid': 'flag-a' }, String(flagA)),
+        React.createElement('span', { 'data-testid': 'flag-b' }, String(flagB)),
+      );
+    }
+
+    render(
+      React.createElement(
+        TinyFlagProvider,
+        { source: { flags: {} }, instance: ff },
+        React.createElement(Consumer),
+      ),
+    );
+
+    await act(() =>
+      ff.reload({
+        flags: {
+          'flag-a': { enabled: false },
+          'flag-b': { enabled: true },
+        },
+      }),
+    );
+
+    expect(screen.getByTestId('flag-a').textContent).toBe('false');
+    expect(screen.getByTestId('flag-b').textContent).toBe('true');
+    ff.destroy();
+  });
+
   it('useFlag without TinyFlagProvider throws descriptive error', () => {
     function BadConsumer() {
       useFlag('any-flag');

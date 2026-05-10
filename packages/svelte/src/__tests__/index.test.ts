@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { get } from 'svelte/store';
 import { createTinyFlag, flag, variant, setContext } from '../index.js';
 import { TinyFlag } from 'tinyflag';
@@ -125,5 +125,38 @@ describe('tinyflag-svelte', () => {
 
     // After destroy and fallback cleared, flag() should throw
     expect(() => flag('any-flag')).toThrow('createTinyFlag');
+  });
+
+  it('reload events synchronously recompute all flag stores', async () => {
+    const ff = createInstance({
+      'flag-a': { enabled: true },
+      'flag-b': { enabled: true },
+    });
+    await ff.init();
+    const { destroy } = createTinyFlag({ source: { flags: {} }, instance: ff });
+    cleanup = destroy;
+
+    const flagA = flag('flag-a');
+    const flagB = flag('flag-b');
+    const valuesA: boolean[] = [];
+    const valuesB: boolean[] = [];
+    const unsubscribeA = flagA.subscribe((value) => valuesA.push(value));
+    const unsubscribeB = flagB.subscribe((value) => valuesB.push(value));
+    const evaluationSpy = vi.spyOn(ff, 'isEnabled');
+    evaluationSpy.mockClear();
+
+    await ff.reload({
+      flags: {
+        'flag-a': { enabled: false },
+        'flag-b': { enabled: true },
+      },
+    });
+
+    expect(valuesA).toEqual([true]);
+    expect(valuesB).toEqual([true]);
+    expect(evaluationSpy.mock.calls.map(([flagName]) => flagName)).toEqual(['flag-a', 'flag-b']);
+    unsubscribeA();
+    unsubscribeB();
+    ff.destroy();
   });
 });
