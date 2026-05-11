@@ -23,6 +23,8 @@ Serverless, file-driven, zero-dependency feature flag SDK for JavaScript/TypeScr
 
 ## Quick Start (< 60 seconds)
 
+> **Prerequisites:** [Node.js](https://nodejs.org/) ≥ 18
+
 [![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/josedab/tinyflag/tree/main/examples?file=basic.ts)
 
 ### 1. Install
@@ -198,6 +200,8 @@ export interface TinyFlagDefinitions {
 | `pollInterval` | `number`                 | `60000`      | URL polling interval (ms, min: 5000) |
 | `watch`        | `boolean`                | `true`       | Watch file for changes               |
 | `strict`       | `boolean`                | `false`      | Reject unknown fields in flag file   |
+| `fetchTimeout` | `number`                 | `5000`       | Timeout in ms for URL source fetch   |
+| `debug`        | `boolean`                | `false`      | Enable debug logging                 |
 
 ### `ff.init(): Promise<void>`
 
@@ -226,6 +230,18 @@ Manually reload flags from source.
 ### `ff.getFlags(): Record<string, FlagDefinition>`
 
 Get a snapshot of all current flag definitions.
+
+### `ff.getAllFlags(context?): Record<string, { enabled: boolean; variant: string | null }>`
+
+Evaluate all flags against a context. Useful for SSR hydration.
+
+### `ff.override(flagName, value): void`
+
+Override a flag's value for testing. Boolean overrides `isEnabled`; string overrides `getVariant`.
+
+### `ff.clearOverrides(): void`
+
+Remove all flag overrides.
 
 ### `ff.destroy(): void`
 
@@ -413,6 +429,8 @@ createTinyFlag({ instance: ff, context: { userId: getUser().id } });
 | `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                               |
 | `strict`       | `boolean`                | `false`      | Reject unknown fields in flag file                                      |
 | `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId) pair                     |
+| `fetchTimeout` | `number`                 | `5000`       | Timeout in ms for fetching flags from a URL                             |
+| `debug`        | `boolean`                | `false`      | Enable debug logging (also via `DEBUG=tinyflag` env var)                |
 
 ### Methods
 
@@ -425,6 +443,9 @@ createTinyFlag({ instance: ff, context: { userId: getUser().id } });
 | `off(event, handler)`    | `void`                           | Remove event listener.                                    |
 | `reload(newSource?)`     | `Promise<void>`                  | Manually reload flags.                                    |
 | `getFlags()`             | `Record<string, FlagDefinition>` | Snapshot of current flags.                                |
+| `getAllFlags(ctx?)`      | `Record<string, {...}>`          | Evaluate all flags against a context.                     |
+| `override(name, value)`  | `void`                           | Override a flag for testing.                              |
+| `clearOverrides()`       | `void`                           | Remove all flag overrides.                                |
 | `destroy()`              | `void`                           | Clean up watchers, timers, listeners.                     |
 
 ### Event Payloads
