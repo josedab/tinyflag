@@ -67,6 +67,43 @@ flags:
 
 Variant assignment uses a different hash seed than rollout, ensuring independent bucketing.
 
+## Bulk Evaluation with `getAllFlags()`
+
+Use `getAllFlags()` to evaluate every flag at once. This is useful for SSR hydration (serializing all flag states to the client) and debugging.
+
+```typescript
+const allFlags = ff.getAllFlags({ userId: 'user-123', plan: 'pro' });
+// {
+//   'new-checkout': { enabled: true, variant: 'new-flow' },
+//   'dark-mode':    { enabled: false, variant: null },
+// }
+
+// SSR example: serialize to the client
+const serialized = JSON.stringify(allFlags);
+```
+
+Overrides set via `override()` are applied during `getAllFlags()` evaluation.
+
+## Testing Overrides
+
+Use `override()` and `clearOverrides()` to force flag values during testing or local development, without modifying your flag file.
+
+```typescript
+// Override isEnabled result (boolean)
+ff.override('new-checkout', true);
+
+// Override getVariant result (string)
+ff.override('checkout-flow', 'new-flow');
+
+ff.isEnabled('new-checkout'); // true (overridden)
+ff.getVariant('checkout-flow'); // 'new-flow' (overridden)
+
+// Clean up all overrides
+ff.clearOverrides();
+```
+
+Overrides take precedence over all evaluation logic (rules, rollouts, enabled state). They are intended for development and testing — not production use.
+
 ## Determinism Guarantee
 
 **Same input → same output. Always. Across SDK versions.**
