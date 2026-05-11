@@ -29,6 +29,7 @@ Welcome to the TinyFlag documentation. TinyFlag is a serverless, file-driven, ze
 - [GitHub Action](./github-action.md) — PR validation
 - [Dashboard](./dashboard.md) — Visual flag overview
 - [JSON Schema](./flag-format.md#json-schema) — IDE autocompletion
+- [Troubleshooting](./troubleshooting.md) — Error codes, common issues, debug logging
 
 ### API Reference
 
@@ -40,6 +41,10 @@ Welcome to the TinyFlag documentation. TinyFlag is a serverless, file-driven, ze
 
 - [From LaunchDarkly](./migration.md#from-launchdarkly)
 - [From Unleash](./migration.md#from-unleash)
+
+### Contributing
+
+- [Contributing Guide](../CONTRIBUTING.md) — Development setup, code standards, PR workflow
 
 ### Architecture
 
