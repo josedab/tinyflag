@@ -15,7 +15,7 @@ const ff = new TinyFlag(options: TinyFlagOptions);
 | `pollInterval` | `number`                 | `60000`      | URL polling interval (ms). Minimum: 5000                         |
 | `watch`        | `boolean`                | `true`       | Watch file for changes (file source only)                        |
 | `strict`       | `boolean`                | `false`      | Reject unknown fields                                            |
-| `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId)                   |
+| `deduplicate`  | `boolean`                | `true`       | Deduplicate exposure events per (flag, userId). Uses an in-memory `Set<string>` cache that is unbounded and lives for the instance lifetime — there is no TTL or size limit. For long-lived server processes, be aware the cache grows with each unique `(flag, userId)` pair. Calling `destroy()` clears the cache. |
 | `fetchTimeout` | `number`                 | `5000`       | Timeout in ms for fetching flags from a URL                      |
 | `debug`        | `boolean`                | `false`      | Enable debug logging (also enabled via `DEBUG=tinyflag` env var) |
 
