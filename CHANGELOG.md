@@ -20,7 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
   - Event system: `exposure`, `change`, `error` events
   - Exposure event deduplication (configurable via `deduplicate` option)
   - Schema validation with strict and lenient modes
-  - Zero runtime dependencies, < 6KB gzipped
+  - `getAllFlags()` — evaluate all flags against a context (SSR hydration, debugging)
+  - `override()` / `clearOverrides()` — override flag values for testing and development
+  - `setDebug()` — enable/disable debug logging programmatically
+  - `fetchTimeout` constructor option — configurable timeout for URL source fetching
+  - `debug` constructor option — enable debug logging at construction time
+  - Zero runtime dependencies, < 8KB gzipped
 
 - **Framework Integrations**
   - `tinyflag-react` — `TinyFlagProvider`, `useFlag`, `useVariant` hooks with SSR support
