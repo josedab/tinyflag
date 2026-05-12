@@ -32,7 +32,7 @@ docs/         → Documentation
 1. Create a branch from `main`
 2. Make your changes
 3. Write or update tests — we target 90%+ coverage
-4. Run `pnpm -r build && pnpm -r test` to verify
+4. Run `pnpm -r build && pnpm -r test && pnpm format:check && pnpm -r lint` to verify
 5. Commit using [Conventional Commits](https://www.conventionalcommits.org/):
    - `feat:` new feature
    - `fix:` bug fix
