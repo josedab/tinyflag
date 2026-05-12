@@ -224,6 +224,8 @@ interface ErrorEvent {
 | `POLL_INTERVAL_CLAMPED` | pollInterval below 5s minimum             |
 | `LISTENER_ERROR`        | Event listener threw an exception         |
 
+> **Safety guarantee:** Listener errors are caught automatically and re-emitted as `error` events with code `LISTENER_ERROR`. Your event handlers will never crash the SDK — a failing listener in a `change` or `exposure` handler is isolated and reported via the `error` event instead.
+
 ## Types
 
 ```typescript
