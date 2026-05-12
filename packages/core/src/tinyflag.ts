@@ -44,6 +44,20 @@ export class TinyFlag {
   private exposureCache = new Set<string>();
   private overrides = new Map<string, boolean | string>();
 
+  /**
+   * Create a new TinyFlag instance.
+   *
+   * @param options - Configuration options for the SDK.
+   * @param options.source - Flag source: file path (`.yml`/`.yaml`/`.json`), URL (`http`/`https`), or inline `FlagConfig` object. **Required.**
+   * @param options.headers - Custom HTTP headers for URL sources.
+   * @param options.pollInterval - URL polling interval in ms. Minimum `5000`; values below this are clamped with a warning. Defaults to `60000`.
+   * @param options.watch - Watch file source for changes. Defaults to `true`.
+   * @param options.strict - Reject unknown fields in flag definitions. Defaults to `false`.
+   * @param options.deduplicate - Deduplicate exposure events per `(flag, userId)`. Defaults to `true`.
+   * @param options.fetchTimeout - Timeout in ms for URL fetches. Defaults to `5000`.
+   * @param options.debug - Enable debug logging. Defaults to `false`.
+   * @throws {Error} If `source` is not provided.
+   */
   constructor(options: TinyFlagOptions) {
     if (!options.source) {
       throw new Error('TinyFlag: "source" option is required');
