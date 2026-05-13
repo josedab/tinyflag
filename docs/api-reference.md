@@ -265,8 +265,11 @@ interface FlagConfig {
 
 Low-level functions used internally by TinyFlag for loading and parsing flag sources. These are exported from `packages/core/src/loader.ts` but are **not re-exported from the public API** — they are intended for advanced use cases such as custom loaders or build-time tooling.
 
+> **Note:** These functions are not available via a subpath export. Import them directly from the source file:
+
 ```typescript
-import { detectSourceType, parseSource, loadFromFile, loadFromUrl, loadFromInline } from 'tinyflag/loader';
+// Direct file-level import (internal use only)
+import { detectSourceType, parseSource, loadFromFile, loadFromUrl, loadFromInline } from 'tinyflag/dist/loader.js';
 ```
 
 ### `detectSourceType(source: string | FlagConfig): SourceType`
