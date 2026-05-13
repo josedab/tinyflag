@@ -114,3 +114,50 @@ rules:
     rollout: 50
 rollout: 0 # Free users don't get it
 ```
+
+## Edge Cases & Gotchas
+
+### Null or Undefined Context Fields
+
+If a context field used in a condition is `null` or `undefined`, the condition silently does **not match**. No error is emitted.
+
+```yaml
+rules:
+  - conditions:
+      plan: pro
+    enabled: true
+```
+
+```typescript
+// context.plan is undefined → condition does not match → rule skipped
+ff.isEnabled('feature', { userId: 'u1' }); // falls through to default
+```
+
+### Empty Conditions Object
+
+A rule with an empty `conditions: {}` object is [vacuous truth](https://en.wikipedia.org/wiki/Vacuous_truth) — it **always matches**, regardless of context.
+
+```yaml
+rules:
+  - conditions: {}
+    enabled: true # This rule always matches
+```
+
+Use this pattern intentionally to create a catch-all rule at the end of a rule list.
+
+### `$not` with Missing Fields
+
+If the context field referenced by `$not` is missing (or `null`/`undefined`), the condition does **not match**. This means `$not` cannot be used to match "field is absent."
+
+```yaml
+rules:
+  - conditions:
+      plan: { $not: free }
+    enabled: true
+```
+
+```typescript
+// context has no 'plan' field → condition does not match (not "plan is not free")
+ff.isEnabled('feature', { userId: 'u1' }); // rule skipped
+ff.isEnabled('feature', { userId: 'u1', plan: 'pro' }); // rule matches
+```
