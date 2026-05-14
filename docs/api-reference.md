@@ -63,7 +63,13 @@ Remove all flag overrides.
 
 #### `destroy(): void`
 
-Clean up file watchers, polling timers, and event listeners.
+Clean up all resources held by the TinyFlag instance:
+
+- Stops the polling timer (if URL source with `pollInterval`)
+- Closes the file watcher (if file source with `watch: true`)
+- Removes all event listeners (`exposure`, `change`, `error`)
+- Clears the exposure deduplication cache
+- Clears all flag overrides
 
 ## Utility Functions
 
