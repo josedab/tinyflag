@@ -32,6 +32,12 @@ export interface ProvideTinyFlagOptions {
   watch?: boolean;
   /** Strict validation mode. */
   strict?: boolean;
+  /** Deduplicate exposure events per (flag, userId). Default: true. */
+  deduplicate?: boolean;
+  /** Timeout in ms for fetching flags from a URL. Default: 5000. */
+  fetchTimeout?: number;
+  /** Enable debug logging. Default: false. */
+  debug?: boolean;
   /** Pre-initialized TinyFlag instance (for SSR/Nuxt). */
   instance?: TinyFlag;
 }
@@ -49,6 +55,9 @@ export function provideTinyFlag(options: ProvideTinyFlagOptions): TinyFlag {
       pollInterval: options.pollInterval,
       watch: options.watch,
       strict: options.strict,
+      deduplicate: options.deduplicate,
+      fetchTimeout: options.fetchTimeout,
+      debug: options.debug,
     });
 
   const version = ref(0);

@@ -27,6 +27,12 @@ export interface CreateTinyFlagOptions {
   watch?: boolean;
   /** Strict validation mode. */
   strict?: boolean;
+  /** Deduplicate exposure events per (flag, userId). Default: true. */
+  deduplicate?: boolean;
+  /** Timeout in ms for fetching flags from a URL. Default: 5000. */
+  fetchTimeout?: number;
+  /** Enable debug logging. Default: false. */
+  debug?: boolean;
   /** Pre-initialized TinyFlag instance (for SSR/SvelteKit). */
   instance?: TinyFlag;
 }
@@ -50,6 +56,9 @@ export function createTinyFlag(options: CreateTinyFlagOptions): {
       pollInterval: options.pollInterval,
       watch: options.watch,
       strict: options.strict,
+      deduplicate: options.deduplicate,
+      fetchTimeout: options.fetchTimeout,
+      debug: options.debug,
     });
 
   const ctxStore = writable<UserContext | undefined>(options.context);
@@ -100,9 +109,7 @@ function getTinyFlagContext(): TinyFlagContext {
 
   if (fallbackCtx) return fallbackCtx;
 
-  throw new Error(
-    'flag()/variant()/setContext() requires createTinyFlag() to be called first.',
-  );
+  throw new Error('flag()/variant()/setContext() requires createTinyFlag() to be called first.');
 }
 
 /**

@@ -23,6 +23,12 @@ export interface TinyFlagProviderProps {
   watch?: boolean;
   /** Strict validation mode. */
   strict?: boolean;
+  /** Deduplicate exposure events per (flag, userId). Default: true. */
+  deduplicate?: boolean;
+  /** Timeout in ms for fetching flags from a URL. Default: 5000. */
+  fetchTimeout?: number;
+  /** Enable debug logging. Default: false. */
+  debug?: boolean;
   /** Pre-initialized TinyFlag instance (for SSR). */
   instance?: TinyFlag;
   children?: React.ReactNode;
@@ -39,6 +45,9 @@ export function TinyFlagProvider({
   pollInterval,
   watch,
   strict,
+  deduplicate,
+  fetchTimeout,
+  debug,
   instance: externalInstance,
   children,
 }: TinyFlagProviderProps): React.ReactElement {
@@ -46,7 +55,16 @@ export function TinyFlagProvider({
 
   const instance = useMemo(() => {
     if (externalInstance) return externalInstance;
-    return new TinyFlag({ source, headers, pollInterval, watch, strict });
+    return new TinyFlag({
+      source,
+      headers,
+      pollInterval,
+      watch,
+      strict,
+      deduplicate,
+      fetchTimeout,
+      debug,
+    });
   }, [externalInstance, source]);
 
   useEffect(() => {
