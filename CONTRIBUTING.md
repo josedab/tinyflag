@@ -12,6 +12,8 @@ pnpm -r build
 pnpm -r test
 ```
 
+Run `pnpm doctor` to verify your environment is configured correctly. It checks Node.js ≥18, pnpm installation, built packages, git setup, and husky hooks.
+
 ## Project Structure
 
 ```
@@ -41,6 +43,15 @@ docs/         → Documentation
    - `chore:` tooling/dependencies
 6. Open a PR against `main`
 
+### Git Hooks
+
+Running `pnpm install` automatically sets up [husky](https://typicode.github.io/husky/) git hooks:
+
+- **commitlint** validates your commit messages follow the Conventional Commits format above. Non-conforming commits are rejected.
+- **lint-staged** auto-formats staged files with Prettier on commit.
+
+No manual setup is needed — hooks are installed automatically.
+
 ## Code Standards
 
 - TypeScript strict mode
@@ -61,6 +72,14 @@ cd packages/core && pnpm test:coverage
 # Single file
 cd packages/core && npx vitest run src/__tests__/evaluator.test.ts
 ```
+
+CI enforces ≥90% line and patch coverage via [Codecov](https://codecov.io/). To check coverage locally before pushing:
+
+```bash
+cd packages/core && pnpm test:coverage
+```
+
+The coverage report is generated in `packages/core/coverage/`.
 
 ## Reporting Issues
 
