@@ -16,6 +16,14 @@ flags:
     variants?: Variant[] # Optional — A/B test variants
 ```
 
+### Version
+
+The `version` field identifies the schema version of the flag file. Currently, only `version: 1` is supported.
+
+- **Optional:** The `version` field can be omitted. When absent, TinyFlag assumes version 1 semantics.
+- **Valid values:** Only `1` is accepted. Any other value will cause a validation error.
+- **Future compatibility:** New schema versions may be introduced for breaking changes to the flag format. When that happens, TinyFlag will use the `version` field to determine how to parse the file. Always include `version: 1` explicitly to ensure forward compatibility.
+
 ### Flag Names
 
 Flag names must be kebab-case: lowercase letters, digits, and hyphens. Cannot start or end with a hyphen. Maximum 128 characters.
