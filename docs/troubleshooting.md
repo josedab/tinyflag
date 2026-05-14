@@ -179,3 +179,56 @@ Debug messages are logged via `console.debug()` and prefixed with `[tinyflag]`.
 - [GitHub Issues](https://github.com/josedab/tinyflag/issues) — Bug reports and feature requests
 - [API Reference](./api-reference.md) — Full SDK API documentation
 - [Flag Format](./flag-format.md) — YAML/JSON flag configuration reference
+
+## Error Handling Patterns
+
+### Wrapping `init()` in try/catch
+
+`init()` throws when the flag source is unreachable or contains validation errors. Always wrap it:
+
+```typescript
+const ff = new TinyFlag({ source: './flags.yml' });
+
+try {
+  await ff.init();
+} catch (err) {
+  console.error('Failed to initialize flags:', err);
+  // App continues — all flags return false / null by default
+}
+```
+
+If `init()` fails, the SDK is still usable: `isEnabled()` returns `false` and `getVariant()` returns `null` for all flags, since no flags were loaded.
+
+### Monitoring with Error Events
+
+Attach an `error` listener early to capture non-fatal issues (unknown flags, load failures on reload, insecure sources):
+
+```typescript
+ff.on('error', (e) => {
+  logger.warn({ code: e.code, message: e.message, flag: e.flagName }, 'TinyFlag error');
+  // Send to your monitoring system (e.g., Sentry, Datadog)
+});
+```
+
+### Graceful Degradation on Reload Failures
+
+When using URL or file sources with polling/watching, reload failures emit a `LOAD_ERROR` event but **do not discard the current flags**. The SDK continues serving the last successfully loaded configuration:
+
+```typescript
+ff.on('error', (e) => {
+  if (e.code === 'LOAD_ERROR') {
+    console.warn('Flag reload failed — serving stale flags:', e.message);
+  }
+});
+```
+
+### Cleanup on Shutdown
+
+Always call `destroy()` in server shutdown handlers to stop file watchers and polling timers:
+
+```typescript
+process.on('SIGTERM', () => {
+  ff.destroy();
+  process.exit(0);
+});
+```
