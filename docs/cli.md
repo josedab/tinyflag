@@ -10,7 +10,24 @@ npm install -g tinyflag-cli
 npx tinyflag <command>
 ```
 
+## Global Options
+
+| Option   | Description                                          |
+| -------- | ---------------------------------------------------- |
+| `--json` | Output structured JSON instead of human-readable text |
+
+The `--json` flag works with all commands (`validate`, `generate`, `diff`) and is useful for CI/CD pipelines and scripting.
+
 ## Commands
+
+### `help`
+
+Show usage information with all commands and options.
+
+```bash
+npx tinyflag help
+npx tinyflag --help
+```
 
 ### `validate`
 
@@ -18,7 +35,16 @@ Validate a flag file against the schema.
 
 ```bash
 npx tinyflag validate ./flags.yml
+npx tinyflag validate ./flags.yml --strict
+npx tinyflag validate ./flags.yml --watch
+npx tinyflag validate ./flags.yml --watch --strict
+npx tinyflag validate ./flags.yml --json
 ```
+
+| Option     | Description                                                |
+| ---------- | ---------------------------------------------------------- |
+| `--strict` | Strict schema validation — reject unknown fields as errors |
+| `--watch`  | Re-validate automatically when the file changes            |
 
 Exit code `0` on success, `1` on failure with detailed error messages:
 
@@ -28,6 +54,18 @@ Exit code `0` on success, `1` on failure with detailed error messages:
   - flags.dark-mode: missing required field "enabled"
 ```
 
+With `--json`, outputs structured validation results:
+
+```json
+{
+  "command": "validate",
+  "file": "./flags.yml",
+  "valid": true,
+  "flagCount": 3,
+  "flags": ["dark-mode", "new-checkout", "payment-v2"]
+}
+```
+
 ### `generate`
 
 Generate TypeScript type definitions from a flag file.
@@ -35,6 +73,7 @@ Generate TypeScript type definitions from a flag file.
 ```bash
 npx tinyflag generate ./flags.yml                    # stdout
 npx tinyflag generate ./flags.yml -o ./src/flags.d.ts # write to file
+npx tinyflag generate ./flags.yml --json             # JSON output
 ```
 
 Output:
@@ -54,6 +93,7 @@ Show flag changes between two git refs.
 ```bash
 npx tinyflag diff main..HEAD
 npx tinyflag diff main..HEAD --file config/flags.yml
+npx tinyflag diff main..HEAD --json
 ```
 
 Output:
