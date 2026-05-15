@@ -30,9 +30,25 @@ cp packages/dashboard/index.html docs/dashboard.html
 
 # Vercel / Netlify
 # Just serve the HTML file
+```
 
-# Auto-load flags from URL
-# Add ?url=https://raw.githubusercontent.com/.../flags.yml to the URL
+## Auto-Load from URL
+
+Append the `?url=` query parameter to automatically load flags when the dashboard opens. This is useful for bookmarks and shared links.
+
+```
+https://your-dashboard.example.com/?url=https://raw.githubusercontent.com/your-org/your-repo/main/flags.yml
+```
+
+**Requirements:**
+- The URL must point to a valid YAML or JSON flag file.
+- URL-encode the value if it contains special characters (e.g., `&`, `=`).
+- The remote server must allow CORS requests from the dashboard origin.
+
+**Example with GitHub raw URLs:**
+
+```
+https://your-dashboard.example.com/?url=https%3A%2F%2Fraw.githubusercontent.com%2Fyour-org%2Fyour-repo%2Fmain%2Fflags.yml
 ```
 
 ## Limitations
