@@ -37,6 +37,19 @@ const checkoutVariant = variant('new-checkout');
 
 Initialize TinyFlag. Call once at the root of your app.
 
+| Option         | Type                     | Required | Default | Description                              |
+| -------------- | ------------------------ | -------- | ------- | ---------------------------------------- |
+| `source`       | `string \| FlagConfig`   | Yes      | —       | Flag source (file path, URL, or inline)  |
+| `context`      | `UserContext`            | No       | —       | User context for evaluation              |
+| `headers`      | `Record<string, string>` | No       | —       | HTTP headers for URL source              |
+| `pollInterval` | `number`                 | No       | `60000` | URL polling interval (ms). Min: 5000     |
+| `watch`        | `boolean`                | No       | `true`  | File watching (file source only)         |
+| `strict`       | `boolean`                | No       | `false` | Strict validation                        |
+| `deduplicate`  | `boolean`                | No       | `true`  | Deduplicate exposure events              |
+| `fetchTimeout` | `number`                 | No       | `5000`  | URL fetch timeout (ms)                   |
+| `debug`        | `boolean`                | No       | `false` | Enable debug logging                     |
+| `instance`     | `TinyFlag`               | No       | —       | Pre-initialized instance (SSR/SvelteKit) |
+
 ### `flag(flagName: string): Readable<boolean>`
 
 Returns a Svelte `Readable` store. Use with `$` syntax.
@@ -73,3 +86,20 @@ export async function handle({ event, resolve }) {
 ```
 
 See the [SvelteKit example](../examples/svelte-kit/) for more details.
+
+## Error Handling
+
+> **Note:** When `createTinyFlag()` creates its own TinyFlag instance (i.e., no `instance` option), `init()` errors are silently caught. This prevents unhandled promise rejections but means initialization failures will go unnoticed — all flags will return `false` and all variants will return `null`.
+
+For proper error handling, pre-initialize the instance with `try/catch` and pass it via the `instance` option:
+
+```ts
+const ff = new TinyFlag({ source: './flags.yml' });
+try {
+  await ff.init();
+} catch (err) {
+  console.error('Failed to load flags:', err);
+}
+
+const { destroy } = createTinyFlag({ instance: ff, context: { userId: '123' } });
+```

@@ -34,15 +34,18 @@ function Dashboard() {
 
 ### `<TinyFlagProvider>`
 
-| Prop           | Type                     | Required | Description                    |
-| -------------- | ------------------------ | -------- | ------------------------------ |
-| `source`       | `string \| FlagConfig`   | Yes      | Flag source                    |
-| `context`      | `UserContext`            | No       | User context for evaluation    |
-| `headers`      | `Record<string, string>` | No       | HTTP headers for URL source    |
-| `pollInterval` | `number`                 | No       | URL polling interval (ms)      |
-| `watch`        | `boolean`                | No       | File watching                  |
-| `strict`       | `boolean`                | No       | Strict validation              |
-| `instance`     | `TinyFlag`               | No       | Pre-initialized instance (SSR) |
+| Prop           | Type                     | Required | Default | Description                    |
+| -------------- | ------------------------ | -------- | ------- | ------------------------------ |
+| `source`       | `string \| FlagConfig`   | Yes      | —       | Flag source                    |
+| `context`      | `UserContext`            | No       | —       | User context for evaluation    |
+| `headers`      | `Record<string, string>` | No       | —       | HTTP headers for URL source    |
+| `pollInterval` | `number`                 | No       | `60000` | URL polling interval (ms)      |
+| `watch`        | `boolean`                | No       | `true`  | File watching                  |
+| `strict`       | `boolean`                | No       | `false` | Strict validation              |
+| `deduplicate`  | `boolean`                | No       | `true`  | Deduplicate exposure events    |
+| `fetchTimeout` | `number`                 | No       | `5000`  | URL fetch timeout (ms)         |
+| `debug`        | `boolean`                | No       | `false` | Enable debug logging           |
+| `instance`     | `TinyFlag`               | No       | —       | Pre-initialized instance (SSR) |
 
 ### `useFlag(flagName: string): boolean`
 
@@ -78,3 +81,22 @@ export default function Layout({ children }) {
 ```
 
 See the [Next.js example](../examples/nextjs/) for a complete setup.
+
+## Error Handling
+
+> **Note:** When the provider creates its own TinyFlag instance (i.e., no `instance` prop), `init()` errors are silently caught. This prevents unhandled promise rejections but means initialization failures will go unnoticed — all flags will return `false` and all variants will return `null`.
+
+For proper error handling, pre-initialize the instance with `try/catch` and pass it via the `instance` prop:
+
+```tsx
+const ff = new TinyFlag({ source: './flags.yml' });
+try {
+  await ff.init();
+} catch (err) {
+  console.error('Failed to load flags:', err);
+}
+
+<TinyFlagProvider instance={ff} context={{ userId: '123' }}>
+  <App />
+</TinyFlagProvider>
+```
