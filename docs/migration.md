@@ -27,6 +27,49 @@
 4. Replace `variation()` calls with `isEnabled()` / `getVariant()`
 5. Update CI/CD to validate `flags.yml` on PRs
 
+### Configuration Examples
+
+**Percentage rollout:**
+
+```yaml
+# LaunchDarkly: 30% rollout via dashboard targeting
+# TinyFlag equivalent:
+flags:
+  new-checkout:
+    enabled: true
+    rollout: 30
+```
+
+**Multi-variant (A/B test):**
+
+```yaml
+# LaunchDarkly: multivariate flag with "control" (50%) and "new-flow" (50%)
+# TinyFlag equivalent:
+flags:
+  checkout-experiment:
+    enabled: true
+    variants:
+      - name: control
+        weight: 50
+      - name: new-flow
+        weight: 50
+```
+
+**Targeted rollout (specific users):**
+
+```yaml
+# LaunchDarkly: targeting rule for "pro" plan users
+# TinyFlag equivalent:
+flags:
+  premium-feature:
+    enabled: false
+    rules:
+      - conditions:
+          plan: pro
+        enabled: true
+        rollout: 100
+```
+
 ## From Unleash
 
 | Unleash                        | TinyFlag                                  |
@@ -51,3 +94,49 @@
 3. Create `flags.yml` with the equivalent configuration
 4. Replace Unleash client calls with TinyFlag
 5. Decommission the Unleash server
+
+### Configuration Examples
+
+**Gradual rollout strategy:**
+
+```yaml
+# Unleash: gradualRollout strategy at 25%
+# TinyFlag equivalent:
+flags:
+  new-dashboard:
+    enabled: true
+    rollout: 25
+```
+
+**UserID-based strategy:**
+
+```yaml
+# Unleash: userWithId strategy targeting specific users
+# TinyFlag equivalent:
+flags:
+  beta-feature:
+    enabled: false
+    rules:
+      - conditions:
+          userId: user-42
+        enabled: true
+      - conditions:
+          userId: user-99
+        enabled: true
+```
+
+**Gradual rollout with variant:**
+
+```yaml
+# Unleash: gradualRollout with variants (A/B)
+# TinyFlag equivalent:
+flags:
+  search-experiment:
+    enabled: true
+    rollout: 50
+    variants:
+      - name: control
+        weight: 50
+      - name: new-algorithm
+        weight: 50
+```
