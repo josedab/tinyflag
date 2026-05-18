@@ -43,6 +43,29 @@ docs/         → Documentation
    - `chore:` tooling/dependencies
 6. Open a PR against `main`
 
+### Changesets
+
+TinyFlag uses [Changesets](https://github.com/changesets/changesets) for versioning and publishing. When your PR includes user-facing changes, create a changeset:
+
+```bash
+pnpm changeset
+```
+
+This will prompt you to:
+1. **Select packages** — choose which packages are affected
+2. **Choose bump type** — `major` (breaking changes), `minor` (new features), or `patch` (bug fixes)
+3. **Write a summary** — describe the change for the changelog
+
+A `.changeset/*.md` file is created and committed with your PR.
+
+**When to create a changeset:**
+- ✅ Bug fixes, new features, breaking changes, dependency updates affecting public API
+- ❌ Documentation-only changes, test changes, internal refactors with no public API impact
+
+**Automated release pipeline:** When changeset PRs are merged to `main`, the [release workflow](.github/workflows/release.yml) automatically creates a "Version Packages" PR that bumps versions and updates changelogs. Merging that PR publishes to npm.
+
+**Excluded packages:** The `dashboard` and `github-action` packages are excluded from changesets and are not published to npm.
+
 ### Git Hooks
 
 Running `pnpm install` automatically sets up [husky](https://typicode.github.io/husky/) git hooks:
