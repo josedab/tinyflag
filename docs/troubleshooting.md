@@ -180,6 +180,76 @@ Debug messages are logged via `console.debug()` and prefixed with `[tinyflag]`.
 - [API Reference](./api-reference.md) — Full SDK API documentation
 - [Flag Format](./flag-format.md) — YAML/JSON flag configuration reference
 
+## Debugging Flag Evaluation
+
+When a flag isn't behaving as expected, follow this step-by-step workflow to diagnose the issue.
+
+### 1. Enable Debug Logging
+
+Turn on debug mode to trace evaluation steps:
+
+```ts
+import { setDebug } from 'tinyflag';
+setDebug(true);
+```
+
+Debug output shows initialization, flag loading, rule matching, rollout hash calculations, and variant assignment. Look for lines like:
+
+```
+[tinyflag] Evaluating flag: new-checkout { userId: 'user-1' }
+[tinyflag] Rollout check: hash=42, rollout=50, result=true
+```
+
+### 2. Inspect Loaded Flags
+
+Verify that your flag definitions were loaded correctly:
+
+```ts
+const flags = ff.getFlags();
+console.log(JSON.stringify(flags['my-flag'], null, 2));
+```
+
+Check that `enabled`, `rollout`, `rules`, and `variants` match your expectations.
+
+### 3. Evaluate All Flags at Once
+
+Use `getAllFlags()` to see how all flags evaluate for a specific user:
+
+```ts
+const results = ff.getAllFlags({ userId: 'user-123', plan: 'pro' });
+console.log(results);
+// { 'new-checkout': { enabled: true, variant: 'new-flow' }, ... }
+```
+
+This reveals whether the issue is isolated to one flag or affects multiple flags.
+
+### 4. Check Rules Evaluation Order
+
+Rules are evaluated top-to-bottom — **the first matching rule wins**. If a flag has multiple rules, verify the order in your flag file:
+
+```yaml
+rules:
+  - conditions: { plan: enterprise }  # Checked first
+    enabled: true
+  - conditions: { plan: pro }         # Checked second
+    enabled: true
+    rollout: 50
+```
+
+A user matching both rules will get the first rule's behavior.
+
+### 5. Verify userId for Rollout/Variant Features
+
+Rollout percentages and variant assignments require a `userId` in the context. Without it, rollout is non-deterministic and variants return `null`:
+
+```ts
+// ❌ No userId — rollout won't be consistent
+ff.isEnabled('my-flag', { plan: 'pro' });
+
+// ✅ Provide userId for deterministic evaluation
+ff.isEnabled('my-flag', { userId: 'user-123', plan: 'pro' });
+```
+
 ## Error Handling Patterns
 
 ### Wrapping `init()` in try/catch
