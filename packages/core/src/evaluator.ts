@@ -1,4 +1,4 @@
-import type { FlagDefinition, Rule, UserContext } from './types.js';
+import type { FlagDefinition, FlagConfig, Rule, UserContext } from './types.js';
 import { rolloutBucket, selectVariant } from './hash.js';
 
 /**
@@ -94,6 +94,188 @@ export function matchRule(rule: Rule, context: UserContext): boolean {
 }
 
 /**
+ * Check if a flag's schedule overrides its enabled state at the current time.
+ * Returns the effective enabled state after applying schedule.
+ */
+function applySchedule(flag: FlagDefinition, now: number = Date.now()): boolean {
+  if (!flag.schedule) return flag.enabled;
+
+  const { enableAt, disableAt } = flag.schedule;
+
+  if (enableAt) {
+    const enableTime = new Date(enableAt).getTime();
+    if (!isNaN(enableTime) && now < enableTime) return false;
+  }
+
+  if (disableAt) {
+    const disableTime = new Date(disableAt).getTime();
+    if (!isNaN(disableTime) && now >= disableTime) return false;
+  }
+
+  return flag.enabled;
+}
+
+/**
+ * Recursively check if all prerequisite flags are enabled.
+ * Uses a visiting set to detect circular dependencies at evaluation time.
+ */
+function checkPrerequisites(
+  flagName: string,
+  allFlags: Record<string, FlagDefinition>,
+  context: UserContext | undefined,
+  visiting: Set<string>,
+  cache: Map<string, boolean>,
+): boolean {
+  if (cache.has(flagName)) return cache.get(flagName)!;
+  if (visiting.has(flagName)) return false; // circular dependency
+
+  const flag = allFlags[flagName];
+  if (!flag) return false;
+
+  visiting.add(flagName);
+
+  if (flag.requires && flag.requires.length > 0) {
+    for (const reqName of flag.requires) {
+      if (!checkPrerequisites(reqName, allFlags, context, visiting, cache)) {
+        visiting.delete(flagName);
+        cache.set(flagName, false);
+        return false;
+      }
+      // Check if the prerequisite itself evaluates as enabled
+      const reqFlag = allFlags[reqName];
+      if (!reqFlag || !evaluateFlagCore(reqName, reqFlag, context)) {
+        visiting.delete(flagName);
+        cache.set(flagName, false);
+        return false;
+      }
+    }
+  }
+
+  visiting.delete(flagName);
+  cache.set(flagName, true);
+  return true;
+}
+
+/**
+ * Detect circular dependencies in flag requirements using topological sort.
+ * Returns an array of cycle paths (empty if no cycles).
+ */
+export function detectCircularDependencies(
+  flags: Record<string, FlagDefinition>,
+): string[][] {
+  const cycles: string[][] = [];
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const path: string[] = [];
+
+  function dfs(name: string): void {
+    if (inStack.has(name)) {
+      const cycleStart = path.indexOf(name);
+      cycles.push([...path.slice(cycleStart), name]);
+      return;
+    }
+    if (visited.has(name)) return;
+
+    visited.add(name);
+    inStack.add(name);
+    path.push(name);
+
+    const flag = flags[name];
+    if (flag?.requires) {
+      for (const req of flag.requires) {
+        dfs(req);
+      }
+    }
+
+    path.pop();
+    inStack.delete(name);
+  }
+
+  for (const name of Object.keys(flags)) {
+    dfs(name);
+  }
+
+  return cycles;
+}
+
+/**
+ * Build an ASCII dependency tree for a flag.
+ */
+export function buildDependencyTree(
+  flagName: string,
+  flags: Record<string, FlagDefinition>,
+  indent: string = '',
+  visited: Set<string> = new Set(),
+): string {
+  const lines: string[] = [];
+  const flag = flags[flagName];
+  const status = flag ? (flag.enabled ? '✅' : '❌') : '⚠️';
+  lines.push(`${indent}${flagName} ${status}`);
+
+  if (visited.has(flagName)) {
+    lines.push(`${indent}  ↻ (circular)`);
+    return lines.join('\n');
+  }
+  visited.add(flagName);
+
+  if (flag?.requires && flag.requires.length > 0) {
+    for (let i = 0; i < flag.requires.length; i++) {
+      const req = flag.requires[i];
+      const isLast = i === flag.requires.length - 1;
+      const prefix = isLast ? '└── ' : '├── ';
+      const childIndent = indent + (isLast ? '    ' : '│   ');
+      const subtree = buildDependencyTree(req, flags, '', new Set(visited));
+      const subtreeLines = subtree.split('\n');
+      lines.push(`${indent}${prefix}${subtreeLines[0]}`);
+      for (let j = 1; j < subtreeLines.length; j++) {
+        lines.push(`${childIndent}${subtreeLines[j]}`);
+      }
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/** Core evaluation logic without prerequisite checking (used internally). */
+function evaluateFlagCore(
+  flagName: string,
+  flag: FlagDefinition,
+  context?: UserContext,
+): boolean {
+  const scheduledEnabled = applySchedule(flag);
+  if (!scheduledEnabled) return false;
+  if (!flag.enabled) return false;
+
+  if (flag.rules && flag.rules.length > 0 && context) {
+    for (const rule of flag.rules) {
+      if (matchRule(rule, context)) {
+        const ruleEnabled = rule.enabled !== undefined ? rule.enabled : true;
+        if (ruleEnabled && rule.rollout !== undefined && context.userId) {
+          const bucket = rolloutBucket(flagName, context.userId);
+          return bucket < rule.rollout;
+        }
+        return ruleEnabled;
+      }
+    }
+  }
+
+  if (flag.rollout !== undefined && context?.userId) {
+    const bucket = rolloutBucket(flagName, context.userId);
+    return bucket < flag.rollout;
+  }
+
+  return flag.enabled;
+}
+
+/** All flags context for prerequisite evaluation. Set by TinyFlag before calling evaluate. */
+let currentFlags: Record<string, FlagDefinition> = {};
+
+/** Set the current flag context for prerequisite evaluation. */
+export function setEvaluationContext(flags: Record<string, FlagDefinition>): void {
+  currentFlags = flags;
+}
+
+/**
  * Core flag evaluation: determines if a flag is enabled for a given context.
  * Never throws — returns false for any error case.
  */
@@ -102,6 +284,18 @@ export function evaluateFlag(
   flag: FlagDefinition,
   context?: UserContext,
 ): boolean {
+  // Step 0: Check prerequisites
+  if (flag.requires && flag.requires.length > 0) {
+    const cache = new Map<string, boolean>();
+    if (!checkPrerequisites(flagName, currentFlags, context, new Set(), cache)) {
+      return false;
+    }
+  }
+
+  // Step 1: Check schedule
+  const scheduledEnabled = applySchedule(flag);
+  if (!scheduledEnabled) return false;
+
   // Step 2: If disabled, always false
   if (!flag.enabled) return false;
 
@@ -145,7 +339,17 @@ export function evaluateVariant(
   flag: FlagDefinition,
   context?: UserContext,
 ): { variant: string | null; enabled: boolean } {
+  if (!applySchedule(flag)) return { variant: null, enabled: false };
   if (!flag.enabled) return { variant: null, enabled: false };
+
+  // Check prerequisites
+  if (flag.requires && flag.requires.length > 0) {
+    const cache = new Map<string, boolean>();
+    if (!checkPrerequisites(flagName, currentFlags, context, new Set(), cache)) {
+      return { variant: null, enabled: false };
+    }
+  }
+
   if (!flag.variants || flag.variants.length === 0) {
     return { variant: null, enabled: evaluateFlag(flagName, flag, context) };
   }
