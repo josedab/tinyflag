@@ -24,6 +24,14 @@ export interface Variant {
   weight: number;
 }
 
+/** Schedule for automatic flag enable/disable (ISO 8601 with timezone offset). */
+export interface FlagSchedule {
+  /** ISO 8601 datetime when the flag should be enabled. */
+  enableAt?: string;
+  /** ISO 8601 datetime when the flag should be disabled. */
+  disableAt?: string;
+}
+
 /** Definition of a single feature flag. */
 export interface FlagDefinition {
   /** Whether this flag is globally enabled. Required. */
@@ -38,6 +46,10 @@ export interface FlagDefinition {
   rules?: readonly Rule[];
   /** A/B test variants with relative weights. */
   variants?: readonly Variant[];
+  /** Scheduled enable/disable times (ISO 8601 with timezone offset). */
+  schedule?: FlagSchedule;
+  /** Prerequisite flag names that must be enabled for this flag to evaluate as enabled. */
+  requires?: readonly string[];
 }
 
 /** Root flag configuration loaded from a source. */
@@ -48,6 +60,13 @@ export interface FlagConfig {
   flags: Record<string, FlagDefinition>;
 }
 
+/** Warning emitted during multi-source flag merging. */
+export interface MergeWarning {
+  flag: string;
+  field: string;
+  message: string;
+}
+
 /** Configuration options for the TinyFlag SDK. */
 export interface TinyFlagOptions {
   /**
@@ -55,8 +74,9 @@ export interface TinyFlagOptions {
    * - File path string ending in .yml/.yaml/.json (Node/Bun/Deno only)
    * - URL string starting with http:// or https:// (all runtimes)
    * - Inline FlagConfig object (all runtimes)
+   * - Array of the above for multi-file merging (base + environment overlays)
    */
-  source: string | FlagConfig;
+  source: string | FlagConfig | Array<string | FlagConfig>;
   /** Custom HTTP headers for URL sources (e.g., Authorization). */
   headers?: Record<string, string>;
   /** Polling interval in ms for URL sources. Default: 60000. Minimum: 5000. */
