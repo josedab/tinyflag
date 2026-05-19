@@ -1,4 +1,4 @@
-import type { FlagConfig, FlagDefinition, Rule, Variant, ValidationError } from './types.js';
+import type { FlagConfig, FlagDefinition, FlagSchedule, Rule, Variant, ValidationError } from './types.js';
 
 const FLAG_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 const MAX_FLAG_NAME_LENGTH = 128;
@@ -156,8 +156,50 @@ function validateFlagDefinition(
     }
   }
 
+  // requires
+  if (flag.requires !== undefined) {
+    if (!Array.isArray(flag.requires)) {
+      errors.push({ path: `${prefix}.requires`, message: '"requires" must be an array of flag name strings' });
+    } else {
+      for (let i = 0; i < flag.requires.length; i++) {
+        if (typeof flag.requires[i] !== 'string' || flag.requires[i] === '') {
+          errors.push({ path: `${prefix}.requires[${i}]`, message: 'Required flag name must be a non-empty string' });
+        }
+      }
+    }
+  }
+
+  // schedule
+  if (flag.schedule !== undefined) {
+    if (typeof flag.schedule !== 'object' || flag.schedule === null || Array.isArray(flag.schedule)) {
+      errors.push({ path: `${prefix}.schedule`, message: '"schedule" must be an object' });
+    } else {
+      const schedule = flag.schedule as Record<string, unknown>;
+      if (schedule.enableAt !== undefined) {
+        if (typeof schedule.enableAt !== 'string') {
+          errors.push({ path: `${prefix}.schedule.enableAt`, message: '"enableAt" must be an ISO 8601 string' });
+        } else if (isNaN(new Date(schedule.enableAt).getTime())) {
+          errors.push({ path: `${prefix}.schedule.enableAt`, message: `Invalid ISO 8601 date: "${schedule.enableAt}"` });
+        }
+      }
+      if (schedule.disableAt !== undefined) {
+        if (typeof schedule.disableAt !== 'string') {
+          errors.push({ path: `${prefix}.schedule.disableAt`, message: '"disableAt" must be an ISO 8601 string' });
+        } else if (isNaN(new Date(schedule.disableAt).getTime())) {
+          errors.push({ path: `${prefix}.schedule.disableAt`, message: `Invalid ISO 8601 date: "${schedule.disableAt}"` });
+        }
+      }
+      const knownScheduleFields = new Set(['enableAt', 'disableAt']);
+      for (const key of Object.keys(schedule)) {
+        if (!knownScheduleFields.has(key)) {
+          errors.push({ path: `${prefix}.schedule.${key}`, message: `Unknown schedule field "${key}"` });
+        }
+      }
+    }
+  }
+
   if (strict) {
-    const knownFields = new Set(['enabled', 'description', 'tags', 'rollout', 'rules', 'variants']);
+    const knownFields = new Set(['enabled', 'description', 'tags', 'rollout', 'rules', 'variants', 'schedule', 'requires']);
     for (const key of Object.keys(flag)) {
       if (!knownFields.has(key)) {
         errors.push({ path: `${prefix}.${key}`, message: `Unknown field "${key}"` });
@@ -292,6 +334,18 @@ export function parseFlagConfig(
       }));
     }
 
+    if (d.schedule !== undefined) {
+      const s = d.schedule as Record<string, unknown>;
+      const schedule: FlagSchedule = {};
+      if (s.enableAt !== undefined) schedule.enableAt = s.enableAt as string;
+      if (s.disableAt !== undefined) schedule.disableAt = s.disableAt as string;
+      flagDef.schedule = schedule;
+    }
+
+    if (d.requires !== undefined) {
+      flagDef.requires = d.requires as string[];
+    }
+
     // Detect unknown flag fields in lenient mode
     if (!strict) {
       const knownFields = new Set([
@@ -301,6 +355,8 @@ export function parseFlagConfig(
         'rollout',
         'rules',
         'variants',
+        'schedule',
+        'requires',
       ]);
       for (const key of Object.keys(d)) {
         if (!knownFields.has(key)) {

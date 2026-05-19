@@ -53,6 +53,15 @@
           "type": "array",
           "items": { "$ref": "#/definitions/Variant" },
           "description": "A/B test variants with relative weights."
+        },
+        "schedule": {
+          "$ref": "#/definitions/Schedule",
+          "description": "Scheduled enable/disable times (ISO 8601 with timezone offset)."
+        },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Prerequisite flag names that must be enabled."
         }
       },
       "required": ["enabled"],
@@ -97,6 +106,20 @@
         }
       },
       "required": ["name", "weight"]
+    },
+    "Schedule": {
+      "type": "object",
+      "properties": {
+        "enableAt": {
+          "type": "string",
+          "description": "ISO 8601 datetime with timezone offset when the flag should be enabled."
+        },
+        "disableAt": {
+          "type": "string",
+          "description": "ISO 8601 datetime with timezone offset when the flag should be disabled."
+        }
+      },
+      "additionalProperties": false
     }
   }
 }
