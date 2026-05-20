@@ -1,19 +1,23 @@
 import { readFileSync, writeFileSync, existsSync, watch } from 'fs';
 import { execSync } from 'child_process';
 import { dirname } from 'path';
-import { parseYaml, parseFlagConfig } from 'tinyflag';
+import { parseYaml, parseFlagConfig, mergeFlagConfigs, detectCircularDependencies, buildDependencyTree } from 'tinyflag';
+import type { FlagConfig } from 'tinyflag';
 import { generateTypes } from './generate.js';
 import { diffConfigs, formatChanges } from './diff.js';
+import { scanFlagUsage, generateStaleReport, formatStaleReport } from './stale.js';
 
 const USAGE = `
 Usage: tinyflag <command> [options]
 
 Commands:
   generate <file> [-o <output>]   Generate TypeScript types from a flags file
-  validate <file>                 Validate a flags file schema
+  validate <file...>              Validate one or more flags files (merged in order)
   validate <file> --watch         Validate and re-validate on file changes
   validate <file> --strict        Validate with strict mode (reject unknown fields)
   diff <ref1>..<ref2> [--file f]  Show flag changes between git refs
+  deps <file...>                  Show flag dependency graph
+  stale <dir> --flags <file>      Detect stale/unused flags
   help                            Show this help message
 
 Options:
@@ -23,6 +27,7 @@ Examples:
   npx tinyflag generate ./flags.yml
   npx tinyflag generate ./flags.yml -o ./src/flags.d.ts
   npx tinyflag validate ./flags.yml
+  npx tinyflag validate ./base.yml ./prod.yml
   npx tinyflag validate ./flags.yml --json
   npx tinyflag diff main..HEAD
   npx tinyflag diff main..HEAD --file config/flags.yml
@@ -52,6 +57,12 @@ function main(): void {
       break;
     case 'diff':
       handleDiff(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'deps':
+      handleDeps(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'stale':
+      handleStale(filteredArgs.slice(1), jsonMode);
       break;
     default:
       console.error(`Unknown command: ${command}\n`);
@@ -96,21 +107,21 @@ function handleGenerate(args: string[], jsonMode: boolean): void {
 }
 
 function handleValidate(args: string[], jsonMode: boolean, watchMode: boolean, strictMode: boolean): void {
-  const filePath = args[0];
-  if (!filePath) {
+  const filePaths = args.filter((a) => !a.startsWith('-'));
+  if (filePaths.length === 0) {
     console.error('Error: Missing flags file path\n');
-    console.log('Usage: tinyflag validate <file> [--watch] [--strict]');
+    console.log('Usage: tinyflag validate <file...> [--watch] [--strict]');
     process.exit(1);
   }
 
-  const config = loadAndValidate(filePath, strictMode);
+  const config = loadAndValidateMulti(filePaths, strictMode);
 
   if (jsonMode) {
     console.log(
       JSON.stringify(
         {
           command: 'validate',
-          file: filePath,
+          files: filePaths,
           valid: true,
           flagCount: Object.keys(config.flags).length,
           flags: Object.keys(config.flags).sort(),
@@ -122,18 +133,19 @@ function handleValidate(args: string[], jsonMode: boolean, watchMode: boolean, s
     if (!watchMode) return;
   }
 
-  console.log(`✅ ${filePath} is valid`);
+  console.log(`✅ ${filePaths.join(' + ')} is valid (${Object.keys(config.flags).length} flags)`);
 
   if (watchMode) {
-    console.log(`👀 Watching ${filePath} for changes…`);
+    const watchFile = filePaths[filePaths.length - 1];
+    console.log(`👀 Watching ${watchFile} for changes…`);
     let debounce: ReturnType<typeof setTimeout> | undefined;
-    watch(filePath, (eventType) => {
+    watch(watchFile, (eventType) => {
       if (eventType !== 'change' && eventType !== 'rename') return;
       clearTimeout(debounce);
       debounce = setTimeout(() => {
         try {
-          loadAndValidate(filePath, strictMode);
-          console.log(`✅ ${filePath} is valid`);
+          loadAndValidateMulti(filePaths, strictMode);
+          console.log(`✅ ${filePaths.join(' + ')} is valid`);
         } catch (error) {
           console.error((error as Error).message);
         }
@@ -182,6 +194,22 @@ function loadAndValidate(filePath: string, strict: boolean = false): ReturnType<
       console.error(`  - ${err.path}: ${err.message}`);
     }
     process.exit(1);
+  }
+
+  return config;
+}
+
+/** Load and merge multiple flag files, returning the merged config. */
+function loadAndValidateMulti(filePaths: string[], strict: boolean = false): FlagConfig {
+  if (filePaths.length === 1) {
+    return loadAndValidate(filePaths[0], strict);
+  }
+
+  const configs: FlagConfig[] = filePaths.map((fp) => loadAndValidate(fp, strict));
+  const { config, warnings } = mergeFlagConfigs(configs);
+
+  for (const w of warnings) {
+    console.warn(`⚠️  Merge conflict in "${w.flag}": ${w.message}`);
   }
 
   return config;
@@ -274,6 +302,88 @@ function handleDiff(args: string[], jsonMode: boolean): void {
   }
 
   console.log(formatChanges(changes, ref1, ref2));
+}
+
+function handleStale(args: string[], jsonMode: boolean): void {
+  const ciMode = args.includes('--ci');
+  const filteredArgs = args.filter((a) => a !== '--ci');
+
+  // Parse --flags option
+  const flagsIdx = filteredArgs.indexOf('--flags');
+  const flagsFile = flagsIdx !== -1 ? filteredArgs[flagsIdx + 1] : undefined;
+  const scanDir = filteredArgs.find((a) => !a.startsWith('-') && a !== flagsFile) || '.';
+
+  if (!flagsFile) {
+    console.error('Error: Missing --flags option\n');
+    console.log('Usage: tinyflag stale [dir] --flags <file> [--ci] [--json]');
+    process.exit(1);
+  }
+
+  const config = loadAndValidate(flagsFile);
+  const usages = scanFlagUsage(scanDir);
+  const report = generateStaleReport(config.flags, usages);
+
+  if (jsonMode) {
+    console.log(JSON.stringify({ command: 'stale', ...report }, null, 2));
+  } else {
+    console.log(formatStaleReport(report));
+  }
+
+  if (ciMode) {
+    const totalIssues = report.unusedFlags.length + report.undefinedRefs.length + report.zeroRolloutFlags.length;
+    if (totalIssues > 0) {
+      process.exit(1);
+    }
+  }
+}
+
+function handleDeps(args: string[], jsonMode: boolean): void {
+  const filePaths = args.filter((a) => !a.startsWith('-'));
+  if (filePaths.length === 0) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag deps <file...>');
+    process.exit(1);
+  }
+
+  const config = loadAndValidateMulti(filePaths, false);
+
+  // Detect circular dependencies
+  const cycles = detectCircularDependencies(config.flags);
+  if (cycles.length > 0) {
+    console.error('⚠️  Circular dependencies detected:');
+    for (const cycle of cycles) {
+      console.error(`  ${cycle.join(' → ')}`);
+    }
+  }
+
+  // Find flags with dependencies
+  const flagsWithDeps = Object.entries(config.flags).filter(
+    ([, f]) => f.requires && f.requires.length > 0,
+  );
+
+  if (flagsWithDeps.length === 0) {
+    if (jsonMode) {
+      console.log(JSON.stringify({ command: 'deps', dependencies: [], cycles }, null, 2));
+    } else {
+      console.log('No flag dependencies found.');
+    }
+    return;
+  }
+
+  if (jsonMode) {
+    const deps = flagsWithDeps.map(([name, f]) => ({
+      flag: name,
+      requires: f.requires,
+    }));
+    console.log(JSON.stringify({ command: 'deps', dependencies: deps, cycles }, null, 2));
+    return;
+  }
+
+  console.log('🔗 Flag dependency graph:\n');
+  for (const [name] of flagsWithDeps) {
+    console.log(buildDependencyTree(name, config.flags));
+    console.log();
+  }
 }
 
 main();
