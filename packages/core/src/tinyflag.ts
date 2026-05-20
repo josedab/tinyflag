@@ -7,12 +7,13 @@ import type {
   ExposureEvent,
 } from './types.js';
 import { EventEmitter } from './events.js';
-import { evaluateFlag, evaluateVariant } from './evaluator.js';
+import { evaluateFlag, evaluateVariant, setEvaluationContext, detectCircularDependencies } from './evaluator.js';
 import {
   detectSourceType,
   loadFromFile,
   loadFromUrl,
   loadFromInline,
+  loadMultiSource,
   type SourceType,
 } from './loader.js';
 import { debug, setDebug } from './debug.js';
@@ -59,8 +60,11 @@ export class TinyFlag {
    * @throws {Error} If `source` is not provided.
    */
   constructor(options: TinyFlagOptions) {
-    if (!options.source) {
+    if (!options.source && !Array.isArray(options.source)) {
       throw new Error('TinyFlag: "source" option is required');
+    }
+    if (Array.isArray(options.source) && options.source.length === 0) {
+      throw new Error('TinyFlag: "source" array must not be empty');
     }
 
     this.options = {
@@ -123,6 +127,14 @@ export class TinyFlag {
       return false;
     }
 
+    // Priority: env var > override() > flag file
+    const envOverride = getEnvVarOverride(normalizedName);
+    if (envOverride !== undefined) {
+      const result = typeof envOverride.value === 'boolean' ? envOverride.value : true;
+      debug(`isEnabled("${normalizedName}") → ${result} (env var override)`);
+      return result;
+    }
+
     const overrideValue = this.overrides.get(normalizedName);
     if (typeof overrideValue === 'boolean') return overrideValue;
 
@@ -160,6 +172,16 @@ export class TinyFlag {
       return null;
     }
 
+    // Priority: env var > override() > flag file
+    const envOverride = getEnvVarOverride(normalizedName);
+    if (envOverride !== undefined) {
+      if (typeof envOverride.value === 'string') {
+        debug(`getVariant("${normalizedName}") → ${envOverride.value} (env var override)`);
+        return envOverride.value;
+      }
+      if (envOverride.value === false) return null;
+    }
+
     const overrideValue = this.overrides.get(normalizedName);
     if (typeof overrideValue === 'string') return overrideValue;
     if (overrideValue === false) return null;
@@ -185,7 +207,7 @@ export class TinyFlag {
   }
 
   /** Manually reload flags from the source. */
-  async reload(newSource?: string | FlagConfig): Promise<void> {
+  async reload(newSource?: string | FlagConfig | Array<string | FlagConfig>): Promise<void> {
     if (newSource !== undefined) {
       (this.options as TinyFlagOptions).source = newSource;
       this.sourceType = detectSourceType(newSource);
@@ -207,6 +229,19 @@ export class TinyFlag {
     const result: Record<string, { enabled: boolean; variant: string | null }> = {};
 
     for (const [flagName, flag] of Object.entries(this.config.flags)) {
+      // Priority: env var > override() > flag file
+      const envOverride = getEnvVarOverride(flagName);
+      if (envOverride !== undefined) {
+        if (typeof envOverride.value === 'boolean') {
+          result[flagName] = { enabled: envOverride.value, variant: null };
+          continue;
+        }
+        if (typeof envOverride.value === 'string') {
+          result[flagName] = { enabled: true, variant: envOverride.value };
+          continue;
+        }
+      }
+
       const overrideValue = this.overrides.get(flagName);
       if (typeof overrideValue === 'boolean') {
         result[flagName] = { enabled: overrideValue, variant: null };
@@ -296,6 +331,17 @@ export class TinyFlag {
           warnings = result.warnings;
           break;
         }
+        case 'multi': {
+          const result = await loadMultiSource(
+            source as Array<string | FlagConfig>,
+            strict,
+            this.options.headers,
+            this.options.fetchTimeout,
+          );
+          config = result.config;
+          warnings = result.warnings;
+          break;
+        }
       }
 
       // Emit warnings for unknown fields
@@ -312,6 +358,17 @@ export class TinyFlag {
       }
 
       this.config = config;
+      setEvaluationContext(config.flags);
+
+      // Detect circular dependencies
+      const cycles = detectCircularDependencies(config.flags);
+      for (const cycle of cycles) {
+        this.emitter.emit('error', {
+          code: 'CIRCULAR_DEPENDENCY',
+          message: `Circular flag dependency detected: ${cycle.join(' → ')}`,
+        });
+      }
+
       debug(`loaded ${Object.keys(config.flags).length} flags from ${this.sourceType}`);
     } catch (error) {
       if (!this.initialized) {
@@ -420,6 +477,35 @@ function normalizeContext(context?: UserContext): UserContext | undefined {
     return Object.keys(rest).length > 0 ? rest : undefined;
   }
   return context;
+}
+
+/**
+ * Convert a kebab-case flag name to UPPER_SNAKE_CASE env var name.
+ * e.g., "new-checkout" → "TINYFLAG_NEW_CHECKOUT"
+ */
+function flagNameToEnvVar(flagName: string): string {
+  return 'TINYFLAG_' + flagName.replace(/-/g, '_').toUpperCase();
+}
+
+/**
+ * Check for an environment variable override for a flag.
+ * Returns the override value or undefined if not set.
+ * Supports: "true"/"false" for boolean, any other string as variant name.
+ */
+function getEnvVarOverride(flagName: string): { value: boolean | string } | undefined {
+  try {
+    if (typeof process === 'undefined' || !process.env) return undefined;
+    const envKey = flagNameToEnvVar(flagName);
+    const envValue = process.env[envKey];
+    if (envValue === undefined || envValue === '') return undefined;
+
+    const lower = envValue.toLowerCase();
+    if (lower === 'true') return { value: true };
+    if (lower === 'false') return { value: false };
+    return { value: envValue }; // variant name
+  } catch {
+    return undefined;
+  }
 }
 
 function hashFlag(flag: FlagDefinition | undefined): number {
