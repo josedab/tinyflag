@@ -1,8 +1,9 @@
 import type { FlagConfig, TinyFlagOptions, ValidationError } from './types.js';
 import { parseYaml } from './yaml.js';
 import { parseFlagConfig } from './schema.js';
+import { mergeFlagConfigs } from './merge.js';
 
-export type SourceType = 'file' | 'url' | 'inline';
+export type SourceType = 'file' | 'url' | 'inline' | 'multi';
 
 export interface LoadResult {
   config: FlagConfig;
@@ -12,11 +13,18 @@ export interface LoadResult {
 const FILE_EXTENSIONS = ['.yml', '.yaml', '.json'];
 
 /** Detect the source type from the options. */
-export function detectSourceType(source: string | FlagConfig): SourceType {
+export function detectSourceType(source: string | FlagConfig | Array<string | FlagConfig>): SourceType {
+  if (Array.isArray(source)) return 'multi';
   if (typeof source !== 'string') return 'inline';
   if (source.startsWith('http://') || source.startsWith('https://')) return 'url';
   if (FILE_EXTENSIONS.some((ext) => source.endsWith(ext))) return 'file';
-  // Extensionless local paths are treated as files (parsed as YAML, the more permissive parser)
+  return 'file';
+}
+
+/** Detect source type for a single (non-array) source entry. */
+export function detectSingleSourceType(source: string | FlagConfig): 'file' | 'url' | 'inline' {
+  if (typeof source !== 'string') return 'inline';
+  if (source.startsWith('http://') || source.startsWith('https://')) return 'url';
   return 'file';
 }
 
@@ -160,4 +168,43 @@ export function loadFromInline(source: FlagConfig, strict: boolean): LoadResult 
   }
 
   return { config, warnings };
+}
+
+/** Load and merge flags from multiple sources (array of file paths, URLs, or inline objects). */
+export async function loadMultiSource(
+  sources: Array<string | FlagConfig>,
+  strict: boolean,
+  headers?: Record<string, string>,
+  fetchTimeout?: number,
+): Promise<LoadResult> {
+  const configs: FlagConfig[] = [];
+  const allWarnings: ValidationError[] = [];
+
+  for (const src of sources) {
+    const type = detectSingleSourceType(src);
+    let result: LoadResult;
+    switch (type) {
+      case 'file':
+        result = await loadFromFile(src as string, strict);
+        break;
+      case 'url':
+        result = await loadFromUrl(src as string, strict, headers, undefined, undefined, fetchTimeout);
+        break;
+      case 'inline':
+        result = loadFromInline(src as FlagConfig, strict);
+        break;
+    }
+    configs.push(result.config);
+    allWarnings.push(...result.warnings);
+  }
+
+  const { config, warnings: mergeWarnings } = mergeFlagConfigs(configs);
+  for (const w of mergeWarnings) {
+    allWarnings.push({
+      path: `flags.${w.flag}.${w.field}`,
+      message: w.message,
+    });
+  }
+
+  return { config, warnings: allWarnings };
 }
