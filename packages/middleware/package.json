@@ -1,0 +1,81 @@
+{
+  "name": "tinyflag-middleware",
+  "version": "0.1.0",
+  "description": "Server middleware for TinyFlag (Express, Fastify, Hono)",
+  "license": "MIT",
+  "author": "josedab",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josedab/tinyflag.git",
+    "directory": "packages/middleware"
+  },
+  "homepage": "https://github.com/josedab/tinyflag#readme",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./express": {
+      "import": {
+        "types": "./dist/express.d.ts",
+        "default": "./dist/express.js"
+      },
+      "require": {
+        "types": "./dist/express.d.cts",
+        "default": "./dist/express.cjs"
+      }
+    },
+    "./fastify": {
+      "import": {
+        "types": "./dist/fastify.d.ts",
+        "default": "./dist/fastify.js"
+      },
+      "require": {
+        "types": "./dist/fastify.d.cts",
+        "default": "./dist/fastify.cjs"
+      }
+    },
+    "./hono": {
+      "import": {
+        "types": "./dist/hono.d.ts",
+        "default": "./dist/hono.js"
+      },
+      "require": {
+        "types": "./dist/hono.d.cts",
+        "default": "./dist/hono.cjs"
+      }
+    }
+  },
+  "files": ["dist", "README.md"],
+  "keywords": [
+    "feature-flags",
+    "middleware",
+    "express",
+    "fastify",
+    "hono",
+    "tinyflag"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "tinyflag": "workspace:*"
+  },
+  "devDependencies": {
+    "tinyflag": "workspace:*",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  }
+}
