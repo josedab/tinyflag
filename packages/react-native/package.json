@@ -1,0 +1,58 @@
+{
+  "name": "tinyflag-react-native",
+  "version": "0.1.0",
+  "description": "React Native support for TinyFlag with offline caching and background refresh",
+  "license": "MIT",
+  "author": "josedab",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josedab/tinyflag.git",
+    "directory": "packages/react-native"
+  },
+  "homepage": "https://github.com/josedab/tinyflag#readme",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": ["dist", "README.md"],
+  "keywords": [
+    "feature-flags",
+    "react-native",
+    "offline",
+    "mobile",
+    "tinyflag"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "tinyflag": "workspace:*",
+    "@react-native-async-storage/async-storage": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-native-async-storage/async-storage": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "tinyflag": "workspace:*",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  }
+}
