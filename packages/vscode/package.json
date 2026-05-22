@@ -1,0 +1,45 @@
+{
+  "name": "tinyflag-vscode",
+  "displayName": "TinyFlag",
+  "description": "IntelliSense, hover previews, and diagnostics for TinyFlag feature flags",
+  "version": "0.1.0",
+  "publisher": "tinyflag",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other", "Linters"],
+  "activationEvents": [
+    "workspaceContains:**/flags.yml",
+    "workspaceContains:**/flags.yaml"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "yaml",
+        "extensions": [".yml", ".yaml"]
+      }
+    ],
+    "configuration": {
+      "title": "TinyFlag",
+      "properties": {
+        "tinyflag.flagsFile": {
+          "type": "string",
+          "default": "flags.yml",
+          "description": "Path to the flags file relative to workspace root"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  }
+}
