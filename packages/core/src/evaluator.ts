@@ -1,5 +1,60 @@
-import type { FlagDefinition, FlagConfig, Rule, UserContext } from './types.js';
-import { rolloutBucket, selectVariant } from './hash.js';
+import type { FlagDefinition, FlagConfig, Rule, UserContext, RolloutStrategy } from './types.js';
+import { rolloutBucket, selectVariant, murmurhash3 } from './hash.js';
+
+/**
+ * Resolve a rollout field (number or strategy) to an effective percentage.
+ * Returns a number 0–100 or undefined if not applicable.
+ */
+function resolveRolloutPercentage(
+  rollout: number | RolloutStrategy | undefined,
+  context: UserContext | undefined,
+  now: number = Date.now(),
+): number | undefined {
+  if (rollout === undefined) return undefined;
+
+  // Simple number
+  if (typeof rollout === 'number') return rollout;
+
+  // Advanced strategies
+  switch (rollout.type) {
+    case 'ramp': {
+      const startTime = new Date(rollout.startAt).getTime();
+      const endTime = new Date(rollout.endAt).getTime();
+      if (isNaN(startTime) || isNaN(endTime) || startTime >= endTime) return rollout.start;
+      if (now <= startTime) return rollout.start;
+      if (now >= endTime) return rollout.end;
+      const progress = (now - startTime) / (endTime - startTime);
+      return Math.round(rollout.start + (rollout.end - rollout.start) * progress);
+    }
+
+    case 'ring': {
+      if (!context) return 0;
+      for (const ring of rollout.rings) {
+        if (ring.conditions) {
+          const match = Object.entries(ring.conditions).every(([field, expected]) =>
+            matchCondition(context[field], expected),
+          );
+          if (match) return ring.percentage;
+        }
+      }
+      // Check for a catch-all ring (no conditions)
+      const catchAll = rollout.rings.find((r) => !r.conditions);
+      return catchAll?.percentage ?? 0;
+    }
+
+    case 'cohort': {
+      const cohortValue = context?.[rollout.field];
+      if (cohortValue === undefined || cohortValue === null) return undefined;
+      // Use cohort field value as hash seed for cohort stability
+      const cohortSeed = murmurhash3(String(cohortValue), 0xdeadbeef);
+      const bucket = cohortSeed % 100;
+      return bucket < rollout.percentage ? 100 : 0;
+    }
+
+    default:
+      return undefined;
+  }
+}
 
 /**
  * Evaluate whether a single condition matches the user context.
@@ -160,9 +215,7 @@ function checkPrerequisites(
  * Detect circular dependencies in flag requirements using topological sort.
  * Returns an array of cycle paths (empty if no cycles).
  */
-export function detectCircularDependencies(
-  flags: Record<string, FlagDefinition>,
-): string[][] {
+export function detectCircularDependencies(flags: Record<string, FlagDefinition>): string[][] {
   const cycles: string[][] = [];
   const visited = new Set<string>();
   const inStack = new Set<string>();
@@ -237,11 +290,7 @@ export function buildDependencyTree(
 }
 
 /** Core evaluation logic without prerequisite checking (used internally). */
-function evaluateFlagCore(
-  flagName: string,
-  flag: FlagDefinition,
-  context?: UserContext,
-): boolean {
+function evaluateFlagCore(flagName: string, flag: FlagDefinition, context?: UserContext): boolean {
   const scheduledEnabled = applySchedule(flag);
   if (!scheduledEnabled) return false;
   if (!flag.enabled) return false;
@@ -259,9 +308,10 @@ function evaluateFlagCore(
     }
   }
 
-  if (flag.rollout !== undefined && context?.userId) {
+  const effectiveRollout = resolveRolloutPercentage(flag.rollout, context);
+  if (effectiveRollout !== undefined && context?.userId) {
     const bucket = rolloutBucket(flagName, context.userId);
-    return bucket < flag.rollout;
+    return bucket < effectiveRollout;
   }
 
   return flag.enabled;
@@ -317,10 +367,11 @@ export function evaluateFlag(
     }
   }
 
-  // Step 4: Rollout with userId
-  if (flag.rollout !== undefined && context?.userId) {
+  // Step 4: Rollout with userId (supports simple number and advanced strategies)
+  const effectiveRollout = resolveRolloutPercentage(flag.rollout, context);
+  if (effectiveRollout !== undefined && context?.userId) {
     const bucket = rolloutBucket(flagName, context.userId);
-    return bucket < flag.rollout;
+    return bucket < effectiveRollout;
   }
 
   // Step 5: Rollout without userId — fall through to enabled state [DECIDED]

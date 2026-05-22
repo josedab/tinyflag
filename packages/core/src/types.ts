@@ -32,6 +32,35 @@ export interface FlagSchedule {
   disableAt?: string;
 }
 
+/** Ramp rollout strategy: linearly interpolate percentage over time. */
+export interface RampStrategy {
+  type: 'ramp';
+  start: number;
+  end: number;
+  startAt: string;
+  endAt: string;
+}
+
+/** Ring-based rollout strategy: named deployment rings with matching rules. */
+export interface RingStrategy {
+  type: 'ring';
+  rings: Array<{
+    name: string;
+    percentage: number;
+    conditions?: Record<string, unknown>;
+  }>;
+}
+
+/** Sticky cohort strategy: consistent hashing per cohort field. */
+export interface CohortStrategy {
+  type: 'cohort';
+  field: string;
+  percentage: number;
+}
+
+/** Advanced rollout strategy (union type). */
+export type RolloutStrategy = RampStrategy | RingStrategy | CohortStrategy;
+
 /** Definition of a single feature flag. */
 export interface FlagDefinition {
   /** Whether this flag is globally enabled. Required. */
@@ -40,8 +69,8 @@ export interface FlagDefinition {
   description?: string;
   /** Categorization tags. */
   tags?: readonly string[];
-  /** Percentage rollout (0–100). */
-  rollout?: number;
+  /** Percentage rollout (0–100). Simple number or advanced strategy. */
+  rollout?: number | RolloutStrategy;
   /** Targeting rules evaluated top-to-bottom. */
   rules?: readonly Rule[];
   /** A/B test variants with relative weights. */
