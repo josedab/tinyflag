@@ -1,0 +1,40 @@
+{
+  "name": "tinyflag-server",
+  "version": "0.1.0",
+  "description": "Lightweight HTTP server for serving TinyFlag configs over REST and WebSocket",
+  "license": "MIT",
+  "author": "josedab",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josedab/tinyflag.git",
+    "directory": "packages/server"
+  },
+  "homepage": "https://github.com/josedab/tinyflag#readme",
+  "type": "module",
+  "bin": {
+    "tinyflag-server": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": ["dist", "Dockerfile", "README.md"],
+  "keywords": [
+    "feature-flags",
+    "server",
+    "rest",
+    "websocket",
+    "tinyflag"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "tinyflag": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0"
+  }
+}
