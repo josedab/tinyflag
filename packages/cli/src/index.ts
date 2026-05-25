@@ -1,11 +1,12 @@
 import { readFileSync, writeFileSync, existsSync, watch } from 'fs';
 import { execSync } from 'child_process';
 import { dirname } from 'path';
-import { parseYaml, parseFlagConfig, mergeFlagConfigs, detectCircularDependencies, buildDependencyTree } from 'tinyflag';
-import type { FlagConfig } from 'tinyflag';
+import { parseYaml, parseFlagConfig, mergeFlagConfigs, detectCircularDependencies, buildDependencyTree, generateKeyPair, signFile, verifyFile, pullFlags, pushFlags, threeWayMerge } from 'tinyflag';
+import type { FlagConfig, FlagDefinition } from 'tinyflag';
 import { generateTypes } from './generate.js';
 import { diffConfigs, formatChanges } from './diff.js';
 import { scanFlagUsage, generateStaleReport, formatStaleReport } from './stale.js';
+import { scanForFlagPatterns, formatSuggestionsAsYaml, formatSuggestionsReport } from './suggest.js';
 
 const USAGE = `
 Usage: tinyflag <command> [options]
@@ -18,6 +19,14 @@ Commands:
   diff <ref1>..<ref2> [--file f]  Show flag changes between git refs
   deps <file...>                  Show flag dependency graph
   stale <dir> --flags <file>      Detect stale/unused flags
+  sign <file> --key <private-key> Sign a flag file with Ed25519
+  verify <file> --pub <key...>    Verify a signed flag file
+  keygen [-o <prefix>]            Generate Ed25519 key pair
+  audit <file>                    Show flag change history from git log
+  pull <url> -o <output>          Pull flag config from remote URL
+  push <url> --file <file>        Push flag config to remote URL
+  inline <file> [--format esm]    Inline flags as JS module for edge runtimes
+  suggest <dir>                   Scan code for feature flag patterns and suggest definitions
   help                            Show this help message
 
 Options:
@@ -31,6 +40,9 @@ Examples:
   npx tinyflag validate ./flags.yml --json
   npx tinyflag diff main..HEAD
   npx tinyflag diff main..HEAD --file config/flags.yml
+  npx tinyflag keygen -o ./keys/tinyflag
+  npx tinyflag sign ./flags.yml --key ./keys/tinyflag.key
+  npx tinyflag verify ./flags.yml --pub ./keys/tinyflag.pub
 `.trim();
 
 function main(): void {
@@ -63,6 +75,30 @@ function main(): void {
       break;
     case 'stale':
       handleStale(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'sign':
+      handleSign(filteredArgs.slice(1));
+      break;
+    case 'verify':
+      handleVerify(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'keygen':
+      handleKeygen(filteredArgs.slice(1));
+      break;
+    case 'audit':
+      handleAudit(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'pull':
+      handlePull(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'push':
+      handlePush(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'inline':
+      handleInline(filteredArgs.slice(1));
+      break;
+    case 'suggest':
+      handleSuggest(filteredArgs.slice(1), jsonMode);
       break;
     default:
       console.error(`Unknown command: ${command}\n`);
@@ -384,6 +420,332 @@ function handleDeps(args: string[], jsonMode: boolean): void {
     console.log(buildDependencyTree(name, config.flags));
     console.log();
   }
+}
+
+function handleSign(args: string[]): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag sign <file> --key <private-key-path>');
+    process.exit(1);
+  }
+
+  const keyIdx = args.indexOf('--key');
+  const keyPath = keyIdx !== -1 ? args[keyIdx + 1] : undefined;
+  if (!keyPath) {
+    console.error('Error: Missing --key option\n');
+    console.log('Usage: tinyflag sign <file> --key <private-key-path>');
+    process.exit(1);
+  }
+
+  try {
+    const sigPath = signFile(filePath, keyPath);
+    console.log(`✅ Signature written to ${sigPath}`);
+  } catch (error) {
+    console.error(`❌ Signing failed: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+
+function handleVerify(args: string[], jsonMode: boolean): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag verify <file> --pub <key-path...> [--lenient]');
+    process.exit(1);
+  }
+
+  const lenient = args.includes('--lenient');
+  const pubIdx = args.indexOf('--pub');
+  if (pubIdx === -1) {
+    console.error('Error: Missing --pub option\n');
+    console.log('Usage: tinyflag verify <file> --pub <key-path...>');
+    process.exit(1);
+  }
+
+  const pubKeys: string[] = [];
+  for (let i = pubIdx + 1; i < args.length; i++) {
+    if (args[i].startsWith('--')) break;
+    pubKeys.push(args[i]);
+  }
+
+  if (pubKeys.length === 0) {
+    console.error('Error: No public key paths provided');
+    process.exit(1);
+  }
+
+  try {
+    const result = verifyFile(filePath, pubKeys, lenient ? 'lenient' : 'strict');
+    if (jsonMode) {
+      console.log(JSON.stringify({ command: 'verify', file: filePath, ...result }, null, 2));
+      return;
+    }
+
+    if (result.valid) {
+      console.log(`✅ Signature valid (key index: ${result.keyIndex})`);
+    } else {
+      for (const w of result.warnings) {
+        console.warn(`⚠️  ${w}`);
+      }
+      if (!lenient) process.exit(1);
+    }
+  } catch (error) {
+    console.error(`❌ Verification failed: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+
+function handleKeygen(args: string[]): void {
+  const outputIdx = args.indexOf('-o');
+  const prefix = outputIdx !== -1 ? args[outputIdx + 1] : 'tinyflag';
+
+  const privateKeyPath = `${prefix}.key`;
+  const publicKeyPath = `${prefix}.pub`;
+
+  try {
+    generateKeyPair(privateKeyPath, publicKeyPath);
+    console.log(`✅ Key pair generated:`);
+    console.log(`   Private key: ${privateKeyPath}`);
+    console.log(`   Public key:  ${publicKeyPath}`);
+  } catch (error) {
+    console.error(`❌ Key generation failed: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+
+function handleInline(args: string[]): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag inline <file> [--format esm|cjs] [-o output]');
+    process.exit(1);
+  }
+
+  const formatIdx = args.indexOf('--format');
+  const format = formatIdx !== -1 ? args[formatIdx + 1] : 'esm';
+  const outputIdx = args.indexOf('-o');
+  const outputPath = outputIdx !== -1 ? args[outputIdx + 1] : undefined;
+
+  const config = loadAndValidate(filePath);
+  const json = JSON.stringify({ version: 1, flags: config.flags }, null, 2);
+
+  let code: string;
+  if (format === 'cjs') {
+    code = `// Auto-generated by tinyflag inline — do not edit\nmodule.exports = ${json};\n`;
+  } else {
+    code = `// Auto-generated by tinyflag inline — do not edit\nexport default ${json};\n`;
+  }
+
+  if (outputPath) {
+    writeFileSync(outputPath, code, 'utf-8');
+    console.log(`✅ Inlined flags to ${outputPath} (${format})`);
+  } else {
+    process.stdout.write(code);
+  }
+}
+
+function handleSuggest(args: string[], jsonMode: boolean): void {
+  const dir = args[0] || '.';
+  const outputIdx = args.indexOf('-o');
+  const outputPath = outputIdx !== -1 ? args[outputIdx + 1] : undefined;
+
+  const suggestions = scanForFlagPatterns(dir);
+
+  if (jsonMode) {
+    console.log(JSON.stringify({ command: 'suggest', directory: dir, suggestions }, null, 2));
+    return;
+  }
+
+  if (suggestions.length === 0) {
+    console.log('No feature flag patterns detected in the codebase.');
+    return;
+  }
+
+  console.log(formatSuggestionsReport(suggestions));
+
+  if (outputPath) {
+    const yaml = formatSuggestionsAsYaml(suggestions);
+    writeFileSync(outputPath, yaml, 'utf-8');
+    console.log(`✅ Suggested flags written to ${outputPath}`);
+  } else {
+    console.log('Suggested YAML:\n');
+    console.log(formatSuggestionsAsYaml(suggestions));
+  }
+}
+
+function handleAudit(args: string[], jsonMode: boolean): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag audit <file> [--json]');
+    process.exit(1);
+  }
+
+  try {
+    execSync('git rev-parse --git-dir', { stdio: 'pipe' });
+  } catch {
+    console.error('Error: Not inside a git repository. The audit command requires git.');
+    process.exit(1);
+  }
+
+  let gitLog: string;
+  try {
+    gitLog = execSync(
+      `git log --follow --format="COMMIT:%H|%an|%aI|%s" -p -- "${filePath}"`,
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], maxBuffer: 10 * 1024 * 1024 },
+    );
+  } catch {
+    console.error(`Error: Could not read git history for "${filePath}".`);
+    process.exit(1);
+  }
+
+  const entries = parseGitAuditLog(gitLog, filePath);
+
+  if (jsonMode) {
+    console.log(JSON.stringify({ command: 'audit', file: filePath, entries }, null, 2));
+    return;
+  }
+
+  if (entries.length === 0) {
+    console.log(`No git history found for ${filePath}`);
+    return;
+  }
+
+  console.log(`📋 Flag change history for ${filePath}\n`);
+  for (const entry of entries) {
+    console.log(`  ${entry.date}  ${entry.hash.slice(0, 7)}  ${entry.author}`);
+    console.log(`  ${entry.subject}`);
+    for (const change of entry.changes) {
+      const icon = change.action === 'added' ? '🆕' : change.action === 'removed' ? '🗑️' : '✏️';
+      console.log(`    ${icon} ${change.flag}: ${change.summary}`);
+    }
+    console.log();
+  }
+}
+
+interface AuditLogEntry {
+  hash: string;
+  author: string;
+  date: string;
+  subject: string;
+  changes: { flag: string; action: 'added' | 'removed' | 'modified'; summary: string }[];
+}
+
+function parseGitAuditLog(gitLog: string, filePath: string): AuditLogEntry[] {
+  const entries: AuditLogEntry[] = [];
+  const commits = gitLog.split(/^COMMIT:/m).filter(Boolean);
+
+  for (const commit of commits) {
+    const headerEnd = commit.indexOf('\n');
+    if (headerEnd === -1) continue;
+
+    const header = commit.substring(0, headerEnd);
+    const [hash, author, date, ...subjectParts] = header.split('|');
+    const subject = subjectParts.join('|');
+    const diff = commit.substring(headerEnd + 1);
+
+    const changes: AuditLogEntry['changes'] = [];
+
+    const addedFlags = new Set<string>();
+    const removedFlags = new Set<string>();
+
+    for (const line of diff.split('\n')) {
+      // Look for flag-level changes in YAML diff
+      const addMatch = line.match(/^\+\s{2}([\w-]+):\s*$/);
+      const removeMatch = line.match(/^-\s{2}([\w-]+):\s*$/);
+
+      if (addMatch) addedFlags.add(addMatch[1]);
+      if (removeMatch) removedFlags.add(removeMatch[1]);
+    }
+
+    for (const flag of addedFlags) {
+      if (removedFlags.has(flag)) {
+        changes.push({ flag, action: 'modified', summary: 'definition changed' });
+        removedFlags.delete(flag);
+      } else {
+        changes.push({ flag, action: 'added', summary: 'flag created' });
+      }
+    }
+    for (const flag of removedFlags) {
+      changes.push({ flag, action: 'removed', summary: 'flag deleted' });
+    }
+
+    // Detect inline property changes (enabled, rollout, etc.)
+    const enabledChanges = diff.match(/^[+-]\s{4}enabled:\s*(true|false)/gm);
+    const rolloutChanges = diff.match(/^[+-]\s{4}rollout:\s*\d+/gm);
+
+    if (enabledChanges && changes.length === 0) {
+      changes.push({ flag: '(flags)', action: 'modified', summary: 'enabled state changed' });
+    }
+    if (rolloutChanges && changes.length === 0) {
+      changes.push({ flag: '(flags)', action: 'modified', summary: 'rollout percentage changed' });
+    }
+
+    if (changes.length === 0 && diff.trim()) {
+      changes.push({ flag: filePath, action: 'modified', summary: 'file modified' });
+    }
+
+    entries.push({ hash, author, date, subject, changes });
+  }
+
+  return entries;
+}
+
+function handlePull(args: string[], jsonMode: boolean): void {
+  const url = args[0];
+  if (!url) {
+    console.error('Error: Missing URL\n');
+    console.log('Usage: tinyflag pull <url> -o <output> [--force]');
+    process.exit(1);
+  }
+
+  const outputIdx = args.indexOf('-o');
+  const outputPath = outputIdx !== -1 ? args[outputIdx + 1] : 'flags.yml';
+  const force = args.includes('--force');
+
+  pullFlags(url, outputPath, { force })
+    .then((result) => {
+      if (jsonMode) {
+        console.log(JSON.stringify({ command: 'pull', url, output: outputPath, ...result }, null, 2));
+      } else if (result.status === 'not-modified') {
+        console.log(`✅ ${outputPath} is up to date`);
+      } else {
+        console.log(`✅ ${result.status === 'created' ? 'Created' : 'Updated'} ${outputPath}`);
+      }
+    })
+    .catch((error) => {
+      console.error(`❌ Pull failed: ${(error as Error).message}`);
+      process.exit(1);
+    });
+}
+
+function handlePush(args: string[], jsonMode: boolean): void {
+  const url = args[0];
+  if (!url) {
+    console.error('Error: Missing URL\n');
+    console.log('Usage: tinyflag push <url> --file <file> [--force]');
+    process.exit(1);
+  }
+
+  const fileIdx = args.indexOf('--file');
+  const filePath = fileIdx !== -1 ? args[fileIdx + 1] : 'flags.yml';
+  const force = args.includes('--force');
+
+  pushFlags(url, filePath, { force })
+    .then((result) => {
+      if (jsonMode) {
+        console.log(JSON.stringify({ command: 'push', url, file: filePath, ...result }, null, 2));
+      } else if (result.status === 'conflict') {
+        console.error('❌ Push conflict: remote has been modified. Pull first or use --force.');
+        process.exit(1);
+      } else {
+        console.log(`✅ Pushed ${filePath} to ${url}`);
+      }
+    })
+    .catch((error) => {
+      console.error(`❌ Push failed: ${(error as Error).message}`);
+      process.exit(1);
+    });
 }
 
 main();
