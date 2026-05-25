@@ -1,0 +1,52 @@
+{
+  "name": "tinyflag-edge",
+  "version": "0.1.0",
+  "description": "Edge runtime middleware for TinyFlag (Vercel Edge, Cloudflare Workers, Deno Deploy)",
+  "license": "MIT",
+  "author": "josedab",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josedab/tinyflag.git",
+    "directory": "packages/edge"
+  },
+  "homepage": "https://github.com/josedab/tinyflag#readme",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./vercel": {
+      "import": { "types": "./dist/vercel.d.ts", "default": "./dist/vercel.js" },
+      "require": { "types": "./dist/vercel.d.cts", "default": "./dist/vercel.cjs" }
+    },
+    "./cloudflare": {
+      "import": { "types": "./dist/cloudflare.d.ts", "default": "./dist/cloudflare.js" },
+      "require": { "types": "./dist/cloudflare.d.cts", "default": "./dist/cloudflare.cjs" }
+    },
+    "./deno": {
+      "import": { "types": "./dist/deno.d.ts", "default": "./dist/deno.js" },
+      "require": { "types": "./dist/deno.d.cts", "default": "./dist/deno.cjs" }
+    }
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["feature-flags", "edge", "vercel", "cloudflare-workers", "deno", "middleware", "tinyflag"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "peerDependencies": {
+    "tinyflag": "workspace:*"
+  },
+  "devDependencies": {
+    "tinyflag": "workspace:*",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
