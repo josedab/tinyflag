@@ -14,6 +14,8 @@ export interface Rule {
   rollout?: number;
   /** Force a specific variant for matched users. */
   variant?: string;
+  /** Reference a named segment instead of inline conditions. */
+  segment?: string;
 }
 
 /** A variant in an A/B test with a relative weight. */
@@ -61,6 +63,17 @@ export interface CohortStrategy {
 /** Advanced rollout strategy (union type). */
 export type RolloutStrategy = RampStrategy | RingStrategy | CohortStrategy;
 
+/** Flag lifecycle states: draft → active → sunset → archived. */
+export type FlagLifecycleState = 'draft' | 'active' | 'sunset' | 'archived';
+
+/** Lifecycle metadata for a flag. */
+export interface FlagLifecycle {
+  /** Current lifecycle state. */
+  state: FlagLifecycleState;
+  /** ISO 8601 date when sunset begins. Required when state is 'sunset'. */
+  sunsetAt?: string;
+}
+
 /** Definition of a single feature flag. */
 export interface FlagDefinition {
   /** Whether this flag is globally enabled. Required. */
@@ -79,6 +92,23 @@ export interface FlagDefinition {
   schedule?: FlagSchedule;
   /** Prerequisite flag names that must be enabled for this flag to evaluate as enabled. */
   requires?: readonly string[];
+  /** Lifecycle state metadata. */
+  lifecycle?: FlagLifecycle;
+  /** Typed configuration values associated with this flag. */
+  config?: Record<string, unknown>;
+}
+
+/** A named persona preset defining reusable context for evaluation. */
+export interface PersonaDefinition {
+  [key: string]: unknown;
+}
+
+/** A named segment defining reusable targeting conditions. */
+export interface SegmentDefinition {
+  /** Conditions that define membership in this segment. */
+  conditions: Record<string, unknown>;
+  /** Other segments this segment extends (inherits conditions from). */
+  extends?: readonly string[];
 }
 
 /** Root flag configuration loaded from a source. */
@@ -87,6 +117,10 @@ export interface FlagConfig {
   version?: number;
   /** Map of flag names to their definitions. */
   flags: Record<string, FlagDefinition>;
+  /** Named context presets for evaluation. */
+  personas?: Record<string, PersonaDefinition>;
+  /** Named segments defining reusable targeting conditions. */
+  segments?: Record<string, SegmentDefinition>;
 }
 
 /** Warning emitted during multi-source flag merging. */
