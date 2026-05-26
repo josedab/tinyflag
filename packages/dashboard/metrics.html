@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📊 TinyFlag Metrics</title>
+  <style>
+    :root {
+      --bg: #fff; --fg: #1a1a2e; --card: #f8f9fa; --border: #e2e8f0;
+      --enabled: #22c55e; --disabled: #ef4444; --accent: #3b82f6; --muted: #64748b;
+      --radius: 8px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0f172a; --fg: #e2e8f0; --card: #1e293b; --border: #334155; --muted: #94a3b8; }
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--fg); }
+    .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    h1 { font-size: 24px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .stat-value { font-size: 32px; font-weight: 700; }
+    .stat-label { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+    .chart-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+    canvas { width: 100% !important; height: 200px !important; }
+    .flag-metrics { margin-top: 16px; }
+    .flag-row { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .flag-row:last-child { border-bottom: none; }
+    .flag-name { flex: 1; font-weight: 500; }
+    .flag-count { width: 80px; text-align: right; color: var(--muted); font-size: 13px; }
+    .sparkline { width: 120px; height: 30px; }
+    .bar { display: flex; height: 24px; border-radius: 4px; overflow: hidden; }
+    .bar .segment { height: 100%; }
+    .bar .enabled-seg { background: var(--enabled); }
+    .bar .disabled-seg { background: var(--disabled); }
+    .variant-seg { height: 100%; }
+    .legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+    .significance { padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-top: 8px; }
+    .sig-ready { background: rgba(34,197,94,0.1); color: var(--enabled); border: 1px solid var(--enabled); }
+    .sig-not-ready { background: rgba(100,116,139,0.1); color: var(--muted); border: 1px solid var(--border); }
+    .connect-panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; display: flex; gap: 8px; align-items: center; }
+    .connect-panel input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 8px 12px; color: var(--fg); font-size: 14px; }
+    .connect-panel button { background: var(--accent); color: #fff; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 16px; }
+    .tab { padding: 8px 16px; border-radius: 6px 6px 0 0; background: var(--card); border: 1px solid var(--border); border-bottom: none; cursor: pointer; color: var(--muted); font-size: 13px; }
+    .tab.active { background: var(--bg); color: var(--fg); font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div>
+      <h1>📊 Flag Impact Metrics</h1>
+      <div class="subtitle">Evaluation frequency, variant distribution, and statistical significance</div>
+    </div>
+    <a href="index.html" style="color:var(--accent);font-size:13px;text-decoration:none">← Dashboard</a>
+  </header>
+
+  <div class="connect-panel">
+    <input id="wsUrl" placeholder="ws://localhost:3939" value="ws://localhost:3939" />
+    <button onclick="connectWs()">Connect</button>
+    <span id="connStatus" style="font-size:12px;color:var(--muted)">Disconnected</span>
+  </div>
+
+  <div class="grid" id="stats">
+    <div class="stat-card"><div class="stat-value" id="totalEvals">0</div><div class="stat-label">Total Evaluations</div></div>
+    <div class="stat-card"><div class="stat-value" id="uniqueFlags">0</div><div class="stat-label">Active Flags</div></div>
+    <div class="stat-card"><div class="stat-value" id="errorRate">0%</div><div class="stat-label">Error Rate</div></div>
+    <div class="stat-card"><div class="stat-value" id="avgLatency">—</div><div class="stat-label">Avg Eval Time</div></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Evaluations Over Time</div>
+    <canvas id="timeChart"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">Per-Flag Metrics</div>
+    <div id="flagMetrics" class="flag-metrics">
+      <div style="color:var(--muted);padding:16px;text-align:center">
+        Connect to a TinyFlag server or paste exposure events to see metrics
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title">A/B Test Significance Calculator</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;color:var(--muted)">Control conversions / total</label>
+        <div style="display:flex;gap:4px;margin-top:4px">
+          <input id="sigControlConv" type="number" value="120" style="width:80px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg)">
+          <span style="padding:6px">/</span>
+          <input id="sigControlTotal" type="number" value="1000" style="width:80px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg)">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--muted)">Treatment conversions / total</label>
+        <div style="display:flex;gap:4px;margin-top:4px">
+          <input id="sigTreatConv" type="number" value="150" style="width:80px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg)">
+          <span style="padding:6px">/</span>
+          <input id="sigTreatTotal" type="number" value="1000" style="width:80px;padding:6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--fg)">
+        </div>
+      </div>
+    </div>
+    <button onclick="calcSignificance()" style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:8px 16px;cursor:pointer;font-weight:600">Calculate</button>
+    <div id="sigResult"></div>
+  </div>
+</div>
+
+<script>
+  // Metrics collector: aggregates exposure events into time-bucketed counters
+  const metrics = {
+    byFlag: {}, // flag -> { total, enabled, disabled, variants: {name: count}, errors, hourBuckets: {hour: count} }
+    total: 0,
+    errors: 0,
+    timeSeries: [], // [{time, count}]
+    _bucket() {
+      return Math.floor(Date.now() / 3600000); // hour bucket
+    }
+  };
+
+  function recordExposure(event) {
+    const { flag, enabled, variant } = event;
+    if (!metrics.byFlag[flag]) {
+      metrics.byFlag[flag] = { total: 0, enabled: 0, disabled: 0, variants: {}, errors: 0, hourBuckets: {} };
+    }
+    const m = metrics.byFlag[flag];
+    m.total++;
+    metrics.total++;
+    if (enabled) m.enabled++;
+    else m.disabled++;
+    if (variant) m.variants[variant] = (m.variants[variant] || 0) + 1;
+    const hour = metrics._bucket();
+    m.hourBuckets[hour] = (m.hourBuckets[hour] || 0) + 1;
+
+    // Time series (1-minute buckets for chart)
+    const minBucket = Math.floor(Date.now() / 60000);
+    const last = metrics.timeSeries[metrics.timeSeries.length - 1];
+    if (last && last.time === minBucket) last.count++;
+    else metrics.timeSeries.push({ time: minBucket, count: 1 });
+    if (metrics.timeSeries.length > 60) metrics.timeSeries.shift();
+
+    updateUI();
+  }
+
+  function updateUI() {
+    document.getElementById('totalEvals').textContent = metrics.total.toLocaleString();
+    document.getElementById('uniqueFlags').textContent = Object.keys(metrics.byFlag).length;
+    document.getElementById('errorRate').textContent = metrics.total > 0
+      ? (metrics.errors / metrics.total * 100).toFixed(1) + '%' : '0%';
+
+    renderFlagMetrics();
+    renderTimeChart();
+  }
+
+  function renderFlagMetrics() {
+    const container = document.getElementById('flagMetrics');
+    const entries = Object.entries(metrics.byFlag).sort((a, b) => b[1].total - a[1].total);
+    if (entries.length === 0) return;
+
+    const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+    let html = '';
+
+    for (const [flag, m] of entries) {
+      const enabledPct = m.total > 0 ? (m.enabled / m.total * 100).toFixed(1) : 0;
+      const disabledPct = m.total > 0 ? (m.disabled / m.total * 100).toFixed(1) : 0;
+
+      html += `<div class="flag-row">
+        <div class="flag-name">${flag}</div>
+        <div class="flag-count">${m.total.toLocaleString()} evals</div>
+        <div style="width:200px;margin-left:16px">
+          <div class="bar">
+            <div class="enabled-seg" style="width:${enabledPct}%"></div>
+            <div class="disabled-seg" style="width:${disabledPct}%"></div>
+          </div>
+          <div class="legend">
+            <span style="--c:var(--enabled)">enabled ${enabledPct}%</span>
+            <span style="--c:var(--disabled)">disabled ${disabledPct}%</span>
+          </div>
+        </div>`;
+
+      // Variant distribution
+      const variantEntries = Object.entries(m.variants);
+      if (variantEntries.length > 0) {
+        const totalVariant = variantEntries.reduce((s, [, c]) => s + c, 0);
+        html += '<div style="width:200px;margin-left:16px"><div class="bar">';
+        variantEntries.forEach(([name, count], i) => {
+          const pct = (count / totalVariant * 100).toFixed(1);
+          html += `<div class="variant-seg" style="width:${pct}%;background:${colors[i % colors.length]}" title="${name}: ${pct}%"></div>`;
+        });
+        html += '</div><div class="legend">';
+        variantEntries.forEach(([name, count], i) => {
+          html += `<span style="--c:${colors[i % colors.length]}">${name} ${(count / totalVariant * 100).toFixed(1)}%</span>`;
+        });
+        html += '</div></div>';
+      }
+
+      // Sparkline (hourly)
+      const hours = Object.entries(m.hourBuckets).sort((a, b) => Number(a[0]) - Number(b[0]));
+      if (hours.length > 1) {
+        const maxVal = Math.max(...hours.map(h => h[1]));
+        const points = hours.map((h, i) => `${i * (120 / (hours.length - 1))},${30 - (h[1] / maxVal * 28)}`).join(' ');
+        html += `<svg class="sparkline" viewBox="0 0 120 30"><polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="1.5"/></svg>`;
+      }
+
+      html += '</div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  // Simple canvas time chart
+  function renderTimeChart() {
+    const canvas = document.getElementById('timeChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = 200 * dpr;
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, rect.width, 200);
+
+    const data = metrics.timeSeries;
+    if (data.length < 2) return;
+
+    const maxVal = Math.max(...data.map(d => d.count), 1);
+    const w = rect.width;
+    const h = 180;
+    const stepX = w / (data.length - 1);
+
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#3b82f6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    data.forEach((d, i) => {
+      const x = i * stepX;
+      const y = h - (d.count / maxVal * (h - 20)) + 10;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Fill area
+    ctx.lineTo((data.length - 1) * stepX, h + 10);
+    ctx.lineTo(0, h + 10);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(59,130,246,0.1)';
+    ctx.fill();
+  }
+
+  // Chi-squared significance test
+  function calcSignificance() {
+    const cc = parseInt(document.getElementById('sigControlConv').value) || 0;
+    const ct = parseInt(document.getElementById('sigControlTotal').value) || 1;
+    const tc = parseInt(document.getElementById('sigTreatConv').value) || 0;
+    const tt = parseInt(document.getElementById('sigTreatTotal').value) || 1;
+
+    const cnc = ct - cc;
+    const tnc = tt - tc;
+    const total = ct + tt;
+    const totalConv = cc + tc;
+    const totalNonConv = cnc + tnc;
+
+    // Chi-squared 2x2
+    const e11 = ct * totalConv / total;
+    const e12 = ct * totalNonConv / total;
+    const e21 = tt * totalConv / total;
+    const e22 = tt * totalNonConv / total;
+
+    const chi2 = ((cc - e11) ** 2 / e11) + ((cnc - e12) ** 2 / e12) + ((tc - e21) ** 2 / e21) + ((tnc - e22) ** 2 / e22);
+
+    // p-value approximation for 1 df using chi-squared survival function
+    const p = chi2SurvivalFunction(chi2);
+    const ready = p < 0.05;
+
+    const controlRate = (cc / ct * 100).toFixed(2);
+    const treatRate = (tc / tt * 100).toFixed(2);
+    const lift = ct > 0 ? ((tc / tt - cc / ct) / (cc / ct) * 100).toFixed(1) : 0;
+
+    const resultDiv = document.getElementById('sigResult');
+    resultDiv.innerHTML = `
+      <div class="significance ${ready ? 'sig-ready' : 'sig-not-ready'}">
+        <strong>${ready ? '✅ Statistically Significant' : '⏳ Not Yet Significant'}</strong>
+        <div style="margin-top:8px;font-size:12px">
+          Control: ${controlRate}% · Treatment: ${treatRate}% · Lift: ${lift > 0 ? '+' : ''}${lift}%<br>
+          χ² = ${chi2.toFixed(3)} · p = ${p.toFixed(4)} · ${ready ? 'Ready to call (p < 0.05)' : 'Keep collecting data'}
+        </div>
+      </div>`;
+  }
+
+  // Chi-squared survival function approximation (1 df)
+  function chi2SurvivalFunction(x) {
+    if (x <= 0) return 1;
+    // Using the complementary error function approximation
+    const z = Math.sqrt(x);
+    const t = 1 / (1 + 0.2316419 * z);
+    const d = 0.3989422804014327;
+    const p = d * Math.exp(-z * z / 2) * t * (0.3193815 + t * (-0.3565638 + t * (1.781478 + t * (-1.821256 + t * 1.330274))));
+    return 2 * p; // two-tailed
+  }
+
+  // WebSocket connection
+  let ws = null;
+  function connectWs() {
+    const url = document.getElementById('wsUrl').value;
+    if (ws) { ws.close(); ws = null; }
+
+    try {
+      ws = new WebSocket(url);
+      document.getElementById('connStatus').textContent = 'Connecting...';
+
+      ws.onopen = () => {
+        document.getElementById('connStatus').textContent = '🟢 Connected';
+        document.getElementById('connStatus').style.color = 'var(--enabled)';
+      };
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'exposure') recordExposure(msg);
+          if (msg.type === 'flags-updated' && msg.flags) {
+            document.getElementById('uniqueFlags').textContent = Object.keys(msg.flags).length;
+          }
+        } catch {}
+      };
+      ws.onclose = () => {
+        document.getElementById('connStatus').textContent = '🔴 Disconnected';
+        document.getElementById('connStatus').style.color = 'var(--disabled)';
+      };
+      ws.onerror = () => {
+        document.getElementById('connStatus').textContent = '🔴 Error';
+        document.getElementById('connStatus').style.color = 'var(--disabled)';
+      };
+    } catch (e) {
+      document.getElementById('connStatus').textContent = '🔴 ' + e.message;
+    }
+  }
+
+  // Generate some demo data
+  function loadDemoData() {
+    const flags = ['new-checkout', 'dark-mode', 'beta-features', 'payment-v2'];
+    const variants = { 'new-checkout': ['control', 'new-flow'], 'payment-v2': ['v1', 'v2'] };
+
+    for (let i = 0; i < 500; i++) {
+      const flag = flags[Math.floor(Math.random() * flags.length)];
+      const enabled = Math.random() > 0.3;
+      const flagVariants = variants[flag];
+      const variant = flagVariants ? flagVariants[Math.floor(Math.random() * flagVariants.length)] : null;
+      recordExposure({ flag, enabled, variant, userId: 'user-' + i, timestamp: Date.now() - Math.random() * 3600000 });
+    }
+  }
+
+  // Auto-load demo data
+  loadDemoData();
+</script>
+</body>
+</html>
