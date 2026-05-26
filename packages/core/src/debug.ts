@@ -13,6 +13,11 @@ function isDebugEnabled(): boolean {
   return debugEnabled;
 }
 
+/** Check if debug mode is active. */
+export function isDebug(): boolean {
+  return isDebugEnabled();
+}
+
 /** Enable or disable debug logging programmatically. */
 export function setDebug(enabled: boolean): void {
   debugEnabled = enabled;
