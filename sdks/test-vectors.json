@@ -1,0 +1,464 @@
+{
+  "description": "Cross-language test vectors",
+  "murmurhash3": [
+    {
+      "key": "",
+      "seed": 0,
+      "expected": 0
+    },
+    {
+      "key": "hello",
+      "seed": 0,
+      "expected": 613153351
+    },
+    {
+      "key": "hello",
+      "seed": 42,
+      "expected": 3806057185
+    },
+    {
+      "key": "flag:user-1",
+      "seed": 0,
+      "expected": 550893901
+    },
+    {
+      "key": "new-checkout:user-123",
+      "seed": 0,
+      "expected": 2171525887
+    },
+    {
+      "key": "dark-mode:user-456",
+      "seed": 0,
+      "expected": 1678498822
+    },
+    {
+      "key": "test:abc",
+      "seed": 1597463007,
+      "expected": 1836727614
+    }
+  ],
+  "rolloutBucket": [
+    {
+      "flagName": "test-flag",
+      "userId": "user-0",
+      "seed": 0,
+      "expected": 88
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-1",
+      "seed": 0,
+      "expected": 43
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-2",
+      "seed": 0,
+      "expected": 95
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-3",
+      "seed": 0,
+      "expected": 5
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-4",
+      "seed": 0,
+      "expected": 70
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-5",
+      "seed": 0,
+      "expected": 64
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-6",
+      "seed": 0,
+      "expected": 60
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-7",
+      "seed": 0,
+      "expected": 28
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-8",
+      "seed": 0,
+      "expected": 45
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-9",
+      "seed": 0,
+      "expected": 45
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-10",
+      "seed": 0,
+      "expected": 92
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-11",
+      "seed": 0,
+      "expected": 78
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-12",
+      "seed": 0,
+      "expected": 77
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-13",
+      "seed": 0,
+      "expected": 2
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-14",
+      "seed": 0,
+      "expected": 44
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-15",
+      "seed": 0,
+      "expected": 28
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-16",
+      "seed": 0,
+      "expected": 15
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-17",
+      "seed": 0,
+      "expected": 57
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-18",
+      "seed": 0,
+      "expected": 48
+    },
+    {
+      "flagName": "test-flag",
+      "userId": "user-19",
+      "seed": 0,
+      "expected": 75
+    }
+  ],
+  "selectVariant": [
+    {
+      "flagName": "ab-test",
+      "userId": "user-0",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-1",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-2",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "treatment"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-3",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-4",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "treatment"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-5",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-6",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-7",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-8",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "treatment"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-9",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-10",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "treatment"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-11",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "treatment"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-12",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-13",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-14",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-15",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-16",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "treatment"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-17",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-18",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    },
+    {
+      "flagName": "ab-test",
+      "userId": "user-19",
+      "variants": [
+        {
+          "name": "control",
+          "weight": 50
+        },
+        {
+          "name": "treatment",
+          "weight": 50
+        }
+      ],
+      "expected": "control"
+    }
+  ]
+}
