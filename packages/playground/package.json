@@ -1,0 +1,11 @@
+{
+  "name": "tinyflag-playground",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Interactive web playground for TinyFlag — paste YAML, define contexts, see results in real-time",
+  "license": "MIT",
+  "scripts": {
+    "dev": "npx serve .",
+    "serve": "npx serve ."
+  }
+}

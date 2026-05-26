@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TinyFlag Playground</title>
+  <style>
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+      --green: #3fb950; --red: #f85149; --yellow: #d29922;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    header h1 { font-size: 18px; font-weight: 600; }
+    header span { color: var(--muted); font-size: 13px; }
+    .container { display: flex; flex: 1; overflow: hidden; }
+    .panel { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+    .panel:last-child { border-right: none; }
+    .panel-header { padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; }
+    .panel-body { flex: 1; overflow: auto; padding: 0; }
+    textarea { width: 100%; height: 100%; background: var(--bg); color: var(--text); border: none; padding: 16px; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; line-height: 1.5; resize: none; outline: none; tab-size: 2; }
+    #context-panel { max-width: 300px; min-width: 200px; }
+    #context-panel .panel-body { padding: 12px; }
+    .ctx-field { margin-bottom: 10px; }
+    .ctx-field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .ctx-field input { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; color: var(--text); font-size: 13px; outline: none; }
+    .ctx-field input:focus { border-color: var(--accent); }
+    .add-field { background: none; border: 1px dashed var(--border); color: var(--muted); padding: 6px; width: 100%; border-radius: 4px; cursor: pointer; font-size: 12px; }
+    .add-field:hover { border-color: var(--accent); color: var(--accent); }
+    #results { font-family: 'SF Mono', monospace; font-size: 13px; padding: 16px; }
+    .flag-result { padding: 8px 12px; margin-bottom: 6px; background: var(--surface); border-radius: 6px; border-left: 3px solid var(--border); }
+    .flag-result.enabled { border-left-color: var(--green); }
+    .flag-result.disabled { border-left-color: var(--red); }
+    .flag-name { font-weight: 600; }
+    .flag-status { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 8px; }
+    .flag-status.on { background: rgba(63,185,80,0.15); color: var(--green); }
+    .flag-status.off { background: rgba(248,81,73,0.15); color: var(--red); }
+    .flag-variant { color: var(--accent); font-size: 12px; margin-top: 2px; }
+    .flag-desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .error-msg { color: var(--red); padding: 16px; }
+    #rollout-panel { border-top: 1px solid var(--border); padding: 16px; }
+    .rollout-bar { height: 20px; background: var(--surface); border-radius: 4px; overflow: hidden; margin: 4px 0; display: flex; }
+    .rollout-bar .segment { height: 100%; transition: width 0.3s; }
+    .rollout-legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); flex-wrap: wrap; margin-top: 4px; }
+    .rollout-legend span::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+    .btn-simulate { background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; margin-top: 8px; }
+    .btn-simulate:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚩 TinyFlag Playground</h1>
+    <span>Paste YAML • Define context • See results instantly</span>
+  </header>
+  <div class="container">
+    <div class="panel" id="editor-panel">
+      <div class="panel-header">Flag Config (YAML)</div>
+      <div class="panel-body">
+        <textarea id="yaml-editor" spellcheck="false">version: 1
+flags:
+  new-checkout:
+    enabled: true
+    description: Redesigned checkout flow
+    rollout: 50
+    rules:
+      - conditions:
+          plan: pro
+        enabled: true
+    variants:
+      - name: control
+        weight: 50
+      - name: new-flow
+        weight: 50
+
+  dark-mode:
+    enabled: false
+    description: Dark mode toggle
+
+  beta-features:
+    enabled: true
+    description: Beta features for internal users
+    rules:
+      - conditions:
+          email: '*@company.com'
+        enabled: true
+    rollout: 0</textarea>
+      </div>
+    </div>
+
+    <div class="panel" id="context-panel">
+      <div class="panel-header">Context</div>
+      <div class="panel-body">
+        <div class="ctx-field">
+          <label>userId</label>
+          <input type="text" id="ctx-userId" value="user-123" data-key="userId">
+        </div>
+        <div class="ctx-field">
+          <label>plan</label>
+          <input type="text" id="ctx-plan" value="free" data-key="plan">
+        </div>
+        <div class="ctx-field">
+          <label>country</label>
+          <input type="text" id="ctx-country" value="US" data-key="country">
+        </div>
+        <div class="ctx-field">
+          <label>email</label>
+          <input type="text" id="ctx-email" value="user@example.com" data-key="email">
+        </div>
+        <div id="custom-fields"></div>
+        <button class="add-field" id="add-ctx-field">+ Add Field</button>
+        <div id="rollout-panel" style="margin-top:16px">
+          <div class="panel-header" style="padding:0 0 8px 0;border:none;background:none">Rollout Visualizer</div>
+          <div id="rollout-viz"></div>
+          <button class="btn-simulate" id="btn-simulate">Simulate 10,000 users</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="results-panel">
+      <div class="panel-header">Evaluation Results</div>
+      <div class="panel-body" id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    // Minimal YAML parser for flag config (supports the TinyFlag subset)
+    function parseSimpleYaml(text) {
+      const lines = text.split('\n');
+      const result = { version: 1, flags: {} };
+      let currentFlag = null;
+      let currentSection = null;
+      let currentRule = null;
+      let currentConditions = null;
+      let currentVariants = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trimEnd();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+
+        const indent = line.search(/\S/);
+
+        if (trimmed.startsWith('version:')) {
+          result.version = parseInt(trimmed.split(':')[1].trim()) || 1;
+          continue;
+        }
+        if (trimmed === 'flags:') continue;
+
+        // Flag name (indent 2)
+        if (indent === 2 && trimmed.endsWith(':') && !trimmed.includes(' ')) {
+          if (currentFlag && currentVariants.length > 0) {
+            result.flags[currentFlag].variants = [...currentVariants];
+          }
+          currentFlag = trimmed.slice(0, -1).trim();
+          result.flags[currentFlag] = { enabled: false };
+          currentSection = null;
+          currentRule = null;
+          currentVariants = [];
+          continue;
+        }
+
+        if (!currentFlag) continue;
+        const flag = result.flags[currentFlag];
+
+        // Flag properties (indent 4)
+        if (indent === 4) {
+          if (trimmed.startsWith('- ')) {
+            // Array item in a section
+            if (currentSection === 'rules') {
+              if (currentRule) {
+                flag.rules = flag.rules || [];
+                flag.rules.push(currentRule);
+              }
+              currentRule = {};
+              currentConditions = null;
+            } else if (currentSection === 'variants') {
+              // handled at deeper indent
+            } else if (currentSection === 'tags') {
+              flag.tags = flag.tags || [];
+              flag.tags.push(trimmed.slice(2).trim());
+            }
+            continue;
+          }
+          const colonIdx = trimmed.indexOf(':');
+          if (colonIdx === -1) continue;
+          const key = trimmed.slice(0, colonIdx).trim();
+          const val = trimmed.slice(colonIdx + 1).trim();
+
+          if (key === 'enabled') flag.enabled = val === 'true';
+          else if (key === 'description') flag.description = val;
+          else if (key === 'rollout') flag.rollout = parseInt(val);
+          else if (key === 'rules') { currentSection = 'rules'; currentRule = null; }
+          else if (key === 'variants') { currentSection = 'variants'; }
+          else if (key === 'tags') { currentSection = 'tags'; }
+          continue;
+        }
+
+        // Deeper indents
+        if (indent >= 6 && currentSection === 'rules' && currentRule) {
+          if (trimmed.startsWith('- conditions:')) {
+            currentConditions = {};
+            currentRule.conditions = currentConditions;
+            continue;
+          }
+          const colonIdx = trimmed.indexOf(':');
+          if (colonIdx === -1) continue;
+          const key = trimmed.slice(trimmed.startsWith('- ') ? 2 : 0, colonIdx).trim();
+          let val = trimmed.slice(colonIdx + 1).trim();
+
+          if (key === 'conditions') {
+            currentConditions = {};
+            currentRule.conditions = currentConditions;
+          } else if (key === 'enabled') {
+            currentRule.enabled = val === 'true';
+          } else if (key === 'rollout') {
+            currentRule.rollout = parseInt(val);
+          } else if (key === 'variant') {
+            currentRule.variant = val;
+          } else if (currentConditions !== null && indent >= 8) {
+            // Parse condition values
+            if (val.startsWith('{')) {
+              try {
+                const jsonVal = val.replace(/(\w+):/g, '"$1":').replace(/'/g, '"');
+                currentConditions[key] = JSON.parse(jsonVal);
+              } catch { currentConditions[key] = val; }
+            } else if (val === 'true') currentConditions[key] = true;
+            else if (val === 'false') currentConditions[key] = false;
+            else if (!isNaN(Number(val))) currentConditions[key] = Number(val);
+            else currentConditions[key] = val.replace(/^['"]|['"]$/g, '');
+          }
+        }
+
+        if (indent >= 6 && currentSection === 'variants') {
+          if (trimmed.startsWith('- name:')) {
+            const name = trimmed.slice(trimmed.indexOf(':') + 1).trim();
+            currentVariants.push({ name, weight: 50 });
+          } else if (trimmed.startsWith('weight:')) {
+            if (currentVariants.length > 0) {
+              currentVariants[currentVariants.length - 1].weight = parseInt(trimmed.split(':')[1].trim()) || 0;
+            }
+          }
+        }
+      }
+
+      // Finalize last flag
+      if (currentFlag) {
+        if (currentRule && currentSection === 'rules') {
+          result.flags[currentFlag].rules = result.flags[currentFlag].rules || [];
+          result.flags[currentFlag].rules.push(currentRule);
+        }
+        if (currentVariants.length > 0) {
+          result.flags[currentFlag].variants = currentVariants;
+        }
+      }
+
+      return result;
+    }
+
+    // MurmurHash3 (32-bit) — same as tinyflag core
+    function murmurhash3(key, seed = 0) {
+      let h = seed >>> 0;
+      const len = key.length;
+      let i = 0;
+      while (i + 4 <= len) {
+        let k = (key.charCodeAt(i) & 0xff) | ((key.charCodeAt(i+1) & 0xff) << 8) | ((key.charCodeAt(i+2) & 0xff) << 16) | ((key.charCodeAt(i+3) & 0xff) << 24);
+        k = Math.imul(k, 0xcc9e2d51); k = (k << 15) | (k >>> 17); k = Math.imul(k, 0x1b873593);
+        h ^= k; h = (h << 13) | (h >>> 19); h = Math.imul(h, 5) + 0xe6546b64;
+        i += 4;
+      }
+      let k = 0;
+      switch (len & 3) {
+        case 3: k ^= (key.charCodeAt(i+2) & 0xff) << 16;
+        case 2: k ^= (key.charCodeAt(i+1) & 0xff) << 8;
+        case 1: k ^= key.charCodeAt(i) & 0xff;
+          k = Math.imul(k, 0xcc9e2d51); k = (k << 15) | (k >>> 17); k = Math.imul(k, 0x1b873593); h ^= k;
+      }
+      h ^= len; h ^= h >>> 16; h = Math.imul(h, 0x85ebca6b); h ^= h >>> 13; h = Math.imul(h, 0xc2b2ae35); h ^= h >>> 16;
+      return h >>> 0;
+    }
+
+    function rolloutBucket(flagName, userId, seed = 0) {
+      return murmurhash3(flagName + ':' + userId, seed) % 100;
+    }
+
+    function selectVariant(flagName, userId, variants) {
+      const totalWeight = variants.reduce((s, v) => s + v.weight, 0);
+      if (totalWeight === 0) return variants[0]?.name || null;
+      const bucket = murmurhash3(flagName + ':' + userId, 0x5f3759df) % totalWeight;
+      let cum = 0;
+      for (const v of variants) { cum += v.weight; if (bucket < cum) return v.name; }
+      return variants[variants.length - 1].name;
+    }
+
+    function matchCondition(ctxVal, expected) {
+      if (ctxVal === undefined || ctxVal === null) return false;
+      if (typeof expected === 'string' && expected.includes('*')) {
+        if (typeof ctxVal !== 'string') return false;
+        const re = new RegExp('^' + expected.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+        return re.test(ctxVal);
+      }
+      if (typeof expected === 'object' && expected !== null) {
+        if (expected.$in) return Array.isArray(expected.$in) && expected.$in.includes(ctxVal);
+        if (expected.$not) return !matchCondition(ctxVal, expected.$not);
+        return false;
+      }
+      return ctxVal === expected;
+    }
+
+    function evaluateFlag(name, flag, ctx) {
+      if (!flag.enabled) return { enabled: false, variant: null };
+      if (flag.rules && ctx) {
+        for (const rule of flag.rules) {
+          if (!rule.conditions) continue;
+          const match = Object.entries(rule.conditions).every(([k, v]) => matchCondition(ctx[k], v));
+          if (match) {
+            const re = rule.enabled !== undefined ? rule.enabled : true;
+            if (re && rule.rollout !== undefined && ctx.userId) {
+              return { enabled: rolloutBucket(name, ctx.userId) < rule.rollout, variant: null };
+            }
+            if (!re) return { enabled: false, variant: null };
+            break;
+          }
+        }
+      }
+      if (flag.rollout !== undefined && ctx?.userId) {
+        const enabled = rolloutBucket(name, ctx.userId) < flag.rollout;
+        if (!enabled) return { enabled: false, variant: null };
+      }
+      const variant = (flag.variants?.length && ctx?.userId) ? selectVariant(name, ctx.userId, flag.variants) : null;
+      return { enabled: flag.enabled, variant };
+    }
+
+    // --- UI Logic ---
+    const yamlEditor = document.getElementById('yaml-editor');
+    const resultsDiv = document.getElementById('results');
+    let debounceTimer;
+
+    function getContext() {
+      const ctx = {};
+      document.querySelectorAll('#context-panel input[data-key]').forEach(input => {
+        const v = input.value.trim();
+        if (v) {
+          if (!isNaN(Number(v)) && v !== '') ctx[input.dataset.key] = Number(v);
+          else ctx[input.dataset.key] = v;
+        }
+      });
+      return ctx;
+    }
+
+    function evaluate() {
+      const yaml = yamlEditor.value;
+      const ctx = getContext();
+
+      try {
+        const config = parseSimpleYaml(yaml);
+        let html = '';
+
+        for (const [name, flag] of Object.entries(config.flags)) {
+          const { enabled, variant } = evaluateFlag(name, flag, ctx);
+          const cls = enabled ? 'enabled' : 'disabled';
+          const statusCls = enabled ? 'on' : 'off';
+          const statusText = enabled ? 'ON' : 'OFF';
+
+          html += `<div class="flag-result ${cls}">`;
+          html += `<span class="flag-name">${name}</span>`;
+          html += `<span class="flag-status ${statusCls}">${statusText}</span>`;
+          if (variant) html += `<div class="flag-variant">variant: ${variant}</div>`;
+          if (flag.description) html += `<div class="flag-desc">${flag.description}</div>`;
+          if (flag.rollout !== undefined) html += `<div class="flag-desc">rollout: ${flag.rollout}%</div>`;
+          html += '</div>';
+        }
+
+        resultsDiv.innerHTML = html || '<div class="flag-desc">No flags defined</div>';
+      } catch (e) {
+        resultsDiv.innerHTML = `<div class="error-msg">Parse error: ${e.message}</div>`;
+      }
+    }
+
+    function debouncedEvaluate() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(evaluate, 150);
+    }
+
+    yamlEditor.addEventListener('input', debouncedEvaluate);
+    document.querySelectorAll('#context-panel input').forEach(i => i.addEventListener('input', debouncedEvaluate));
+
+    // Add custom context field
+    document.getElementById('add-ctx-field').addEventListener('click', () => {
+      const key = prompt('Field name:');
+      if (!key) return;
+      const div = document.createElement('div');
+      div.className = 'ctx-field';
+      div.innerHTML = `<label>${key}</label><input type="text" data-key="${key}" value="">`;
+      div.querySelector('input').addEventListener('input', debouncedEvaluate);
+      document.getElementById('custom-fields').appendChild(div);
+    });
+
+    // Monte Carlo simulation
+    document.getElementById('btn-simulate').addEventListener('click', () => {
+      const yaml = yamlEditor.value;
+      const ctx = getContext();
+
+      try {
+        const config = parseSimpleYaml(yaml);
+        const vizDiv = document.getElementById('rollout-viz');
+        let html = '';
+        const N = 10000;
+        const colors = ['#58a6ff', '#3fb950', '#d29922', '#f85149', '#bc8cff', '#79c0ff'];
+
+        for (const [name, flag] of Object.entries(config.flags)) {
+          const counts = {};
+          for (let i = 0; i < N; i++) {
+            const simCtx = { ...ctx, userId: 'sim-user-' + i };
+            const { enabled, variant } = evaluateFlag(name, flag, simCtx);
+            const key = variant || (enabled ? 'enabled' : 'disabled');
+            counts[key] = (counts[key] || 0) + 1;
+          }
+
+          html += `<div style="margin-bottom:12px"><div style="font-size:12px;font-weight:600;margin-bottom:4px">${name}</div>`;
+          html += '<div class="rollout-bar">';
+          const keys = Object.keys(counts).sort();
+          keys.forEach((k, idx) => {
+            const pct = (counts[k] / N * 100).toFixed(1);
+            html += `<div class="segment" style="width:${pct}%;background:${colors[idx % colors.length]}" title="${k}: ${pct}%"></div>`;
+          });
+          html += '</div><div class="rollout-legend">';
+          keys.forEach((k, idx) => {
+            const pct = (counts[k] / N * 100).toFixed(1);
+            html += `<span style="--c:${colors[idx % colors.length]}">${k}: ${pct}%</span>`;
+          });
+          html += '</div></div>';
+        }
+
+        vizDiv.innerHTML = html;
+      } catch (e) {
+        document.getElementById('rollout-viz').innerHTML = `<div class="error-msg">${e.message}</div>`;
+      }
+    });
+
+    // Tab key support in editor
+    yamlEditor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = yamlEditor.selectionStart;
+        const end = yamlEditor.selectionEnd;
+        yamlEditor.value = yamlEditor.value.substring(0, start) + '  ' + yamlEditor.value.substring(end);
+        yamlEditor.selectionStart = yamlEditor.selectionEnd = start + 2;
+        debouncedEvaluate();
+      }
+    });
+
+    // Initial evaluation
+    evaluate();
+  </script>
+</body>
+</html>
