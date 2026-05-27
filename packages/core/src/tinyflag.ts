@@ -7,7 +7,7 @@ import type {
   ExposureEvent,
 } from './types.js';
 import { EventEmitter } from './events.js';
-import { evaluateFlag, evaluateVariant, setEvaluationContext, detectCircularDependencies } from './evaluator.js';
+import { evaluateFlag, evaluateVariant, setEvaluationContext, detectCircularDependencies, evaluateWithPersona as coreEvaluateWithPersona, getEvaluationWarnings } from './evaluator.js';
 import {
   detectSourceType,
   loadFromFile,
@@ -140,6 +140,11 @@ export class TinyFlag {
 
     const normalizedContext = normalizeContext(context);
     const result = evaluateFlag(normalizedName, flag, normalizedContext);
+
+    // Emit lifecycle warnings (e.g., sunset)
+    for (const w of getEvaluationWarnings()) {
+      this.emitter.emit('error', { code: w.code, message: w.message, flagName: w.flagName });
+    }
 
     debug(`isEnabled("${normalizedName}") → ${result}`, context ? { context } : undefined);
 
@@ -281,6 +286,54 @@ export class TinyFlag {
     this.overrides.clear();
   }
 
+  /**
+   * Evaluate a flag using a named persona as the base context.
+   * Returns false if the persona or flag is not found.
+   */
+  evaluateWithPersona(flagName: string, personaName: string, additionalContext?: UserContext): boolean {
+    const normalizedName = flagName?.trim();
+    if (!normalizedName) {
+      this.emitter.emit('error', { code: 'INVALID_FLAG_NAME', message: 'Flag name is empty' });
+      return false;
+    }
+
+    const flag = this.config.flags[normalizedName];
+    if (!flag) {
+      this.emitter.emit('error', { code: 'FLAG_NOT_FOUND', message: `Flag "${normalizedName}" not found`, flagName: normalizedName });
+      return false;
+    }
+
+    const persona = this.config.personas?.[personaName];
+    if (!persona) {
+      this.emitter.emit('error', { code: 'PERSONA_NOT_FOUND', message: `Persona "${personaName}" not found` });
+      return false;
+    }
+
+    return coreEvaluateWithPersona(normalizedName, flag, persona, additionalContext);
+  }
+
+  /** Get all defined personas. */
+  getPersonas(): Readonly<Record<string, Record<string, unknown>>> {
+    return this.config.personas ?? {};
+  }
+
+  /**
+   * Get typed configuration for a flag.
+   * Returns null if the flag is not found, disabled, or has no config.
+   */
+  getConfig<T = Record<string, unknown>>(flagName: string, context?: UserContext): T | null {
+    const normalizedName = flagName?.trim();
+    if (!normalizedName) return null;
+
+    const flag = this.config.flags[normalizedName];
+    if (!flag || !flag.config) return null;
+
+    const normalizedContext = normalizeContext(context);
+    if (!evaluateFlag(normalizedName, flag, normalizedContext)) return null;
+
+    return flag.config as T;
+  }
+
   /** Clean up resources (file watchers, polling timers). */
   destroy(): void {
     if (this.pollTimer) {
@@ -358,7 +411,7 @@ export class TinyFlag {
       }
 
       this.config = config;
-      setEvaluationContext(config.flags);
+      setEvaluationContext(config.flags, config.segments);
 
       // Detect circular dependencies
       const cycles = detectCircularDependencies(config.flags);
