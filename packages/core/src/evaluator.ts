@@ -1,5 +1,17 @@
-import type { FlagDefinition, FlagConfig, Rule, UserContext, RolloutStrategy } from './types.js';
+import type { FlagDefinition, FlagConfig, Rule, UserContext, RolloutStrategy, SegmentDefinition } from './types.js';
 import { rolloutBucket, selectVariant, murmurhash3 } from './hash.js';
+import { isDebug } from './debug.js';
+
+/** Warnings collected during evaluation (e.g., sunset warnings). */
+export type EvaluationWarning = { code: string; message: string; flagName: string };
+let lastEvaluationWarnings: EvaluationWarning[] = [];
+
+/** Get and clear warnings from the last evaluation call. */
+export function getEvaluationWarnings(): EvaluationWarning[] {
+  const warnings = lastEvaluationWarnings;
+  lastEvaluationWarnings = [];
+  return warnings;
+}
 
 /**
  * Resolve a rollout field (number or strategy) to an effective percentage.
@@ -132,9 +144,18 @@ function globMatch(pattern: string, value: string): boolean {
 /**
  * Evaluate whether all conditions in a rule match the context.
  * Uses AND logic — all conditions must match.
+ * If the rule references a segment, resolves segment conditions first.
  */
 export function matchRule(rule: Rule, context: UserContext): boolean {
-  const entries = Object.entries(rule.conditions);
+  let conditions = rule.conditions;
+
+  // Resolve segment reference
+  if (rule.segment && currentSegments[rule.segment]) {
+    const segConditions = resolveSegmentConditions(rule.segment, currentSegments);
+    conditions = { ...segConditions, ...conditions };
+  }
+
+  const entries = Object.entries(conditions);
 
   // Empty conditions = always matches (vacuous truth)
   if (entries.length === 0) return true;
@@ -319,10 +340,39 @@ function evaluateFlagCore(flagName: string, flag: FlagDefinition, context?: User
 
 /** All flags context for prerequisite evaluation. Set by TinyFlag before calling evaluate. */
 let currentFlags: Record<string, FlagDefinition> = {};
+let currentSegments: Record<string, SegmentDefinition> = {};
 
 /** Set the current flag context for prerequisite evaluation. */
-export function setEvaluationContext(flags: Record<string, FlagDefinition>): void {
+export function setEvaluationContext(flags: Record<string, FlagDefinition>, segments?: Record<string, SegmentDefinition>): void {
   currentFlags = flags;
+  currentSegments = segments ?? {};
+}
+
+/**
+ * Resolve all conditions for a segment, including inherited conditions.
+ * Uses a visited set to prevent circular resolution.
+ */
+function resolveSegmentConditions(
+  segmentName: string,
+  segments: Record<string, SegmentDefinition>,
+  visited: Set<string> = new Set(),
+): Record<string, unknown> {
+  if (visited.has(segmentName)) return {};
+  visited.add(segmentName);
+
+  const segment = segments[segmentName];
+  if (!segment) return {};
+
+  let conditions = { ...segment.conditions };
+
+  if (segment.extends) {
+    for (const parent of segment.extends) {
+      const parentConditions = resolveSegmentConditions(parent, segments, visited);
+      conditions = { ...parentConditions, ...conditions };
+    }
+  }
+
+  return conditions;
 }
 
 /**
@@ -334,7 +384,21 @@ export function evaluateFlag(
   flag: FlagDefinition,
   context?: UserContext,
 ): boolean {
-  // Step 0: Check prerequisites
+  // Step 0: Check lifecycle state
+  if (flag.lifecycle) {
+    const state = flag.lifecycle.state;
+    if (state === 'archived') return false;
+    if (state === 'draft' && !isDebug()) return false;
+    if (state === 'sunset') {
+      lastEvaluationWarnings.push({
+        code: 'SUNSET_FLAG',
+        message: `Flag "${flagName}" is in sunset state${flag.lifecycle.sunsetAt ? ` since ${flag.lifecycle.sunsetAt}` : ''}`,
+        flagName,
+      });
+    }
+  }
+
+  // Step 1: Check prerequisites
   if (flag.requires && flag.requires.length > 0) {
     const cache = new Map<string, boolean>();
     if (!checkPrerequisites(flagName, currentFlags, context, new Set(), cache)) {
@@ -423,4 +487,18 @@ export function evaluateVariant(
 
   const enabled = evaluateFlag(flagName, flag, context);
   return { variant: selectVariant(flagName, context.userId, flag.variants), enabled };
+}
+
+/**
+ * Evaluate a flag using a named persona as the base context.
+ * Persona context is merged with any additional context (additional takes precedence).
+ */
+export function evaluateWithPersona(
+  flagName: string,
+  flag: FlagDefinition,
+  personaContext: Record<string, unknown>,
+  additionalContext?: UserContext,
+): boolean {
+  const merged: UserContext = { ...personaContext, ...additionalContext };
+  return evaluateFlag(flagName, flag, merged);
 }
