@@ -1,8 +1,44 @@
-import type { FlagConfig, FlagDefinition, FlagSchedule, Rule, Variant, ValidationError } from './types.js';
+import type { FlagConfig, FlagDefinition, FlagSchedule, FlagLifecycleState, SegmentDefinition, Rule, Variant, ValidationError } from './types.js';
 
 const FLAG_NAME_PATTERN = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
 const MAX_FLAG_NAME_LENGTH = 128;
 const SUPPORTED_VERSIONS = [1];
+
+/** Detect circular inheritance in segment definitions. */
+function detectCircularSegments(segments: Record<string, Record<string, unknown>>): string[][] {
+  const cycles: string[][] = [];
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const path: string[] = [];
+
+  function dfs(name: string): void {
+    if (inStack.has(name)) {
+      const cycleStart = path.indexOf(name);
+      cycles.push([...path.slice(cycleStart), name]);
+      return;
+    }
+    if (visited.has(name)) return;
+    visited.add(name);
+    inStack.add(name);
+    path.push(name);
+
+    const seg = segments[name];
+    const exts = seg?.extends as string[] | undefined;
+    if (exts) {
+      for (const ext of exts) {
+        dfs(ext);
+      }
+    }
+
+    path.pop();
+    inStack.delete(name);
+  }
+
+  for (const name of Object.keys(segments)) {
+    dfs(name);
+  }
+  return cycles;
+}
 
 /**
  * Validate a parsed flag configuration object.
@@ -47,11 +83,62 @@ export function validateConfig(config: unknown, strict: boolean = false): Valida
     return errors;
   }
 
-  const knownRootFields = new Set(['version', 'flags']);
+  const knownRootFields = new Set(['version', 'flags', 'personas', 'segments']);
   if (strict) {
     for (const key of Object.keys(obj)) {
       if (!knownRootFields.has(key)) {
         errors.push({ path: key, message: `Unknown field "${key}"` });
+      }
+    }
+  }
+
+  // Validate personas
+  if (obj.personas !== undefined) {
+    if (typeof obj.personas !== 'object' || Array.isArray(obj.personas) || obj.personas === null) {
+      errors.push({ path: 'personas', message: '"personas" must be an object mapping names to context objects' });
+    } else {
+      const personas = obj.personas as Record<string, unknown>;
+      for (const [pName, pDef] of Object.entries(personas)) {
+        if (typeof pDef !== 'object' || pDef === null || Array.isArray(pDef)) {
+          errors.push({ path: `personas.${pName}`, message: 'Persona definition must be an object' });
+        }
+      }
+    }
+  }
+
+  // Validate segments
+  if (obj.segments !== undefined) {
+    if (typeof obj.segments !== 'object' || Array.isArray(obj.segments) || obj.segments === null) {
+      errors.push({ path: 'segments', message: '"segments" must be an object mapping names to segment definitions' });
+    } else {
+      const segments = obj.segments as Record<string, unknown>;
+      for (const [sName, sDef] of Object.entries(segments)) {
+        if (typeof sDef !== 'object' || sDef === null || Array.isArray(sDef)) {
+          errors.push({ path: `segments.${sName}`, message: 'Segment definition must be an object' });
+        } else {
+          const seg = sDef as Record<string, unknown>;
+          if (seg.conditions === undefined) {
+            errors.push({ path: `segments.${sName}.conditions`, message: 'Segment must have a "conditions" field' });
+          } else if (typeof seg.conditions !== 'object' || seg.conditions === null || Array.isArray(seg.conditions)) {
+            errors.push({ path: `segments.${sName}.conditions`, message: '"conditions" must be an object' });
+          }
+          if (seg.extends !== undefined) {
+            if (!Array.isArray(seg.extends)) {
+              errors.push({ path: `segments.${sName}.extends`, message: '"extends" must be an array of segment names' });
+            } else {
+              for (const ext of seg.extends) {
+                if (typeof ext !== 'string' || ext === '') {
+                  errors.push({ path: `segments.${sName}.extends`, message: 'Extended segment name must be a non-empty string' });
+                }
+              }
+            }
+          }
+        }
+      }
+      // Detect circular segment inheritance
+      const segmentCircles = detectCircularSegments(segments as Record<string, Record<string, unknown>>);
+      for (const cycle of segmentCircles) {
+        errors.push({ path: 'segments', message: `Circular segment inheritance: ${cycle.join(' → ')}` });
       }
     }
   }
@@ -198,8 +285,40 @@ function validateFlagDefinition(
     }
   }
 
+  // lifecycle
+  if (flag.lifecycle !== undefined) {
+    if (typeof flag.lifecycle !== 'object' || flag.lifecycle === null || Array.isArray(flag.lifecycle)) {
+      errors.push({ path: `${prefix}.lifecycle`, message: '"lifecycle" must be an object' });
+    } else {
+      const lc = flag.lifecycle as Record<string, unknown>;
+      const validStates = ['draft', 'active', 'sunset', 'archived'];
+      if (lc.state === undefined) {
+        errors.push({ path: `${prefix}.lifecycle.state`, message: 'Missing required field "state"' });
+      } else if (typeof lc.state !== 'string' || !validStates.includes(lc.state)) {
+        errors.push({ path: `${prefix}.lifecycle.state`, message: `"state" must be one of: ${validStates.join(', ')}` });
+      }
+      if (lc.state === 'sunset' && lc.sunsetAt === undefined) {
+        errors.push({ path: `${prefix}.lifecycle.sunsetAt`, message: '"sunsetAt" is required when state is "sunset"' });
+      }
+      if (lc.sunsetAt !== undefined) {
+        if (typeof lc.sunsetAt !== 'string') {
+          errors.push({ path: `${prefix}.lifecycle.sunsetAt`, message: '"sunsetAt" must be an ISO 8601 string' });
+        } else if (isNaN(new Date(lc.sunsetAt).getTime())) {
+          errors.push({ path: `${prefix}.lifecycle.sunsetAt`, message: `Invalid ISO 8601 date: "${lc.sunsetAt}"` });
+        }
+      }
+    }
+  }
+
+  // config
+  if (flag.config !== undefined) {
+    if (typeof flag.config !== 'object' || flag.config === null || Array.isArray(flag.config)) {
+      errors.push({ path: `${prefix}.config`, message: '"config" must be an object' });
+    }
+  }
+
   if (strict) {
-    const knownFields = new Set(['enabled', 'description', 'tags', 'rollout', 'rules', 'variants', 'schedule', 'requires']);
+    const knownFields = new Set(['enabled', 'description', 'tags', 'rollout', 'rules', 'variants', 'schedule', 'requires', 'lifecycle', 'config']);
     for (const key of Object.keys(flag)) {
       if (!knownFields.has(key)) {
         errors.push({ path: `${prefix}.${key}`, message: `Unknown field "${key}"` });
@@ -299,7 +418,7 @@ export function parseFlagConfig(
 
   // Detect unknown root fields in lenient mode
   if (!strict) {
-    const knownRootFields = new Set(['version', 'flags']);
+    const knownRootFields = new Set(['version', 'flags', 'personas', 'segments']);
     for (const key of Object.keys(obj)) {
       if (!knownRootFields.has(key)) {
         warnings.push({ path: key, message: `Unknown field "${key}" (ignored)` });
@@ -319,10 +438,11 @@ export function parseFlagConfig(
 
     if (d.rules !== undefined) {
       flagDef.rules = (d.rules as Record<string, unknown>[]).map((r) => {
-        const rule: Rule = { conditions: r.conditions as Record<string, unknown> };
+        const rule: Rule = { conditions: (r.conditions as Record<string, unknown>) ?? {} };
         if (r.enabled !== undefined) rule.enabled = r.enabled as boolean;
         if (r.rollout !== undefined) rule.rollout = r.rollout as number;
         if (r.variant !== undefined) rule.variant = r.variant as string;
+        if (r.segment !== undefined) rule.segment = r.segment as string;
         return rule;
       });
     }
@@ -346,6 +466,18 @@ export function parseFlagConfig(
       flagDef.requires = d.requires as string[];
     }
 
+    if (d.lifecycle !== undefined) {
+      const lc = d.lifecycle as Record<string, unknown>;
+      flagDef.lifecycle = {
+        state: lc.state as FlagLifecycleState,
+        ...(lc.sunsetAt !== undefined ? { sunsetAt: lc.sunsetAt as string } : {}),
+      };
+    }
+
+    if (d.config !== undefined) {
+      flagDef.config = d.config as Record<string, unknown>;
+    }
+
     // Detect unknown flag fields in lenient mode
     if (!strict) {
       const knownFields = new Set([
@@ -357,6 +489,8 @@ export function parseFlagConfig(
         'variants',
         'schedule',
         'requires',
+        'lifecycle',
+        'config',
       ]);
       for (const key of Object.keys(d)) {
         if (!knownFields.has(key)) {
@@ -371,10 +505,30 @@ export function parseFlagConfig(
     flags[name] = flagDef;
   }
 
+  // Parse personas
+  const personas = obj.personas
+    ? (obj.personas as Record<string, Record<string, unknown>>)
+    : undefined;
+
+  // Parse segments
+  let segments: Record<string, SegmentDefinition> | undefined;
+  if (obj.segments) {
+    segments = {};
+    const segsRaw = obj.segments as Record<string, Record<string, unknown>>;
+    for (const [sName, sDef] of Object.entries(segsRaw)) {
+      segments[sName] = {
+        conditions: (sDef.conditions as Record<string, unknown>) ?? {},
+        ...(sDef.extends ? { extends: sDef.extends as string[] } : {}),
+      };
+    }
+  }
+
   return {
     config: {
       version: (obj.version as number) ?? 1,
       flags,
+      ...(personas ? { personas } : {}),
+      ...(segments ? { segments } : {}),
     },
     errors: [],
     warnings,
