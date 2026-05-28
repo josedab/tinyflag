@@ -18,6 +18,28 @@
         }
       },
       "additionalProperties": false
+    },
+    "personas": {
+      "type": "object",
+      "description": "Named context presets (personas) for flag evaluation.",
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$": {
+          "type": "object",
+          "description": "Context key-value pairs for this persona.",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "segments": {
+      "type": "object",
+      "description": "Named segments defining reusable targeting conditions.",
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$": {
+          "$ref": "#/definitions/Segment"
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["flags"],
@@ -62,6 +84,15 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "description": "Prerequisite flag names that must be enabled."
+        },
+        "lifecycle": {
+          "$ref": "#/definitions/Lifecycle",
+          "description": "Flag lifecycle state metadata."
+        },
+        "config": {
+          "type": "object",
+          "description": "Typed configuration values associated with this flag.",
+          "additionalProperties": true
         }
       },
       "required": ["enabled"],
@@ -87,6 +118,10 @@
         "variant": {
           "type": "string",
           "description": "Force a specific variant when rule matches."
+        },
+        "segment": {
+          "type": "string",
+          "description": "Reference a named segment instead of inline conditions."
         }
       },
       "required": ["conditions"]
@@ -119,6 +154,38 @@
           "description": "ISO 8601 datetime with timezone offset when the flag should be disabled."
         }
       },
+      "additionalProperties": false
+    },
+    "Lifecycle": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": ["draft", "active", "sunset", "archived"],
+          "description": "Current lifecycle state of the flag."
+        },
+        "sunsetAt": {
+          "type": "string",
+          "description": "ISO 8601 datetime when sunset begins. Required when state is 'sunset'."
+        }
+      },
+      "required": ["state"],
+      "additionalProperties": false
+    },
+    "Segment": {
+      "type": "object",
+      "properties": {
+        "conditions": {
+          "type": "object",
+          "description": "Conditions that define segment membership."
+        },
+        "extends": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Other segments this segment inherits conditions from."
+        }
+      },
+      "required": ["conditions"],
       "additionalProperties": false
     }
   }
