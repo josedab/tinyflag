@@ -17,11 +17,16 @@ export type {
   RampStrategy,
   RingStrategy,
   CohortStrategy,
+  PersonaDefinition,
+  FlagLifecycleState,
+  FlagLifecycle,
+  SegmentDefinition,
 } from './types.js';
 export { parseYaml } from './yaml.js';
 export { validateConfig, parseFlagConfig } from './schema.js';
 export { mergeFlagConfigs } from './merge.js';
-export { detectCircularDependencies, buildDependencyTree } from './evaluator.js';
+export { detectCircularDependencies, buildDependencyTree, evaluateWithPersona, getEvaluationWarnings } from './evaluator.js';
+export type { EvaluationWarning } from './evaluator.js';
 export { setDebug } from './debug.js';
 export { generateKeyPair, signContent, verifyContent, signFile, verifyFile } from './signing.js';
 export {
@@ -34,3 +39,7 @@ export {
 export type { AuditEvent, AuditSink, AuditOptions } from './audit.js';
 export { pullFlags, pushFlags, threeWayMerge } from './sync.js';
 export type { SyncMeta } from './sync.js';
+export { CachedTinyFlag } from './cached.js';
+export type { CachedTinyFlagOptions } from './cached.js';
+export { createReplayRecorder, parseReplayLog, generateReplayHtmlReport } from './replay.js';
+export type { ReplayLogEntry, ReplayRecorderOptions, ReplayDiff } from './replay.js';
