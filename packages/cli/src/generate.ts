@@ -18,11 +18,40 @@ export function generateTypes(config: FlagConfig): string {
       variantType = flag.variants.map((v) => `'${v.name}'`).join(' | ');
     }
 
-    lines.push(`  '${name}': { variants: ${variantType} };`);
+    const configType = flag.config ? `${toPascalCase(name)}Config` : 'never';
+    lines.push(`  '${name}': { variants: ${variantType}; config: ${configType} };`);
   }
 
   lines.push('}');
   lines.push('');
 
+  // Generate config interfaces
+  for (const name of flagNames) {
+    const flag = config.flags[name];
+    if (!flag.config) continue;
+
+    const ifaceName = `${toPascalCase(name)}Config`;
+    lines.push(`export interface ${ifaceName} {`);
+    for (const [key, value] of Object.entries(flag.config)) {
+      const tsType = inferTsType(value);
+      lines.push(`  ${key}: ${tsType};`);
+    }
+    lines.push('}');
+    lines.push('');
+  }
+
   return lines.join('\n');
+}
+
+function toPascalCase(name: string): string {
+  return name.split('-').map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
+}
+
+function inferTsType(value: unknown): string {
+  if (value === null || value === undefined) return 'unknown';
+  if (typeof value === 'string') return 'string';
+  if (typeof value === 'number') return 'number';
+  if (typeof value === 'boolean') return 'boolean';
+  if (Array.isArray(value)) return 'unknown[]';
+  return 'Record<string, unknown>';
 }
