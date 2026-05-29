@@ -43,3 +43,19 @@ export { CachedTinyFlag } from './cached.js';
 export type { CachedTinyFlagOptions } from './cached.js';
 export { createReplayRecorder, parseReplayLog, generateReplayHtmlReport } from './replay.js';
 export type { ReplayLogEntry, ReplayRecorderOptions, ReplayDiff } from './replay.js';
+export {
+  resolveTenantFlags,
+  evaluateTenantFlag,
+  evaluateTenantVariant,
+  listTenants,
+  diffTenantFlags,
+  validateTenantIsolation,
+  formatTenantList,
+} from './tenant.js';
+export type {
+  TenantContext,
+  TenantFlagConfig,
+  MultiTenantFlagConfig,
+  TenantDiffEntry,
+  TenantIsolationViolation,
+} from './tenant.js';

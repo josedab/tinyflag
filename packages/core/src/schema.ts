@@ -83,7 +83,7 @@ export function validateConfig(config: unknown, strict: boolean = false): Valida
     return errors;
   }
 
-  const knownRootFields = new Set(['version', 'flags', 'personas', 'segments']);
+  const knownRootFields = new Set(['version', 'flags', 'personas', 'segments', 'tenants']);
   if (strict) {
     for (const key of Object.keys(obj)) {
       if (!knownRootFields.has(key)) {
@@ -418,7 +418,7 @@ export function parseFlagConfig(
 
   // Detect unknown root fields in lenient mode
   if (!strict) {
-    const knownRootFields = new Set(['version', 'flags', 'personas', 'segments']);
+    const knownRootFields = new Set(['version', 'flags', 'personas', 'segments', 'tenants']);
     for (const key of Object.keys(obj)) {
       if (!knownRootFields.has(key)) {
         warnings.push({ path: key, message: `Unknown field "${key}" (ignored)` });

@@ -40,6 +40,26 @@
         }
       },
       "additionalProperties": false
+    },
+    "tenants": {
+      "type": "object",
+      "description": "Tenant-scoped flag overrides for multi-tenant isolation.",
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$": {
+          "type": "object",
+          "properties": {
+            "description": { "type": "string" },
+            "flags": {
+              "type": "object",
+              "description": "Tenant-specific flag overrides merged on top of global defaults.",
+              "additionalProperties": true
+            }
+          },
+          "required": ["flags"],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["flags"],

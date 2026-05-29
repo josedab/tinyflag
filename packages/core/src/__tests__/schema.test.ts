@@ -100,6 +100,20 @@ describe('validateConfig', () => {
     expect(errors.some((e) => e.message.includes('Unknown field'))).toBe(true);
   });
 
+  it('strict mode accepts tenants as a known root field', () => {
+    const errors = validateConfig(
+      {
+        flags: { f: { enabled: true } },
+        tenants: {
+          'acme': { flags: { f: { enabled: false } } },
+        },
+      },
+      true,
+    );
+    const rootFieldErrors = errors.filter((e) => e.message.includes('Unknown field "tenants"'));
+    expect(rootFieldErrors).toEqual([]);
+  });
+
   it('lenient mode allows unknown fields', () => {
     expect(validateConfig({ flags: { f: { enabled: true, extra: 'x' } }, extra: true })).toEqual(
       [],
