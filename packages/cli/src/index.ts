@@ -1,12 +1,14 @@
 import { readFileSync, writeFileSync, existsSync, watch } from 'fs';
 import { execSync } from 'child_process';
 import { dirname } from 'path';
-import { parseYaml, parseFlagConfig, mergeFlagConfigs, detectCircularDependencies, buildDependencyTree, generateKeyPair, signFile, verifyFile, pullFlags, pushFlags, threeWayMerge } from 'tinyflag';
-import type { FlagConfig, FlagDefinition } from 'tinyflag';
+import { parseYaml, parseFlagConfig, mergeFlagConfigs, detectCircularDependencies, buildDependencyTree, generateKeyPair, signFile, verifyFile, pullFlags, pushFlags, threeWayMerge, evaluateFlag, evaluateWithPersona, setEvaluationContext, parseReplayLog, generateReplayHtmlReport } from 'tinyflag';
+import type { FlagConfig, FlagDefinition, UserContext, ReplayDiff } from 'tinyflag';
 import { generateTypes } from './generate.js';
 import { diffConfigs, formatChanges } from './diff.js';
 import { scanFlagUsage, generateStaleReport, formatStaleReport } from './stale.js';
 import { scanForFlagPatterns, formatSuggestionsAsYaml, formatSuggestionsReport } from './suggest.js';
+import { checkConsistency, formatConsistencyReport } from './consistency.js';
+import { lintConfig, loadLintConfig, formatLintResults, formatLintSarif } from './lint.js';
 
 const USAGE = `
 Usage: tinyflag <command> [options]
@@ -27,6 +29,11 @@ Commands:
   push <url> --file <file>        Push flag config to remote URL
   inline <file> [--format esm]    Inline flags as JS module for edge runtimes
   suggest <dir>                   Scan code for feature flag patterns and suggest definitions
+  eval <flag> --file <f>          Evaluate a flag (use --persona <name> or --context key=val)
+  lifecycle <file>                Show lifecycle state distribution of flags
+  consistency-check <file>        Check evaluation consistency across SDKs
+  lint <file>                     Lint flag file for issues (--format json/sarif)
+  replay <log> --flags <file>     Replay evaluations (--at timestamp, --html report.html)
   help                            Show this help message
 
 Options:
@@ -99,6 +106,21 @@ function main(): void {
       break;
     case 'suggest':
       handleSuggest(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'eval':
+      handleEval(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'lifecycle':
+      handleLifecycle(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'consistency-check':
+      handleConsistencyCheck(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'lint':
+      handleLint(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'replay':
+      handleReplay(filteredArgs.slice(1), jsonMode);
       break;
     default:
       console.error(`Unknown command: ${command}\n`);
@@ -746,6 +768,256 @@ function handlePush(args: string[], jsonMode: boolean): void {
       console.error(`❌ Push failed: ${(error as Error).message}`);
       process.exit(1);
     });
+}
+
+function handleReplay(args: string[], jsonMode: boolean): void {
+  const logFile = args.find((a) => !a.startsWith('-'));
+  if (!logFile) {
+    console.error('Error: Missing replay log file\n');
+    console.log('Usage: tinyflag replay <log.jsonl> --flags <file> [--at <timestamp>] [--html <output>] [--json]');
+    process.exit(1);
+  }
+
+  const flagsIdx = args.indexOf('--flags');
+  const flagsFile = flagsIdx !== -1 ? args[flagsIdx + 1] : undefined;
+  if (!flagsFile) {
+    console.error('Error: Missing --flags option\n');
+    console.log('Usage: tinyflag replay <log.jsonl> --flags <file> [--at <timestamp>] [--html <output>]');
+    process.exit(1);
+  }
+
+  const atIdx = args.indexOf('--at');
+  const atTimestamp = atIdx !== -1 ? args[atIdx + 1] : undefined;
+  const htmlIdx = args.indexOf('--html');
+  const htmlOutput = htmlIdx !== -1 ? args[htmlIdx + 1] : undefined;
+
+  let logContent: string;
+  try {
+    logContent = readFileSync(logFile, 'utf-8');
+  } catch {
+    console.error(`Error: Cannot read log file "${logFile}"`);
+    process.exit(1);
+  }
+
+  const entries = parseReplayLog(logContent);
+  const config = loadAndValidate(flagsFile);
+  setEvaluationContext(config.flags);
+
+  // Filter entries by timestamp if --at is provided
+  const filtered = atTimestamp
+    ? entries.filter((e) => new Date(e.timestamp).getTime() <= new Date(atTimestamp).getTime())
+    : entries;
+
+  // Re-evaluate each entry against current flags
+  const diffs: ReplayDiff[] = filtered.map((entry) => {
+    const flag = config.flags[entry.flag];
+    const replayResult = flag ? evaluateFlag(entry.flag, flag, entry.context) : false;
+    return {
+      flag: entry.flag,
+      context: entry.context,
+      originalResult: entry.result,
+      replayResult,
+      changed: entry.result !== replayResult,
+      ...(entry.variant !== undefined ? { originalVariant: entry.variant } : {}),
+    };
+  });
+
+  const changedCount = diffs.filter((d) => d.changed).length;
+
+  if (htmlOutput) {
+    const html = generateReplayHtmlReport(diffs, atTimestamp);
+    writeFileSync(htmlOutput, html, 'utf-8');
+    console.log(`✅ HTML report written to ${htmlOutput}`);
+  }
+
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      command: 'replay',
+      logFile,
+      flagsFile,
+      ...(atTimestamp ? { at: atTimestamp } : {}),
+      totalEntries: filtered.length,
+      changed: changedCount,
+      diffs: diffs.filter((d) => d.changed),
+    }, null, 2));
+    return;
+  }
+
+  console.log(`🔄 Replay: ${filtered.length} evaluations, ${changedCount} changed\n`);
+  if (changedCount > 0) {
+    for (const d of diffs.filter((d) => d.changed)) {
+      console.log(`  ⚠️  ${d.flag}: ${d.originalResult} → ${d.replayResult}`);
+    }
+  } else {
+    console.log('  ✅ No changes detected — current flags produce identical results.');
+  }
+}
+
+function handleLint(args: string[], jsonMode: boolean): void {
+  const filePath = args.find((a) => !a.startsWith('-'));
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag lint <file> [--format json|sarif] [--config <rc-path>]');
+    process.exit(1);
+  }
+
+  const formatIdx = args.indexOf('--format');
+  const format = formatIdx !== -1 ? args[formatIdx + 1] : undefined;
+  const configIdx = args.indexOf('--config');
+  const configPath = configIdx !== -1 ? args[configIdx + 1] : undefined;
+
+  const config = loadAndValidate(filePath);
+  const lintCfg = loadLintConfig(configPath);
+  const results = lintConfig(config, lintCfg);
+
+  if (format === 'sarif') {
+    console.log(JSON.stringify(formatLintSarif(results, filePath), null, 2));
+    const hasErrors = results.some((r) => r.severity === 'error');
+    if (hasErrors) process.exit(1);
+    return;
+  }
+
+  if (jsonMode || format === 'json') {
+    console.log(JSON.stringify({ command: 'lint', file: filePath, results }, null, 2));
+    const hasErrors = results.some((r) => r.severity === 'error');
+    if (hasErrors) process.exit(1);
+    return;
+  }
+
+  console.log(formatLintResults(results));
+  const hasErrors = results.some((r) => r.severity === 'error');
+  if (hasErrors) process.exit(1);
+}
+
+function handleConsistencyCheck(args: string[], jsonMode: boolean): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag consistency-check <file> [--vectors <count>] [--json]');
+    process.exit(1);
+  }
+
+  const vectorsIdx = args.indexOf('--vectors');
+  const count = vectorsIdx !== -1 ? parseInt(args[vectorsIdx + 1], 10) : 10000;
+  if (isNaN(count) || count < 1) {
+    console.error('Error: --vectors must be a positive integer');
+    process.exit(1);
+  }
+
+  try {
+    const result = checkConsistency(filePath, count);
+    if (jsonMode) {
+      console.log(JSON.stringify({ command: 'consistency-check', ...result }, null, 2));
+    } else {
+      console.log(formatConsistencyReport(result));
+    }
+
+    if (result.divergences.length > 0) {
+      process.exit(1);
+    }
+  } catch (error) {
+    console.error(`❌ Consistency check failed: ${(error as Error).message}`);
+    process.exit(1);
+  }
+}
+
+function handleLifecycle(args: string[], jsonMode: boolean): void {
+  const filePath = args[0];
+  if (!filePath) {
+    console.error('Error: Missing flags file path\n');
+    console.log('Usage: tinyflag lifecycle <file> [--json]');
+    process.exit(1);
+  }
+
+  const config = loadAndValidate(filePath);
+  const distribution: Record<string, string[]> = { draft: [], active: [], sunset: [], archived: [], unset: [] };
+
+  for (const [name, flag] of Object.entries(config.flags)) {
+    const state = (flag as FlagDefinition & { lifecycle?: { state: string } }).lifecycle?.state ?? 'unset';
+    (distribution[state] ??= []).push(name);
+  }
+
+  if (jsonMode) {
+    console.log(JSON.stringify({ command: 'lifecycle', distribution }, null, 2));
+    return;
+  }
+
+  console.log('📊 Flag lifecycle distribution:\n');
+  for (const [state, flags] of Object.entries(distribution)) {
+    if (flags.length === 0) continue;
+    const icon = state === 'active' ? '🟢' : state === 'draft' ? '📝' : state === 'sunset' ? '🌅' : state === 'archived' ? '📦' : '⚪';
+    console.log(`  ${icon} ${state}: ${flags.length} flag(s)`);
+    for (const f of flags) {
+      console.log(`     - ${f}`);
+    }
+  }
+}
+
+function handleEval(args: string[], jsonMode: boolean): void {
+  const flagName = args[0];
+  if (!flagName || flagName.startsWith('-')) {
+    console.error('Error: Missing flag name\n');
+    console.log('Usage: tinyflag eval <flag> --file <file> [--persona <name>] [--context key=val...]');
+    process.exit(1);
+  }
+
+  const fileIdx = args.indexOf('--file');
+  const filePath = fileIdx !== -1 ? args[fileIdx + 1] : undefined;
+  if (!filePath) {
+    console.error('Error: Missing --file option\n');
+    console.log('Usage: tinyflag eval <flag> --file <file> [--persona <name>] [--context key=val...]');
+    process.exit(1);
+  }
+
+  const config = loadAndValidate(filePath);
+  setEvaluationContext(config.flags);
+
+  const personaIdx = args.indexOf('--persona');
+  const personaName = personaIdx !== -1 ? args[personaIdx + 1] : undefined;
+
+  // Build context from --context key=val pairs
+  const context: UserContext = {};
+  const contextIdx = args.indexOf('--context');
+  if (contextIdx !== -1) {
+    for (let i = contextIdx + 1; i < args.length; i++) {
+      if (args[i].startsWith('--')) break;
+      const eqIdx = args[i].indexOf('=');
+      if (eqIdx === -1) continue;
+      const key = args[i].substring(0, eqIdx);
+      const val = args[i].substring(eqIdx + 1);
+      context[key] = val === 'true' ? true : val === 'false' ? false : isNaN(Number(val)) ? val : Number(val);
+    }
+  }
+
+  const flag = config.flags[flagName];
+  if (!flag) {
+    console.error(`Error: Flag "${flagName}" not found`);
+    process.exit(1);
+  }
+
+  let result: boolean;
+  if (personaName) {
+    const persona = (config as FlagConfig).personas?.[personaName];
+    if (!persona) {
+      console.error(`Error: Persona "${personaName}" not found`);
+      process.exit(1);
+    }
+    result = evaluateWithPersona(flagName, flag, persona, Object.keys(context).length > 0 ? context : undefined);
+  } else {
+    result = evaluateFlag(flagName, flag, Object.keys(context).length > 0 ? context : undefined);
+  }
+
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      command: 'eval',
+      flag: flagName,
+      ...(personaName ? { persona: personaName } : {}),
+      context: Object.keys(context).length > 0 ? context : undefined,
+      result,
+    }, null, 2));
+  } else {
+    console.log(`${result ? '✅' : '❌'} ${flagName} → ${result}`);
+  }
 }
 
 main();
