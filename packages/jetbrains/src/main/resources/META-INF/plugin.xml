@@ -1,0 +1,25 @@
+<idea-plugin>
+    <id>com.tinyflag.plugin</id>
+    <name>TinyFlag</name>
+    <vendor email="support@tinyflag.dev" url="https://github.com/josedab/tinyflag">josedab</vendor>
+
+    <description><![CDATA[
+        Feature flag support for TinyFlag — autocomplete flag names in isEnabled()/getVariant() calls,
+        hover previews with current state and rollout, inline gutter icons showing flag status,
+        and Go to Definition navigation from code to YAML flag definitions.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.yaml</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <completion.contributor
+            language="any"
+            implementationClass="com.tinyflag.plugin.TinyFlagCompletionContributor"/>
+        <annotator
+            language="any"
+            implementationClass="com.tinyflag.plugin.TinyFlagAnnotator"/>
+        <projectService
+            serviceImplementation="com.tinyflag.plugin.TinyFlagService"/>
+    </extensions>
+</idea-plugin>
