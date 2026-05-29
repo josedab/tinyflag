@@ -57,6 +57,9 @@ function setCors(res: ServerResponse): void {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, If-None-Match');
 }
 
+// Webhook subscribers for HTTP push notifications
+const webhookSubscribers = new Set<string>();
+
 function handleRequest(req: IncomingMessage, res: ServerResponse): void {
   setCors(res);
 
@@ -79,6 +82,12 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
       break;
     case '/webhook':
       handleWebhook(req, res);
+      break;
+    case '/webhook/subscribe':
+      handleWebhookSubscribe(req, res);
+      break;
+    case '/webhook/unsubscribe':
+      handleWebhookUnsubscribe(req, res);
       break;
     default:
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -120,8 +129,73 @@ function handleWebhook(req: IncomingMessage, res: ServerResponse): void {
   }
 
   loadFlags();
+  notifyWebhookSubscribers();
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ status: 'ok', reloaded: true }));
+}
+
+function handleWebhookSubscribe(req: IncomingMessage, res: ServerResponse): void {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  let body = '';
+  req.on('data', (chunk) => { body += chunk; });
+  req.on('end', () => {
+    try {
+      const { url } = JSON.parse(body);
+      if (!url || typeof url !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Missing "url" in request body' }));
+        return;
+      }
+      webhookSubscribers.add(url);
+      console.log(`📡 Webhook subscriber added: ${url} (total: ${webhookSubscribers.size})`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'subscribed', url }));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+    }
+  });
+}
+
+function handleWebhookUnsubscribe(req: IncomingMessage, res: ServerResponse): void {
+  if (req.method !== 'POST') {
+    res.writeHead(405, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  let body = '';
+  req.on('data', (chunk) => { body += chunk; });
+  req.on('end', () => {
+    try {
+      const { url } = JSON.parse(body);
+      webhookSubscribers.delete(url);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'unsubscribed', url }));
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON body' }));
+    }
+  });
+}
+
+function notifyWebhookSubscribers(): void {
+  const payload = JSON.stringify({ type: 'flags-updated', etag: currentEtag, timestamp: Date.now() });
+  for (const url of webhookSubscribers) {
+    fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload,
+      signal: AbortSignal.timeout(5000),
+    }).catch((err) => {
+      console.error(`❌ Webhook delivery failed for ${url}: ${err.message}`);
+    });
+  }
 }
 
 // Main
@@ -150,8 +224,10 @@ wss.on('connection', (ws: WebSocket) => {
 
 server.listen(PORT, () => {
   console.log(`🚀 TinyFlag server running on http://localhost:${PORT}`);
-  console.log(`   GET  /flags       → JSON flag config`);
-  console.log(`   GET  /health      → Health check`);
-  console.log(`   POST /webhook     → Trigger reload (+ git pull if GIT_AUTO_PULL=true)`);
-  console.log(`   WS   ws://localhost:${PORT} → Real-time flag updates`);
+  console.log(`   GET  /flags              → JSON flag config`);
+  console.log(`   GET  /health             → Health check`);
+  console.log(`   POST /webhook            → Trigger reload (+ git pull if GIT_AUTO_PULL=true)`);
+  console.log(`   POST /webhook/subscribe  → Subscribe to flag change webhooks`);
+  console.log(`   POST /webhook/unsubscribe → Unsubscribe from webhooks`);
+  console.log(`   WS   ws://localhost:${PORT}  → Real-time flag updates`);
 });
