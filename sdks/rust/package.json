@@ -1,0 +1,33 @@
+{
+  "name": "tinyflag-wasm",
+  "version": "0.1.0",
+  "description": "TinyFlag feature flag evaluator compiled to WebAssembly — deterministic flag evaluation in browsers, edge workers, and embedded systems",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tinyflag/tinyflag",
+    "directory": "sdks/rust"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "feature-flags",
+    "wasm",
+    "webassembly",
+    "feature-toggle"
+  ],
+  "main": "pkg/tinyflag_bg.js",
+  "module": "pkg/tinyflag.js",
+  "types": "pkg/tinyflag.d.ts",
+  "sideEffects": [
+    "pkg/tinyflag.js"
+  ],
+  "files": [
+    "pkg/"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir pkg --release",
+    "test": "cargo test"
+  }
+}
