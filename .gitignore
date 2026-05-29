@@ -4,6 +4,11 @@ dist
 .DS_Store
 coverage
 
+# JVM build artifacts
+.gradle/
+.kotlin/
+build/
+
 # Internal planning docs
 PRD-*.md
 __pycache__
