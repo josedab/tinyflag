@@ -1,14 +1,19 @@
 import { readFileSync, writeFileSync, existsSync, watch } from 'fs';
 import { execSync } from 'child_process';
 import { dirname } from 'path';
-import { parseYaml, parseFlagConfig, mergeFlagConfigs, detectCircularDependencies, buildDependencyTree, generateKeyPair, signFile, verifyFile, pullFlags, pushFlags, threeWayMerge, evaluateFlag, evaluateWithPersona, setEvaluationContext, parseReplayLog, generateReplayHtmlReport } from 'tinyflag';
-import type { FlagConfig, FlagDefinition, UserContext, ReplayDiff } from 'tinyflag';
+import { parseYaml, parseFlagConfig, mergeFlagConfigs, detectCircularDependencies, buildDependencyTree, generateKeyPair, signFile, verifyFile, pullFlags, pushFlags, threeWayMerge, evaluateFlag, evaluateWithPersona, setEvaluationContext, parseReplayLog, generateReplayHtmlReport, listTenants, diffTenantFlags, formatTenantList, validateTenantIsolation } from 'tinyflag';
+import type { FlagConfig, FlagDefinition, UserContext, ReplayDiff, MultiTenantFlagConfig } from 'tinyflag';
 import { generateTypes } from './generate.js';
 import { diffConfigs, formatChanges } from './diff.js';
 import { scanFlagUsage, generateStaleReport, formatStaleReport } from './stale.js';
 import { scanForFlagPatterns, formatSuggestionsAsYaml, formatSuggestionsReport } from './suggest.js';
 import { checkConsistency, formatConsistencyReport } from './consistency.js';
 import { lintConfig, loadLintConfig, formatLintResults, formatLintSarif } from './lint.js';
+import { loadFlagOwners, resolveOwnership, checkApprovals, formatApprovalResult, formatOwnershipReport } from './governance.js';
+import { analyzeImpact, formatImpactReport } from './impact.js';
+import { parseTestSpec, runTestSpec, runTestSpecs, formatTestResults, formatJUnitXml } from './testing.js';
+import { CanaryController, createPrometheusAdapter, createDatadogAdapter, formatCanaryState } from './canary.js';
+import { parseFlagCommand, generateOverlayFile, applyOverlay, writeOverlay, loadOverlay, cleanupExpiredOverlays, listActiveOverlays } from './ephemeral.js';
 
 const USAGE = `
 Usage: tinyflag <command> [options]
@@ -33,6 +38,16 @@ Commands:
   lifecycle <file>                Show lifecycle state distribution of flags
   consistency-check <file>        Check evaluation consistency across SDKs
   lint <file>                     Lint flag file for issues (--format json/sarif)
+  owners <file>                   Show flag ownership (--owners <owners-file>)
+  owners check <file>             Check PR approvals (--approvers user1,user2)
+  tenant list <file>              List tenants in config
+  tenant diff <file>              Compare flags between tenants (--a tenant1 --b tenant2)
+  impact <flag> --dir <dir>       Analyze flag blast radius (--flags <file>)
+  test <specs-dir> --flags <f>    Run declarative flag test specs (--junit <out>)
+  canary <flag>                   Start canary rollout (--adapter prometheus --url <url>)
+  overlay list <dir>              List active ephemeral overlays
+  overlay apply <file> --dir <d>  Apply flag overlay to base config
+  overlay cleanup <dir>           Remove expired overlays
   replay <log> --flags <file>     Replay evaluations (--at timestamp, --html report.html)
   help                            Show this help message
 
@@ -118,6 +133,24 @@ function main(): void {
       break;
     case 'lint':
       handleLint(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'owners':
+      handleOwners(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'tenant':
+      handleTenant(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'impact':
+      handleImpact(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'test':
+      handleTest(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'canary':
+      handleCanary(filteredArgs.slice(1), jsonMode);
+      break;
+    case 'overlay':
+      handleOverlay(filteredArgs.slice(1), jsonMode);
       break;
     case 'replay':
       handleReplay(filteredArgs.slice(1), jsonMode);
@@ -1017,6 +1050,321 @@ function handleEval(args: string[], jsonMode: boolean): void {
     }, null, 2));
   } else {
     console.log(`${result ? '✅' : '❌'} ${flagName} → ${result}`);
+  }
+}
+
+function handleOwners(args: string[], jsonMode: boolean): void {
+  const subCommand = args[0];
+
+  const ownersIdx = args.indexOf('--owners');
+  const ownersFile = ownersIdx >= 0 && args[ownersIdx + 1] ? args[ownersIdx + 1] : 'flag-owners.yml';
+
+  if (subCommand === 'check') {
+    // Check approvals for changed flags
+    const flagFile = args[1];
+    if (!flagFile) {
+      console.error('Usage: tinyflag owners check <file> --owners <owners-file> --approvers user1,user2 --changed flag1,flag2');
+      process.exit(1);
+    }
+
+    const approversIdx = args.indexOf('--approvers');
+    const approvers = approversIdx >= 0 && args[approversIdx + 1]
+      ? args[approversIdx + 1].split(',')
+      : [];
+
+    const changedIdx = args.indexOf('--changed');
+    const changedFlags = changedIdx >= 0 && args[changedIdx + 1]
+      ? args[changedIdx + 1].split(',')
+      : [];
+
+    const ownersConfig = loadFlagOwners(ownersFile);
+    const result = checkApprovals(changedFlags, ownersConfig, approvers);
+
+    if (jsonMode) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatApprovalResult(result));
+    }
+
+    process.exit(result.passed ? 0 : 1);
+  } else {
+    // Show ownership report for all flags
+    const flagFile = subCommand;
+    if (!flagFile) {
+      console.error('Usage: tinyflag owners <file> [--owners <owners-file>]');
+      process.exit(1);
+    }
+
+    const content = readFileSync(flagFile, 'utf8');
+    const raw = parseYaml(content);
+    const config = parseFlagConfig(raw);
+    const ownersConfig = loadFlagOwners(ownersFile);
+
+    if (jsonMode) {
+      const results = Object.keys(config.flags).map((f) => resolveOwnership(f, ownersConfig));
+      console.log(JSON.stringify(results, null, 2));
+    } else {
+      console.log(formatOwnershipReport(config, ownersConfig));
+    }
+  }
+}
+
+function handleTenant(args: string[], jsonMode: boolean): void {
+  const subCommand = args[0];
+
+  if (subCommand === 'list') {
+    const flagFile = args[1];
+    if (!flagFile) {
+      console.error('Usage: tinyflag tenant list <file>');
+      process.exit(1);
+    }
+    const content = readFileSync(flagFile, 'utf8');
+    const raw = parseYaml(content) as MultiTenantFlagConfig;
+    if (jsonMode) {
+      console.log(JSON.stringify({ tenants: listTenants(raw) }, null, 2));
+    } else {
+      console.log(formatTenantList(raw));
+    }
+  } else if (subCommand === 'diff') {
+    const flagFile = args[1];
+    if (!flagFile) {
+      console.error('Usage: tinyflag tenant diff <file> --a <tenant1> --b <tenant2>');
+      process.exit(1);
+    }
+    const content = readFileSync(flagFile, 'utf8');
+    const raw = parseYaml(content) as MultiTenantFlagConfig;
+
+    const aIdx = args.indexOf('--a');
+    const bIdx = args.indexOf('--b');
+    const tenantA = aIdx >= 0 && args[aIdx + 1] ? args[aIdx + 1] : null;
+    const tenantB = bIdx >= 0 && args[bIdx + 1] ? args[bIdx + 1] : null;
+
+    const diffs = diffTenantFlags(raw, tenantA, tenantB);
+    if (jsonMode) {
+      console.log(JSON.stringify(diffs, null, 2));
+    } else if (diffs.length === 0) {
+      console.log('No differences found.');
+    } else {
+      for (const diff of diffs) {
+        const icon = diff.type === 'added' ? '➕' : diff.type === 'removed' ? '➖' : '🔄';
+        console.log(`${icon} ${diff.flag} (${diff.type})`);
+        if (diff.changes) {
+          for (const c of diff.changes) {
+            console.log(`    ${c}`);
+          }
+        }
+      }
+    }
+  } else if (subCommand === 'validate') {
+    const flagFile = args[1];
+    if (!flagFile) {
+      console.error('Usage: tinyflag tenant validate <file>');
+      process.exit(1);
+    }
+    const content = readFileSync(flagFile, 'utf8');
+    const raw = parseYaml(content) as MultiTenantFlagConfig;
+    const violations = validateTenantIsolation(raw);
+    if (jsonMode) {
+      console.log(JSON.stringify({ passed: violations.length === 0, violations }, null, 2));
+    } else if (violations.length === 0) {
+      console.log('✅ No tenant isolation violations found.');
+    } else {
+      console.log('❌ Tenant isolation violations:');
+      for (const v of violations) {
+        console.log(`  Flag "${v.flag}" from tenant "${v.sourceTenant}" leaked to "${v.leakedToTenant}"`);
+      }
+      process.exit(1);
+    }
+  } else {
+    console.error('Usage: tinyflag tenant <list|diff|validate> <file>');
+    process.exit(1);
+  }
+}
+
+function handleImpact(args: string[], jsonMode: boolean): void {
+  const flagName = args[0];
+  if (!flagName) {
+    console.error('Usage: tinyflag impact <flag> --dir <dir> [--flags <file>]');
+    process.exit(1);
+  }
+
+  const dirIdx = args.indexOf('--dir');
+  const dir = dirIdx >= 0 && args[dirIdx + 1] ? args[dirIdx + 1] : '.';
+
+  const flagsIdx = args.indexOf('--flags');
+  let config = undefined;
+  if (flagsIdx >= 0 && args[flagsIdx + 1]) {
+    const content = readFileSync(args[flagsIdx + 1], 'utf8');
+    const raw = parseYaml(content);
+    config = parseFlagConfig(raw);
+  }
+
+  const analysis = analyzeImpact(dir, flagName, config);
+
+  if (jsonMode) {
+    console.log(JSON.stringify(analysis, null, 2));
+  } else {
+    console.log(formatImpactReport(analysis));
+  }
+}
+
+function handleTest(args: string[], jsonMode: boolean): void {
+  const specDir = args[0];
+  if (!specDir) {
+    console.error('Usage: tinyflag test <specs-dir> --flags <file> [--junit <output>]');
+    process.exit(1);
+  }
+
+  const flagsIdx = args.indexOf('--flags');
+  if (flagsIdx < 0 || !args[flagsIdx + 1]) {
+    console.error('--flags <file> is required');
+    process.exit(1);
+  }
+
+  const flagContent = readFileSync(args[flagsIdx + 1], 'utf8');
+  const config = parseFlagConfig(parseYaml(flagContent));
+
+  const result = runTestSpecs(specDir, config);
+
+  // JUnit output
+  const junitIdx = args.indexOf('--junit');
+  if (junitIdx >= 0 && args[junitIdx + 1]) {
+    const xml = formatJUnitXml(result);
+    writeFileSync(args[junitIdx + 1], xml);
+    console.log(`JUnit XML written to ${args[junitIdx + 1]}`);
+  }
+
+  if (jsonMode) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(formatTestResults(result));
+  }
+
+  process.exit(result.totalFailed > 0 ? 1 : 0);
+}
+
+function handleCanary(args: string[], jsonMode: boolean): void {
+  const flagName = args[0];
+  if (!flagName) {
+    console.error('Usage: tinyflag canary <flag> --adapter <prometheus|datadog> --url <metrics-url> [--threshold <0.05>]');
+    process.exit(1);
+  }
+
+  const adapterIdx = args.indexOf('--adapter');
+  const adapterName = adapterIdx >= 0 && args[adapterIdx + 1] ? args[adapterIdx + 1] : 'prometheus';
+
+  const urlIdx = args.indexOf('--url');
+  const metricsUrl = urlIdx >= 0 && args[urlIdx + 1] ? args[urlIdx + 1] : 'http://localhost:9090';
+
+  const thresholdIdx = args.indexOf('--threshold');
+  const threshold = thresholdIdx >= 0 && args[thresholdIdx + 1] ? parseFloat(args[thresholdIdx + 1]) : 0.05;
+
+  const stagesIdx = args.indexOf('--stages');
+  const stages = stagesIdx >= 0 && args[stagesIdx + 1]
+    ? args[stagesIdx + 1].split(',').map(Number)
+    : [1, 5, 25, 50, 100];
+
+  let adapter;
+  switch (adapterName) {
+    case 'datadog': {
+      const apiKey = process.env.DD_API_KEY || '';
+      const appKey = process.env.DD_APP_KEY || '';
+      adapter = createDatadogAdapter(apiKey, appKey);
+      break;
+    }
+    case 'prometheus':
+    default:
+      adapter = createPrometheusAdapter(metricsUrl);
+      break;
+  }
+
+  const controller = new CanaryController({
+    flag: flagName,
+    metricsAdapter: adapter,
+    errorThreshold: threshold,
+    stages,
+    stageInterval: 300,
+    gracePeriod: 300,
+    confirmationWindow: 3,
+  }, (flag, pct) => {
+    console.log(`  → Updated ${flag} rollout to ${pct}%`);
+  });
+
+  if (jsonMode) {
+    console.log(JSON.stringify(controller.getState(), null, 2));
+  } else {
+    console.log(formatCanaryState(controller.getState()));
+    console.log('');
+    console.log('Canary controller initialized. Use the canary API to run check/advance cycles.');
+    console.log(`  Stages: ${stages.join('% → ')}%`);
+    console.log(`  Threshold: ${(threshold * 100).toFixed(1)}% error rate`);
+    console.log(`  Adapter: ${adapterName} (${metricsUrl})`);
+  }
+}
+
+function handleOverlay(args: string[], jsonMode: boolean): void {
+  const subCommand = args[0];
+
+  if (subCommand === 'list') {
+    const dir = args[1] || '.';
+    const overlays = listActiveOverlays(dir);
+    if (jsonMode) {
+      console.log(JSON.stringify(overlays, null, 2));
+    } else if (overlays.length === 0) {
+      console.log('No active overlays.');
+    } else {
+      for (const overlay of overlays) {
+        console.log(`📌 ${overlay.scope} (${overlay.overrides.length} override${overlay.overrides.length !== 1 ? 's' : ''})`);
+        console.log(`   Expires: ${overlay.expiresAt}`);
+        for (const o of overlay.overrides) {
+          const parts: string[] = [o.flag];
+          if (o.enabled !== undefined) parts.push(`enabled=${o.enabled}`);
+          if (o.rollout !== undefined) parts.push(`rollout=${o.rollout}`);
+          if (o.variant) parts.push(`variant=${o.variant}`);
+          console.log(`   • ${parts.join(' ')}`);
+        }
+        console.log('');
+      }
+    }
+  } else if (subCommand === 'apply') {
+    const flagFile = args[1];
+    const dirIdx = args.indexOf('--dir');
+    const dir = dirIdx >= 0 && args[dirIdx + 1] ? args[dirIdx + 1] : '.';
+
+    if (!flagFile) {
+      console.error('Usage: tinyflag overlay apply <flags-file> --dir <overlay-dir>');
+      process.exit(1);
+    }
+
+    const content = readFileSync(flagFile, 'utf8');
+    const raw = parseYaml(content);
+    let config = parseFlagConfig(raw);
+
+    const overlays = listActiveOverlays(dir);
+    for (const overlay of overlays) {
+      config = { ...config, ...applyOverlay(config, overlay) };
+    }
+
+    if (jsonMode) {
+      console.log(JSON.stringify(config, null, 2));
+    } else {
+      console.log(`✅ Applied ${overlays.length} overlay(s) to ${flagFile}`);
+      console.log(JSON.stringify(config.flags, null, 2));
+    }
+  } else if (subCommand === 'cleanup') {
+    const dir = args[1] || '.';
+    const removed = cleanupExpiredOverlays(dir);
+    if (jsonMode) {
+      console.log(JSON.stringify({ removed }, null, 2));
+    } else if (removed.length === 0) {
+      console.log('No expired overlays to clean up.');
+    } else {
+      console.log(`🗑️  Removed ${removed.length} expired overlay(s):`);
+      for (const r of removed) console.log(`  - ${r}`);
+    }
+  } else {
+    console.error('Usage: tinyflag overlay <list|apply|cleanup> [options]');
+    process.exit(1);
   }
 }
 
