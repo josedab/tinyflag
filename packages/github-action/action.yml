@@ -1,10 +1,18 @@
 name: 'TinyFlag Validate'
-description: 'Validate flags.yml schema and post flag change summary on PRs'
+description: 'Validate flags.yml schema, check ownership approvals, and post flag change summary on PRs'
 inputs:
   flags-file:
     description: 'Path to the flags file'
     required: false
     default: 'flags.yml'
+  flag-owners-file:
+    description: 'Path to the flag-owners.yml file'
+    required: false
+    default: 'flag-owners.yml'
+  check-approvals:
+    description: 'Enable ownership approval checking'
+    required: false
+    default: 'true'
   github-token:
     description: 'GitHub token for posting PR comments'
     required: false
@@ -28,6 +36,38 @@ runs:
     - name: Validate flags file
       shell: bash
       run: npx tinyflag validate "${{ inputs.flags-file }}"
+
+    - name: Check flag ownership approvals
+      if: github.event_name == 'pull_request' && inputs.check-approvals == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        FLAGS_FILE: ${{ inputs.flags-file }}
+        OWNERS_FILE: ${{ inputs.flag-owners-file }}
+      run: |
+        if [ ! -f "$OWNERS_FILE" ]; then
+          echo "No flag-owners.yml found, skipping approval check."
+          exit 0
+        fi
+
+        # Get changed flags from diff
+        DIFF_OUTPUT=$(npx tinyflag diff "${{ github.event.pull_request.base.ref }}..HEAD" --file "$FLAGS_FILE" --json 2>/dev/null || echo "[]")
+        CHANGED_FLAGS=$(echo "$DIFF_OUTPUT" | node -e "
+          const d = JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+          if (Array.isArray(d)) console.log(d.map(c=>c.flag||c.name).filter(Boolean).join(','));
+          else console.log('');
+        " 2>/dev/null || echo "")
+
+        if [ -z "$CHANGED_FLAGS" ]; then
+          echo "No flag changes to check."
+          exit 0
+        fi
+
+        # Get PR approvers
+        APPROVERS=$(gh pr view "${{ github.event.pull_request.number }}" --json reviews --jq '[.reviews[] | select(.state=="APPROVED") | .author.login] | map("@" + .) | join(",")' 2>/dev/null || echo "")
+
+        # Run approval check
+        npx tinyflag owners check "$FLAGS_FILE" --owners "$OWNERS_FILE" --changed "$CHANGED_FLAGS" --approvers "$APPROVERS"
 
     - name: Check for flag changes and comment on PR
       if: github.event_name == 'pull_request'
