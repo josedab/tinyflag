@@ -3,6 +3,8 @@ import { readFileSync, watch } from 'fs';
 import { execSync } from 'child_process';
 import { WebSocketServer, WebSocket } from './ws.js';
 import { parseYaml, parseFlagConfig } from 'tinyflag';
+import { CollabState, processCollabMessage } from './collab.js';
+import type { CollabResponse } from './collab.js';
 
 const PORT = parseInt(process.env.PORT || '3939', 10);
 const FLAGS_FILE = process.env.FLAGS_FILE || 'flags.yml';
@@ -37,6 +39,10 @@ function loadFlags(): void {
 
 // WebSocket clients
 const wsClients = new Set<WebSocket>();
+
+// Collaboration state
+const collabState = new CollabState();
+const collabSessions = new Map<WebSocket, string>(); // ws → sessionId
 
 function broadcastUpdate(): void {
   const message = JSON.stringify({ type: 'flags-updated', flags: currentFlags, etag: currentEtag });
@@ -88,6 +94,12 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
       break;
     case '/webhook/unsubscribe':
       handleWebhookUnsubscribe(req, res);
+      break;
+    case '/collab/presence':
+      handleCollabPresence(req, res);
+      break;
+    case '/collab/history':
+      handleCollabHistory(req, res);
       break;
     default:
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -198,6 +210,29 @@ function notifyWebhookSubscribers(): void {
   }
 }
 
+function handleCollabPresence(_req: IncomingMessage, res: ServerResponse): void {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ sessions: collabState.getPresence() }));
+}
+
+function handleCollabHistory(req: IncomingMessage, res: ServerResponse): void {
+  const url = new URL(req.url || '/', `http://localhost:${PORT}`);
+  const flagName = url.searchParams.get('flag') || undefined;
+  const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ operations: collabState.getHistory(flagName, limit) }));
+}
+
+function broadcastCollab(msg: CollabResponse, excludeWs?: WebSocket): void {
+  const data = JSON.stringify(msg);
+  for (const client of wsClients) {
+    if (client === excludeWs) continue;
+    try {
+      if (client.readyState === 1) client.send(data);
+    } catch { /* ignore dead connections */ }
+  }
+}
+
 // Main
 loadFlags();
 
@@ -219,7 +254,49 @@ wss.on('connection', (ws: WebSocket) => {
   wsClients.add(ws);
   // Send current flags on connect
   ws.send(JSON.stringify({ type: 'flags-updated', flags: currentFlags, etag: currentEtag }));
-  ws.on('close', () => wsClients.delete(ws));
+
+  ws.on('message', (data: string) => {
+    try {
+      const msg = JSON.parse(data);
+      if (!msg.type) return;
+
+      // Handle collaboration messages
+      const sessionId = collabSessions.get(ws) || '';
+      const { responses, broadcast } = processCollabMessage(collabState, sessionId, msg);
+
+      // If this is a join, store session mapping
+      if (msg.type === 'join') {
+        for (const r of responses) {
+          if (r.type === 'joined') {
+            collabSessions.set(ws, r.sessionId);
+          }
+        }
+      }
+
+      // Send direct responses to this client
+      for (const r of responses) {
+        ws.send(JSON.stringify(r));
+      }
+
+      // Broadcast to all other clients
+      if (broadcast) {
+        broadcastCollab(broadcast, ws);
+      }
+    } catch { /* ignore invalid messages */ }
+  });
+
+  ws.on('close', () => {
+    wsClients.delete(ws);
+    const sessionId = collabSessions.get(ws);
+    if (sessionId) {
+      const releasedLocks = collabState.leave(sessionId);
+      collabSessions.delete(ws);
+      broadcastCollab({ type: 'session-left', sessionId });
+      for (const flagName of releasedLocks) {
+        broadcastCollab({ type: 'unlocked', flagName });
+      }
+    }
+  });
 });
 
 server.listen(PORT, () => {
@@ -229,5 +306,7 @@ server.listen(PORT, () => {
   console.log(`   POST /webhook            → Trigger reload (+ git pull if GIT_AUTO_PULL=true)`);
   console.log(`   POST /webhook/subscribe  → Subscribe to flag change webhooks`);
   console.log(`   POST /webhook/unsubscribe → Unsubscribe from webhooks`);
-  console.log(`   WS   ws://localhost:${PORT}  → Real-time flag updates`);
+  console.log(`   GET  /collab/presence    → Active collaboration sessions`);
+  console.log(`   GET  /collab/history     → Edit history (?flag=name&limit=50)`);
+  console.log(`   WS   ws://localhost:${PORT}  → Real-time flag updates + collaboration`);
 });
