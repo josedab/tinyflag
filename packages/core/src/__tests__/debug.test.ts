@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { setDebug, debug } from '../debug.js';
+import { setDebug, debug, isDebug } from '../debug.js';
 
 describe('debug', () => {
   let debugSpy: ReturnType<typeof vi.spyOn>;
@@ -128,6 +128,59 @@ describe('debug', () => {
 
       ff.destroy();
       setDebug(false);
+    });
+  });
+
+  describe('isDebug()', () => {
+    it('returns true when debug is enabled', () => {
+      setDebug(true);
+      expect(isDebug()).toBe(true);
+    });
+
+    it('returns false when debug is disabled', () => {
+      setDebug(false);
+      expect(isDebug()).toBe(false);
+    });
+  });
+
+  describe('toggle behavior', () => {
+    it('setDebug(true) then setDebug(false) disables debug', () => {
+      setDebug(true);
+      expect(isDebug()).toBe(true);
+
+      setDebug(false);
+      expect(isDebug()).toBe(false);
+
+      debug('should not log');
+      expect(debugSpy).not.toHaveBeenCalled();
+    });
+
+    it('debug is no-op when disabled', () => {
+      setDebug(false);
+      debug('no-op message');
+      debug('no-op with data', { key: 'value' });
+      expect(debugSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('output format', () => {
+    it('uses [tinyflag] prefix', () => {
+      setDebug(true);
+      debug('test');
+      expect(debugSpy.mock.calls[0][0]).toBe('[tinyflag]');
+    });
+
+    it('includes message as second argument', () => {
+      setDebug(true);
+      debug('my-message');
+      expect(debugSpy.mock.calls[0][1]).toBe('my-message');
+    });
+
+    it('includes data as third argument when provided', () => {
+      setDebug(true);
+      const data = { foo: 'bar' };
+      debug('msg', data);
+      expect(debugSpy.mock.calls[0][2]).toBe(data);
     });
   });
 });
