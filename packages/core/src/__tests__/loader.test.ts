@@ -1,10 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   detectSourceType,
+  detectSingleSourceType,
   parseSource,
   loadFromInline,
   loadFromFile,
   loadFromUrl,
+  loadMultiSource,
 } from '../loader.js';
 
 vi.mock('fs', () => {
@@ -19,6 +21,11 @@ vi.mock('fs', () => {
     if (path === 'no-access.yml') {
       const err = new Error('EACCES') as NodeJS.ErrnoException;
       err.code = 'EACCES';
+      throw err;
+    }
+    if (path === 'not-supported.yml') {
+      const err = new Error('Cannot import') as any;
+      err.code = 'ERR_MODULE_NOT_FOUND';
       throw err;
     }
     throw new Error('Unknown test file');
@@ -195,5 +202,131 @@ describe('loadFromUrl', () => {
     );
 
     vi.unstubAllGlobals();
+  });
+
+  it('sends etag and lastModified headers for conditional request', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 304,
+      headers: { get: () => null },
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await loadFromUrl('https://cdn.example.com/flags.json', false, {}, '"etag-1"', 'Mon, 01 Jan 2024');
+
+    const headers = mockFetch.mock.calls[0][1].headers;
+    expect(headers['If-None-Match']).toBe('"etag-1"');
+    expect(headers['If-Modified-Since']).toBe('Mon, 01 Jan 2024');
+
+    vi.unstubAllGlobals();
+  });
+
+  it('throws on unexpected content type', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => '<html></html>',
+        headers: { get: (key: string) => key === 'content-type' ? 'text/html' : null },
+      }),
+    );
+
+    await expect(loadFromUrl('https://cdn.example.com/flags', false)).rejects.toThrow(
+      'Unexpected Content-Type',
+    );
+
+    vi.unstubAllGlobals();
+  });
+
+  it('parses YAML from URL ending in .yml', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => 'version: 1\nflags:\n  f:\n    enabled: true',
+        headers: { get: (key: string) => key === 'content-type' ? 'text/plain' : null },
+      }),
+    );
+
+    const result = await loadFromUrl('https://cdn.example.com/flags.yml', false);
+    expect(result.config.flags.f.enabled).toBe(true);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('passes custom headers', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => '{"version":1,"flags":{"f":{"enabled":true}}}',
+      headers: { get: () => null },
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await loadFromUrl('https://cdn.example.com/flags.json', false, { Authorization: 'Bearer tok' });
+
+    expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer tok');
+
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('detectSingleSourceType', () => {
+  it('detects inline from object', () => {
+    expect(detectSingleSourceType({ flags: {} })).toBe('inline');
+  });
+
+  it('detects url from https', () => {
+    expect(detectSingleSourceType('https://example.com/flags')).toBe('url');
+  });
+
+  it('detects file from path', () => {
+    expect(detectSingleSourceType('./flags.yml')).toBe('file');
+  });
+});
+
+describe('detectSourceType multi', () => {
+  it('detects multi source from array', () => {
+    expect(detectSourceType(['./a.yml', './b.yml'])).toBe('multi');
+  });
+});
+
+describe('loadFromFile edge cases', () => {
+  it('throws descriptive error for unsupported runtime', async () => {
+    await expect(loadFromFile('not-supported.yml', false)).rejects.toThrow(
+      'not supported in this runtime',
+    );
+  });
+});
+
+describe('loadMultiSource', () => {
+  it('merges multiple inline sources', async () => {
+    const sources = [
+      { flags: { 'flag-a': { enabled: true } } },
+      { flags: { 'flag-b': { enabled: false } } },
+    ];
+    const result = await loadMultiSource(sources, false);
+    expect(result.config.flags['flag-a'].enabled).toBe(true);
+    expect(result.config.flags['flag-b'].enabled).toBe(false);
+  });
+
+  it('later source overrides earlier for same flag', async () => {
+    const sources = [
+      { flags: { 'f': { enabled: true } } },
+      { flags: { 'f': { enabled: false } } },
+    ];
+    const result = await loadMultiSource(sources, false);
+    expect(result.config.flags['f'].enabled).toBe(false);
+  });
+
+  it('includes merge warnings in result', async () => {
+    const sources = [
+      { flags: { 'f': { enabled: true } } },
+      { flags: { 'f': { enabled: false } } },
+    ];
+    const result = await loadMultiSource(sources, false);
+    expect(result.warnings.some((w) => w.message.includes('enabled'))).toBe(true);
   });
 });
