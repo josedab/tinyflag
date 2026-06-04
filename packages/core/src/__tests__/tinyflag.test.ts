@@ -848,4 +848,345 @@ describe('TinyFlag', () => {
       ff.destroy();
     });
   });
+
+  describe('env var overrides', () => {
+    const originalEnv = { ...process.env };
+
+    afterEach(() => {
+      // Restore env vars
+      for (const key of Object.keys(process.env)) {
+        if (key.startsWith('TINYFLAG_') && !(key in originalEnv)) {
+          delete process.env[key];
+        }
+      }
+    });
+
+    it('env var TINYFLAG_MY_FLAG=true overrides isEnabled to true', async () => {
+      process.env.TINYFLAG_MY_FLAG = 'true';
+
+      const ff = new TinyFlag({
+        source: { flags: { 'my-flag': { enabled: false } } },
+      });
+      await ff.init();
+
+      expect(ff.isEnabled('my-flag')).toBe(true);
+      ff.destroy();
+      delete process.env.TINYFLAG_MY_FLAG;
+    });
+
+    it('env var TINYFLAG_MY_FLAG=false overrides isEnabled to false', async () => {
+      process.env.TINYFLAG_MY_FLAG = 'false';
+
+      const ff = new TinyFlag({
+        source: { flags: { 'my-flag': { enabled: true } } },
+      });
+      await ff.init();
+
+      expect(ff.isEnabled('my-flag')).toBe(false);
+      ff.destroy();
+      delete process.env.TINYFLAG_MY_FLAG;
+    });
+
+    it('env var with variant name overrides getVariant', async () => {
+      process.env.TINYFLAG_AB_TEST = 'special-variant';
+
+      const ff = new TinyFlag({
+        source: {
+          flags: {
+            'ab-test': {
+              enabled: true,
+              variants: [{ name: 'control', weight: 100 }],
+            },
+          },
+        },
+      });
+      await ff.init();
+
+      expect(ff.getVariant('ab-test', { userId: 'u1' })).toBe('special-variant');
+      ff.destroy();
+      delete process.env.TINYFLAG_AB_TEST;
+    });
+
+    it('env var false returns null variant', async () => {
+      process.env.TINYFLAG_AB_TEST = 'false';
+
+      const ff = new TinyFlag({
+        source: {
+          flags: {
+            'ab-test': {
+              enabled: true,
+              variants: [{ name: 'control', weight: 100 }],
+            },
+          },
+        },
+      });
+      await ff.init();
+
+      expect(ff.getVariant('ab-test', { userId: 'u1' })).toBeNull();
+      ff.destroy();
+      delete process.env.TINYFLAG_AB_TEST;
+    });
+
+    it('env var takes priority over override()', async () => {
+      process.env.TINYFLAG_MY_FLAG = 'true';
+
+      const ff = new TinyFlag({
+        source: { flags: { 'my-flag': { enabled: false } } },
+      });
+      await ff.init();
+
+      ff.override('my-flag', false);
+      expect(ff.isEnabled('my-flag')).toBe(true); // env var wins
+
+      ff.destroy();
+      delete process.env.TINYFLAG_MY_FLAG;
+    });
+
+    it('env var with empty value is ignored', async () => {
+      process.env.TINYFLAG_MY_FLAG = '';
+
+      const ff = new TinyFlag({
+        source: { flags: { 'my-flag': { enabled: true } } },
+      });
+      await ff.init();
+
+      expect(ff.isEnabled('my-flag')).toBe(true); // uses flag value
+      ff.destroy();
+      delete process.env.TINYFLAG_MY_FLAG;
+    });
+
+    it('env var override works in getAllFlags', async () => {
+      process.env.TINYFLAG_MY_FLAG = 'true';
+
+      const ff = new TinyFlag({
+        source: { flags: { 'my-flag': { enabled: false } } },
+      });
+      await ff.init();
+
+      const result = ff.getAllFlags();
+      expect(result['my-flag'].enabled).toBe(true);
+
+      ff.destroy();
+      delete process.env.TINYFLAG_MY_FLAG;
+    });
+
+    it('env var variant override works in getAllFlags', async () => {
+      process.env.TINYFLAG_MY_FLAG = 'custom-variant';
+
+      const ff = new TinyFlag({
+        source: { flags: { 'my-flag': { enabled: true } } },
+      });
+      await ff.init();
+
+      const result = ff.getAllFlags();
+      expect(result['my-flag'].enabled).toBe(true);
+      expect(result['my-flag'].variant).toBe('custom-variant');
+
+      ff.destroy();
+      delete process.env.TINYFLAG_MY_FLAG;
+    });
+  });
+
+  describe('override edge cases', () => {
+    it('emits error for empty flag name in override()', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+      });
+      await ff.init();
+
+      const errors: ErrorEvent[] = [];
+      ff.on('error', (e) => errors.push(e));
+
+      ff.override('', true);
+      expect(errors[0].code).toBe('INVALID_FLAG_NAME');
+
+      ff.destroy();
+    });
+  });
+
+  describe('evaluateWithPersona', () => {
+    it('evaluates with named persona', async () => {
+      const ff = new TinyFlag({
+        source: {
+          flags: {
+            f: {
+              enabled: true,
+              rules: [{ conditions: { plan: 'enterprise' } }],
+            },
+          },
+          personas: {
+            'enterprise-user': { plan: 'enterprise', role: 'admin' },
+          },
+        },
+      });
+      await ff.init();
+
+      expect(ff.evaluateWithPersona('f', 'enterprise-user')).toBe(true);
+      ff.destroy();
+    });
+
+    it('returns false for nonexistent persona', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+      });
+      await ff.init();
+
+      const errors: ErrorEvent[] = [];
+      ff.on('error', (e) => errors.push(e));
+
+      expect(ff.evaluateWithPersona('f', 'nonexistent')).toBe(false);
+      expect(errors.some((e) => e.code === 'PERSONA_NOT_FOUND')).toBe(true);
+
+      ff.destroy();
+    });
+
+    it('returns false for nonexistent flag', async () => {
+      const ff = new TinyFlag({
+        source: {
+          flags: {},
+          personas: { p: { role: 'admin' } },
+        },
+      });
+      await ff.init();
+
+      const errors: ErrorEvent[] = [];
+      ff.on('error', (e) => errors.push(e));
+
+      expect(ff.evaluateWithPersona('nonexistent', 'p')).toBe(false);
+      expect(errors.some((e) => e.code === 'FLAG_NOT_FOUND')).toBe(true);
+
+      ff.destroy();
+    });
+
+    it('returns false for empty flag name', async () => {
+      const ff = new TinyFlag({
+        source: { flags: {}, personas: { p: { role: 'admin' } } },
+      });
+      await ff.init();
+
+      expect(ff.evaluateWithPersona('', 'p')).toBe(false);
+      ff.destroy();
+    });
+  });
+
+  describe('getPersonas', () => {
+    it('returns personas when defined', async () => {
+      const ff = new TinyFlag({
+        source: {
+          flags: {},
+          personas: { admin: { role: 'admin' } },
+        },
+      });
+      await ff.init();
+
+      const personas = ff.getPersonas();
+      expect(personas.admin.role).toBe('admin');
+      ff.destroy();
+    });
+
+    it('returns empty object when no personas', async () => {
+      const ff = new TinyFlag({ source: { flags: {} } });
+      await ff.init();
+
+      expect(ff.getPersonas()).toEqual({});
+      ff.destroy();
+    });
+  });
+
+  describe('getConfig', () => {
+    it('returns config for enabled flag', async () => {
+      const ff = new TinyFlag({
+        source: {
+          flags: { f: { enabled: true, config: { maxItems: 10 } } },
+        },
+      });
+      await ff.init();
+
+      expect(ff.getConfig('f')).toEqual({ maxItems: 10 });
+      ff.destroy();
+    });
+
+    it('returns null for disabled flag', async () => {
+      const ff = new TinyFlag({
+        source: {
+          flags: { f: { enabled: false, config: { maxItems: 10 } } },
+        },
+      });
+      await ff.init();
+
+      expect(ff.getConfig('f')).toBeNull();
+      ff.destroy();
+    });
+
+    it('returns null for flag without config', async () => {
+      const ff = new TinyFlag({
+        source: { flags: { f: { enabled: true } } },
+      });
+      await ff.init();
+
+      expect(ff.getConfig('f')).toBeNull();
+      ff.destroy();
+    });
+
+    it('returns null for unknown flag', async () => {
+      const ff = new TinyFlag({
+        source: { flags: {} },
+      });
+      await ff.init();
+
+      expect(ff.getConfig('nonexistent')).toBeNull();
+      ff.destroy();
+    });
+
+    it('returns null for empty flag name', async () => {
+      const ff = new TinyFlag({
+        source: { flags: {} },
+      });
+      await ff.init();
+
+      expect(ff.getConfig('')).toBeNull();
+      ff.destroy();
+    });
+  });
+
+  describe('circular dependency detection', () => {
+    it('emits error for circular flag dependencies on init', async () => {
+      const errors: ErrorEvent[] = [];
+      const ff = new TinyFlag({
+        source: {
+          flags: {
+            a: { enabled: true, requires: ['b'] },
+            b: { enabled: true, requires: ['a'] },
+          },
+        },
+      });
+      ff.on('error', (e) => errors.push(e));
+      await ff.init();
+
+      expect(errors.some((e) => e.code === 'CIRCULAR_DEPENDENCY')).toBe(true);
+      ff.destroy();
+    });
+  });
+
+  describe('empty source array', () => {
+    it('throws for empty source array', () => {
+      expect(() => new TinyFlag({ source: [] })).toThrow('must not be empty');
+    });
+  });
+
+  describe('multi-source', () => {
+    it('merges multiple inline sources', async () => {
+      const ff = new TinyFlag({
+        source: [
+          { flags: { 'flag-a': { enabled: true } } },
+          { flags: { 'flag-b': { enabled: false } } },
+        ],
+      });
+      await ff.init();
+
+      expect(ff.isEnabled('flag-a')).toBe(true);
+      expect(ff.isEnabled('flag-b')).toBe(false);
+      ff.destroy();
+    });
+  });
 });
