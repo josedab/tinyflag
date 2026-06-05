@@ -92,4 +92,68 @@ describe('signing', () => {
 
     expect(() => verifyFile(flagPath, ['nonexistent.pub'], 'strict')).toThrow();
   });
+
+  it('verifyContent with invalid/corrupt public key silently tries next key', () => {
+    const sig = signContent(content, privateKey);
+    const corruptKey = '-----BEGIN PUBLIC KEY-----\nINVALID\n-----END PUBLIC KEY-----';
+    const result = verifyContent(content, sig, [corruptKey, publicKey]);
+    expect(result.valid).toBe(true);
+    expect(result.keyIndex).toBe(1);
+  });
+
+  it('verifyContent returns invalid when all keys fail', () => {
+    const sig = signContent(content, privateKey);
+    const corruptKey = '-----BEGIN PUBLIC KEY-----\nINVALID\n-----END PUBLIC KEY-----';
+    const result = verifyContent(content, sig, [corruptKey]);
+    expect(result.valid).toBe(false);
+    expect(result.keyIndex).toBe(-1);
+  });
+
+  it('verifyFile in strict mode with valid .sig but wrong key throws', () => {
+    const { privateKey: otherPriv, publicKey: otherPub } = makeKeyPair();
+    const flagPath = join(tmpDir, 'test-wrongkey.yml');
+    const privPath = join(tmpDir, 'test-wrongkey.key');
+    const pubPath = join(tmpDir, 'test-wrongkey-other.pub');
+    const sigPath = flagPath + '.sig';
+    cleanup.push(flagPath, privPath, pubPath, sigPath);
+
+    writeFileSync(flagPath, content, 'utf-8');
+    writeFileSync(privPath, privateKey, 'utf-8');
+    writeFileSync(pubPath, otherPub, 'utf-8');
+
+    signFile(flagPath, privPath);
+
+    expect(() => verifyFile(flagPath, [pubPath], 'strict')).toThrow(
+      'Signature verification failed',
+    );
+  });
+
+  it('verifyFile in lenient mode with wrong key returns valid:false with warnings', () => {
+    const { publicKey: otherPub } = makeKeyPair();
+    const flagPath = join(tmpDir, 'test-wrongkey-lenient.yml');
+    const privPath = join(tmpDir, 'test-wrongkey-lenient.key');
+    const pubPath = join(tmpDir, 'test-wrongkey-lenient.pub');
+    const sigPath = flagPath + '.sig';
+    cleanup.push(flagPath, privPath, pubPath, sigPath);
+
+    writeFileSync(flagPath, content, 'utf-8');
+    writeFileSync(privPath, privateKey, 'utf-8');
+    writeFileSync(pubPath, otherPub, 'utf-8');
+
+    signFile(flagPath, privPath);
+
+    const result = verifyFile(flagPath, [pubPath], 'lenient');
+    expect(result.valid).toBe(false);
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(result.warnings[0]).toContain('Signature verification failed');
+  });
+
+  it('verifyContent with multiple keys where first throws but second verifies', () => {
+    const { publicKey: otherPub } = makeKeyPair();
+    const sig = signContent(content, privateKey);
+    // otherPub is valid but won't match → continues to publicKey which matches
+    const result = verifyContent(content, sig, [otherPub, publicKey]);
+    expect(result.valid).toBe(true);
+    expect(result.keyIndex).toBe(1);
+  });
 });
