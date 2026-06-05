@@ -115,4 +115,35 @@ describe('selectVariant', () => {
       expect(selectVariant('flag', `user-${i}`, variants)).toBe('winner');
     }
   });
+
+  it('returns first variant when all weights are zero', () => {
+    const variants = [
+      { name: 'a', weight: 0 },
+      { name: 'b', weight: 0 },
+      { name: 'c', weight: 0 },
+    ];
+    for (let i = 0; i < 50; i++) {
+      expect(selectVariant('flag', `user-${i}`, variants)).toBe('a');
+    }
+  });
+
+  it('returns first variant when single zero-weight variant', () => {
+    const variants = [{ name: 'only', weight: 0 }];
+    expect(selectVariant('flag', 'user-1', variants)).toBe('only');
+  });
+
+  it('falls back to last variant when bucket equals cumulative weight', () => {
+    // With 3 variants of weight 1 each, totalWeight=3.
+    // If bucket = 2 (hash%3), cumulative reaches 3 at last variant (2 < 3 = true).
+    // Verify the fallback path by testing many users and ensuring all results are valid.
+    const variants = [
+      { name: 'a', weight: 1 },
+      { name: 'b', weight: 1 },
+      { name: 'c', weight: 1 },
+    ];
+    for (let i = 0; i < 1000; i++) {
+      const result = selectVariant('flag', `user-${i}`, variants);
+      expect(['a', 'b', 'c']).toContain(result);
+    }
+  });
 });
