@@ -232,4 +232,51 @@ flags:
     const result = parseYaml(yaml) as Record<string, unknown>;
     expect(result.val).toBe('has # hash');
   });
+
+  it('parses list item with bare - (no value) producing null entry', () => {
+    const result = parseYaml('items:\n  -\n  -') as Record<string, unknown>;
+    expect(result.items).toEqual([null, null]);
+  });
+
+  it('parses list ending followed by non-list-item line at same indent', () => {
+    const result = parseYaml('a:\n  - item1\nb: val') as Record<string, unknown>;
+    expect(result).toEqual({ a: ['item1'], b: 'val' });
+  });
+
+  it('parses mapping with incorrectly indented line (skipped)', () => {
+    const yaml = 'top:\n  key1: val1\n      tooDeep: skipped\n  key2: val2';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    const top = result.top as Record<string, unknown>;
+    expect(top.key1).toBe('val1');
+    expect(top.key2).toBe('val2');
+  });
+
+  it('parses mapping entry with no colon (skipped)', () => {
+    const yaml = 'key1: val1\njust-a-word\nkey2: val2';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    // The line "just-a-word" has no colon but top-level parser
+    // treats the whole thing as a mapping, so it's skipped
+    expect(result).toHaveProperty('key1', 'val1');
+    expect(result).toHaveProperty('key2', 'val2');
+  });
+
+  it('mixed valid and malformed entries preserves valid', () => {
+    const yaml = 'a: 1\nb: 2\nc: 3';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(result).toEqual({ a: 1, b: 2, c: 3 });
+  });
+
+  it('multiline value after bare - with deeper indent parses block', () => {
+    const yaml = 'list:\n  -\n    name: nested\n    val: 42';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    const list = result.list as any[];
+    expect(list).toHaveLength(1);
+    expect(list[0]).toEqual({ name: 'nested', val: 42 });
+  });
+
+  it('handles sequence item - followed by deeper scalar', () => {
+    const yaml = 'items:\n  - first\n  -\n  - third';
+    const result = parseYaml(yaml) as Record<string, unknown>;
+    expect(result.items).toEqual(['first', null, 'third']);
+  });
 });
