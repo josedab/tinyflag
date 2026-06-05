@@ -137,6 +137,53 @@ describe('multi-tenant', () => {
       expect(darkModeDiff).toBeTruthy();
       expect(darkModeDiff!.type).toBe('modified');
     });
+
+    it('shows added flag when tenantB has flag not in tenantA (null)', () => {
+      const config: MultiTenantFlagConfig = {
+        flags: { 'global-flag': { enabled: true } },
+        tenants: {
+          'b': {
+            flags: { 'extra-flag': { enabled: true } },
+          },
+        },
+      };
+      const diffs = diffTenantFlags(config, null, 'b');
+      const addedDiff = diffs.find((d) => d.flag === 'extra-flag');
+      expect(addedDiff).toBeTruthy();
+      expect(addedDiff!.type).toBe('added');
+    });
+
+    it('shows removed flag when tenantA has flag not in tenantB', () => {
+      const config: MultiTenantFlagConfig = {
+        flags: { 'global-flag': { enabled: true } },
+        tenants: {
+          'a': {
+            flags: { 'only-a': { enabled: true } },
+          },
+          'b': {
+            flags: {},
+          },
+        },
+      };
+      const diffs = diffTenantFlags(config, 'a', 'b');
+      const removedDiff = diffs.find((d) => d.flag === 'only-a');
+      expect(removedDiff).toBeTruthy();
+      expect(removedDiff!.type).toBe('removed');
+    });
+
+    it('compares global vs global when both tenants are null', () => {
+      const diffs = diffTenantFlags(CONFIG, null, null);
+      expect(diffs).toHaveLength(0);
+    });
+
+    it('calls resolveTenantFlags when tenantA is non-null', () => {
+      const diffs = diffTenantFlags(CONFIG, 'acme-corp', 'beta-inc');
+      // Both tenantA and tenantB are resolved, verify we get meaningful diffs
+      const betaDiff = diffs.find((d) => d.flag === 'beta-features');
+      expect(betaDiff).toBeTruthy();
+      expect(betaDiff!.type).toBe('modified');
+      expect(betaDiff!.changes).toBeDefined();
+    });
   });
 
   describe('validateTenantIsolation', () => {
