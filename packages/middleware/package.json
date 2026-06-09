@@ -67,6 +67,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "test": "vitest run",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
@@ -76,6 +77,7 @@
   "devDependencies": {
     "tinyflag": "workspace:*",
     "tsup": "^8.3.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
   }
 }
