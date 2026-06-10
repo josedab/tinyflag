@@ -84,4 +84,56 @@ describe('EventEmitter', () => {
     const emitter = new EventEmitter();
     expect(() => emitter.off('error', () => {})).not.toThrow();
   });
+
+  describe('non-Error listener throw formatting', () => {
+    it('formats string throw via String(error)', () => {
+      const emitter = new EventEmitter();
+      const errors: unknown[] = [];
+      emitter.on('change', () => { throw 'string error'; });
+      emitter.on('error', (e) => errors.push(e));
+      emitter.emit('change', { flag: 'f', previous: undefined, current: { enabled: true }, timestamp: 0 });
+      expect(errors).toHaveLength(1);
+      expect((errors[0] as { message: string }).message).toContain('string error');
+    });
+
+    it('formats number throw via String(error)', () => {
+      const emitter = new EventEmitter();
+      const errors: unknown[] = [];
+      emitter.on('change', () => { throw 42; });
+      emitter.on('error', (e) => errors.push(e));
+      emitter.emit('change', { flag: 'f', previous: undefined, current: { enabled: true }, timestamp: 0 });
+      expect(errors).toHaveLength(1);
+      expect((errors[0] as { message: string }).message).toContain('42');
+    });
+
+    it('formats null throw via String(error)', () => {
+      const emitter = new EventEmitter();
+      const errors: unknown[] = [];
+      emitter.on('change', () => { throw null; });
+      emitter.on('error', (e) => errors.push(e));
+      emitter.emit('change', { flag: 'f', previous: undefined, current: { enabled: true }, timestamp: 0 });
+      expect(errors).toHaveLength(1);
+      expect((errors[0] as { message: string }).message).toContain('null');
+    });
+
+    it('formats object throw via String(error)', () => {
+      const emitter = new EventEmitter();
+      const errors: unknown[] = [];
+      emitter.on('change', () => { throw { code: 'CUSTOM' }; });
+      emitter.on('error', (e) => errors.push(e));
+      emitter.emit('change', { flag: 'f', previous: undefined, current: { enabled: true }, timestamp: 0 });
+      expect(errors).toHaveLength(1);
+      expect((errors[0] as { message: string }).message).toContain('[object Object]');
+    });
+
+    it('error event still fires after non-Error throw', () => {
+      const emitter = new EventEmitter();
+      const errors: unknown[] = [];
+      emitter.on('exposure', () => { throw 'boom'; });
+      emitter.on('error', (e) => errors.push(e));
+      emitter.emit('exposure', { flag: 'f', variant: null, enabled: true, userId: 'u', timestamp: 0 });
+      expect(errors).toHaveLength(1);
+      expect((errors[0] as { code: string }).code).toBe('LISTENER_ERROR');
+    });
+  });
 });
