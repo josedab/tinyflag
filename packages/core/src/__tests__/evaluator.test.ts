@@ -691,6 +691,66 @@ describe('evaluateWithPersona', () => {
   });
 });
 
+describe('resolveRolloutPercentage - unknown type', () => {
+  it('returns undefined for unknown rollout type', () => {
+    const flag: FlagDefinition = {
+      enabled: true,
+      rollout: { type: 'unknown-strategy' } as unknown as RolloutStrategy,
+    };
+    setEvaluationContext({});
+    // Unknown type -> resolveRolloutPercentage returns undefined -> falls through to enabled
+    expect(evaluateFlag('f', flag, { userId: 'u1' })).toBe(true);
+  });
+});
+
+describe('rule-level rollout with enabled', () => {
+  it('rule with both enabled: true and rollout: 50 applies rollout bucketing', () => {
+    const flag: FlagDefinition = {
+      enabled: true,
+      rules: [{ conditions: { plan: 'pro' }, enabled: true, rollout: 50 }],
+    };
+    setEvaluationContext({});
+    let enabledCount = 0;
+    for (let i = 0; i < 1000; i++) {
+      if (evaluateFlag('f', flag, { userId: `user-${i}`, plan: 'pro' })) enabledCount++;
+    }
+    expect(enabledCount).toBeGreaterThan(400);
+    expect(enabledCount).toBeLessThan(600);
+  });
+
+  it('rule-level rollout of 0 disables even when conditions match', () => {
+    const flag: FlagDefinition = {
+      enabled: true,
+      rules: [{ conditions: { plan: 'pro' }, enabled: true, rollout: 0 }],
+    };
+    setEvaluationContext({});
+    for (let i = 0; i < 100; i++) {
+      expect(evaluateFlag('f', flag, { userId: `user-${i}`, plan: 'pro' })).toBe(false);
+    }
+  });
+
+  it('rule-level rollout of 100 enables for all matching users', () => {
+    const flag: FlagDefinition = {
+      enabled: true,
+      rules: [{ conditions: { plan: 'pro' }, enabled: true, rollout: 100 }],
+    };
+    setEvaluationContext({});
+    for (let i = 0; i < 100; i++) {
+      expect(evaluateFlag('f', flag, { userId: `user-${i}`, plan: 'pro' })).toBe(true);
+    }
+  });
+
+  it('rule-level rollout without userId falls through to ruleEnabled', () => {
+    const flag: FlagDefinition = {
+      enabled: true,
+      rules: [{ conditions: { plan: 'pro' }, enabled: true, rollout: 50 }],
+    };
+    setEvaluationContext({});
+    // No userId -> rollout branch not entered -> returns ruleEnabled (true)
+    expect(evaluateFlag('f', flag, { plan: 'pro' })).toBe(true);
+  });
+});
+
 describe('segment resolution', () => {
   afterEach(() => {
     setEvaluationContext({});
