@@ -381,7 +381,7 @@ describe('CachedTinyFlag', () => {
 
   describe('event handling', () => {
     it('emits change event when config updates via WebSocket', async () => {
-      mockFetch.mockResolvedValueOnce(jsonResponse(validFlagsPayload({ 'f': { enabled: true } })));
+      mockFetch.mockResolvedValueOnce(jsonResponse(validFlagsPayload({ f: { enabled: true } })));
 
       const mockWs = {
         onmessage: null as any,
@@ -402,7 +402,7 @@ describe('CachedTinyFlag', () => {
       mockWs.onmessage?.({
         data: JSON.stringify({
           type: 'flags-updated',
-          flags: { 'f': { enabled: false } },
+          flags: { f: { enabled: false } },
         }),
       });
 
@@ -499,6 +499,23 @@ describe('CachedTinyFlag', () => {
       const callCount = mockFetch.mock.calls.length;
       await vi.advanceTimersByTimeAsync(60_000);
       expect(mockFetch.mock.calls.length).toBe(callCount);
+    });
+
+    it('stopPolling clears interval so no further fetches happen', async () => {
+      mockFetch.mockResolvedValue(jsonResponse(validFlagsPayload()));
+
+      const client = new CachedTinyFlag({
+        serverUrl: 'http://localhost:3939',
+        mode: 'poll',
+        pollInterval: 5_000,
+      });
+      await client.init();
+      const countAfterInit = mockFetch.mock.calls.length;
+
+      client.destroy();
+
+      await vi.advanceTimersByTimeAsync(20_000);
+      expect(mockFetch.mock.calls.length).toBe(countAfterInit);
     });
   });
 
