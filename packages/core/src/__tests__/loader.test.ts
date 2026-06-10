@@ -28,6 +28,15 @@ vi.mock('fs', () => {
       err.code = 'ERR_MODULE_NOT_FOUND';
       throw err;
     }
+    if (path === 'enospc.yml') {
+      const err = new Error('No space left on device') as NodeJS.ErrnoException;
+      err.code = 'ENOSPC';
+      throw err;
+    }
+    if (path === 'import-error.yml') {
+      const err = new Error('Dynamic import is not supported');
+      throw err;
+    }
     throw new Error('Unknown test file');
   });
   return {
@@ -296,6 +305,21 @@ describe('detectSourceType multi', () => {
 describe('loadFromFile edge cases', () => {
   it('throws descriptive error for unsupported runtime', async () => {
     await expect(loadFromFile('not-supported.yml', false)).rejects.toThrow(
+      'not supported in this runtime',
+    );
+  });
+
+  it('rethrows ENOSPC error as-is', async () => {
+    await expect(loadFromFile('enospc.yml', false)).rejects.toThrow('No space left on device');
+    try {
+      await loadFromFile('enospc.yml', false);
+    } catch (e: any) {
+      expect(e.code).toBe('ENOSPC');
+    }
+  });
+
+  it('wraps error whose message contains "import"', async () => {
+    await expect(loadFromFile('import-error.yml', false)).rejects.toThrow(
       'not supported in this runtime',
     );
   });
