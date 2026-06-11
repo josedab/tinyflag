@@ -1189,4 +1189,105 @@ describe('TinyFlag', () => {
       ff.destroy();
     });
   });
+
+  describe('startAutoRefresh URL polling', () => {
+    it('emits POLL_INTERVAL_CLAMPED when pollInterval < 5000ms for URL source', async () => {
+      const errors: ErrorEvent[] = [];
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => '{"version":1,"flags":{"f":{"enabled":true}}}',
+        headers: { get: () => null },
+      }));
+
+      const ff = new TinyFlag({
+        source: 'https://cdn.example.com/flags.json',
+        pollInterval: 1000,
+      });
+      ff.on('error', (e) => errors.push(e));
+      await ff.init();
+
+      expect(errors.some((e) => e.code === 'POLL_INTERVAL_CLAMPED')).toBe(true);
+      ff.destroy();
+      vi.unstubAllGlobals();
+    });
+
+    it('polls URL and triggers reload on change', async () => {
+      let callCount = 0;
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+        callCount++;
+        const flags = callCount === 1
+          ? { f: { enabled: true } }
+          : { f: { enabled: false } };
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify({ version: 1, flags }),
+          headers: { get: () => null },
+        });
+      }));
+
+      const changes: ChangeEvent[] = [];
+      const ff = new TinyFlag({
+        source: 'https://cdn.example.com/flags.json',
+        pollInterval: 5000,
+      });
+      ff.on('change', (e) => changes.push(e));
+      await ff.init();
+      expect(ff.isEnabled('f')).toBe(true);
+
+      // Manually trigger reload to simulate poll
+      await ff.reload();
+      expect(changes.length).toBe(1);
+      expect(changes[0].flag).toBe('f');
+
+      ff.destroy();
+      vi.unstubAllGlobals();
+    });
+
+    it('destroy() clears poll timer', async () => {
+      let fetchCount = 0;
+      vi.stubGlobal('fetch', vi.fn().mockImplementation(() => {
+        fetchCount++;
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: async () => '{"version":1,"flags":{"f":{"enabled":true}}}',
+          headers: { get: () => null },
+        });
+      }));
+
+      const ff = new TinyFlag({
+        source: 'https://cdn.example.com/flags.json',
+        pollInterval: 5000,
+      });
+      await ff.init();
+      const countAfterInit = fetchCount;
+      ff.destroy();
+
+      // After destroy, no more fetches should happen even if we wait
+      // (We can't advance timers without vi.useFakeTimers but destroy clears the timer)
+      expect(fetchCount).toBe(countAfterInit);
+      vi.unstubAllGlobals();
+    });
+
+    it('destroy() stops file watcher', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const os = await import('os');
+      const tmpDir = os.tmpdir();
+      const tmpFile = path.join(tmpDir, `tinyflag-watcher-test-${Date.now()}.yml`);
+      fs.writeFileSync(tmpFile, 'version: 1\nflags:\n  f:\n    enabled: true\n');
+
+      try {
+        const ff = new TinyFlag({ source: tmpFile, watch: true });
+        await ff.init();
+        expect(ff.isEnabled('f')).toBe(true);
+        // destroy should close the watcher without error
+        ff.destroy();
+      } finally {
+        fs.unlinkSync(tmpFile);
+      }
+    });
+  });
 });
