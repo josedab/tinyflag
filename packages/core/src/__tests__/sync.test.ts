@@ -325,5 +325,30 @@ describe('sync', () => {
       const read = readSyncMeta('/tmp/test.yml');
       expect(read).toEqual(meta);
     });
+
+    it('returns null for corrupted JSON in meta file', () => {
+      const store = getStore();
+      store['/tmp/corrupt.yml.tinyflag-sync'] = '{not valid json!!!';
+      expect(readSyncMeta('/tmp/corrupt.yml')).toBeNull();
+    });
+
+    it('returns null for empty meta file', () => {
+      const store = getStore();
+      store['/tmp/empty.yml.tinyflag-sync'] = '';
+      expect(readSyncMeta('/tmp/empty.yml')).toBeNull();
+    });
+
+    it('returns parsed SyncMeta for valid JSON', () => {
+      const meta: SyncMeta = {
+        url: 'https://example.com/flags',
+        etag: '"v2"',
+        pulledAt: '2025-06-01',
+        contentHash: 'def',
+      };
+      const store = getStore();
+      store['/tmp/valid.yml.tinyflag-sync'] = JSON.stringify(meta);
+      const read = readSyncMeta('/tmp/valid.yml');
+      expect(read).toEqual(meta);
+    });
   });
 });
