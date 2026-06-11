@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { createVercelMiddleware } from '../vercel.js';
 import { handleRequest } from '../cloudflare.js';
 import { createDenoHandler } from '../deno.js';
+import { extractContextFromRequest, evaluateEdgeFlags } from '../index.js';
 import type { TinyFlag } from 'tinyflag';
 
 function createMockInstance(overrides?: Partial<Record<string, any>>): TinyFlag {
@@ -234,5 +235,133 @@ describe('createDenoHandler', () => {
 
     expect(response.headers.get('x-custom')).toBe('yes');
     expect(response.headers.get('x-tinyflag-test-flag')).toBe('1');
+  });
+});
+
+describe('edge context extraction edge cases', () => {
+  it('returns empty context for request with no headers or cookies', () => {
+    const request = new Request('https://example.com');
+    const ctx = extractContextFromRequest(request);
+    expect(ctx.userId).toBeUndefined();
+    expect(ctx.plan).toBeUndefined();
+    expect(ctx.country).toBeUndefined();
+  });
+
+  it('extracts userId from x-tinyflag-user-id header', () => {
+    const request = new Request('https://example.com', {
+      headers: { 'x-tinyflag-user-id': 'u-alt' },
+    });
+    const ctx = extractContextFromRequest(request);
+    expect(ctx.userId).toBe('u-alt');
+  });
+
+  it('extracts country from cf-ipcountry header', () => {
+    const request = new Request('https://example.com', {
+      headers: { 'cf-ipcountry': 'DE' },
+    });
+    const ctx = extractContextFromRequest(request);
+    expect(ctx.country).toBe('DE');
+  });
+
+  it('cookie userId overrides header userId', () => {
+    const request = new Request('https://example.com', {
+      headers: {
+        'x-user-id': 'header-user',
+        'cookie': 'tinyflag-uid=cookie-user',
+      },
+    });
+    const ctx = extractContextFromRequest(request);
+    expect(ctx.userId).toBe('cookie-user');
+  });
+});
+
+describe('variant header handling', () => {
+  it('does not set variant header when variant is null', () => {
+    const instance = createMockInstance({
+      getVariant: vi.fn().mockReturnValue(null),
+      getAllFlags: vi.fn().mockReturnValue({
+        'test-flag': { enabled: true, variant: null },
+      }),
+    });
+
+    const request = new Request('https://example.com');
+    const result = evaluateEdgeFlags(request, { instance });
+
+    expect(result.headers['x-tinyflag-test-flag']).toBe('1');
+    expect(result.headers['x-tinyflag-test-flag-variant']).toBeUndefined();
+  });
+});
+
+describe('Cloudflare adapter edge cases', () => {
+  it('JSON response includes flag headers when no origin', async () => {
+    const instance = createMockInstance();
+    const request = new Request('https://example.com/api', {
+      headers: { 'x-user-id': 'u-1' },
+    });
+
+    const response = await handleRequest(request, { instance });
+    expect(response.headers.get('x-tinyflag-test-flag')).toBe('1');
+  });
+
+  it('skips htmlRewriteRules for non-HTML responses', async () => {
+    const instance = createMockInstance();
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response('{"data":true}', {
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    try {
+      const request = new Request('https://cdn.example.com/api');
+      const response = await handleRequest(request, {
+        instance,
+        origin: 'https://origin.example.com',
+        htmlRewriteRules: [
+          { selector: '#cta', flagName: 'test-flag', variants: { 'new-flow': '<b>CTA</b>' } },
+        ],
+      });
+
+      expect(response.headers.get('x-tinyflag-rewrites')).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe('Vercel middleware edge cases', () => {
+  it('passes flag headers even without rewrites config', async () => {
+    const instance = createMockInstance();
+    const middleware = createVercelMiddleware({ instance });
+    const request = new Request('https://example.com/page');
+
+    const response = await middleware(request);
+    expect(response.headers.get('x-tinyflag-test-flag')).toBe('1');
+    expect(response.headers.get('x-tinyflag-test-flag-variant')).toBe('new-flow');
+  });
+
+  it('includes flag headers on rewrite response', async () => {
+    const instance = createMockInstance();
+    const middleware = createVercelMiddleware({
+      instance,
+      rewrites: { 'test-flag': { 'new-flow': '/checkout-v2' } },
+    });
+    const request = new Request('https://example.com/checkout');
+    const response = await middleware(request);
+
+    expect(response.headers.get('x-tinyflag-test-flag')).toBe('1');
+    expect(response.headers.get('x-middleware-rewrite')).toContain('/checkout-v2');
+  });
+});
+
+describe('Deno handler edge cases', () => {
+  it('default handler includes flag headers', async () => {
+    const instance = createMockInstance();
+    const handler = createDenoHandler({ instance });
+    const request = new Request('https://example.com');
+    const response = await handler(request);
+
+    expect(response.headers.get('x-tinyflag-test-flag')).toBe('1');
+    expect(response.headers.get('x-tinyflag-test-flag-variant')).toBe('new-flow');
   });
 });
