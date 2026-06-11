@@ -166,4 +166,36 @@ describe('mergeFlagConfigs', () => {
     const { warnings } = mergeFlagConfigs([c1, c2]);
     expect(warnings.filter((w) => w.field === 'rollout')).toHaveLength(0);
   });
+
+  it('defaults version to 1 when last config has no version', () => {
+    const c1: FlagConfig = { flags: { 'f': { enabled: true } } };
+    const c2: FlagConfig = { flags: { 'g': { enabled: false } } };
+    const { config } = mergeFlagConfigs([c1, c2]);
+    expect(config.version).toBe(1);
+  });
+
+  it('produces rollout warning "none → 50" when base has no rollout and overlay adds one', () => {
+    const c1 = makeConfig({ 'f': { enabled: true } });
+    const c2 = makeConfig({ 'f': { enabled: true, rollout: 50 } });
+    const { config, warnings } = mergeFlagConfigs([c1, c2]);
+    expect(config.flags['f'].rollout).toBe(50);
+    const rolloutWarning = warnings.find((w) => w.field === 'rollout');
+    expect(rolloutWarning).toBeDefined();
+    expect(rolloutWarning!.message).toContain('none');
+    expect(rolloutWarning!.message).toContain('50');
+  });
+
+  it('uses version from last config when explicit versions differ', () => {
+    const c1 = makeConfig({ 'f': { enabled: true } }, 2);
+    const c2 = makeConfig({ 'g': { enabled: true } }, 5);
+    const { config } = mergeFlagConfigs([c1, c2]);
+    expect(config.version).toBe(5);
+  });
+
+  it('preserves version: 0 from last config', () => {
+    const c1 = makeConfig({ 'f': { enabled: true } }, 3);
+    const c2 = makeConfig({ 'g': { enabled: true } }, 0);
+    const { config } = mergeFlagConfigs([c1, c2]);
+    expect(config.version).toBe(0);
+  });
 });
