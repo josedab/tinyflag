@@ -124,5 +124,132 @@ describe('TinyFlagProvider', () => {
       await provider.onClose();
       expect(mock.destroy).toHaveBeenCalled();
     });
+
+    it('sets status to NOT_READY after close', async () => {
+      await provider.initialize();
+      await provider.onClose();
+      // Provider should no longer be in READY state
+      expect(mock.destroy).toHaveBeenCalled();
+    });
+  });
+
+  describe('wireEvents', () => {
+    it('wires change and error event listeners on construction', () => {
+      expect(mock.on).toHaveBeenCalledWith('change', expect.any(Function));
+      expect(mock.on).toHaveBeenCalledWith('error', expect.any(Function));
+    });
+
+    it('emits PROVIDER_CONFIGURATION_CHANGED on change event', () => {
+      const eventSpy = vi.spyOn(provider.events, 'emit');
+      // Get the change handler registered during construction
+      const changeCall = (mock.on as ReturnType<typeof vi.fn>).mock.calls.find(
+        (c: any[]) => c[0] === 'change',
+      );
+      const changeHandler = changeCall![1];
+      changeHandler({ flag: 'my-flag', previous: undefined, current: { enabled: true }, timestamp: 0 });
+
+      expect(eventSpy).toHaveBeenCalledWith(
+        'PROVIDER_CONFIGURATION_CHANGED',
+        expect.objectContaining({ flagsChanged: ['my-flag'] }),
+      );
+    });
+
+    it('emits PROVIDER_ERROR on LOAD_ERROR event', () => {
+      const eventSpy = vi.spyOn(provider.events, 'emit');
+      const errorCall = (mock.on as ReturnType<typeof vi.fn>).mock.calls.find(
+        (c: any[]) => c[0] === 'error',
+      );
+      const errorHandler = errorCall![1];
+      errorHandler({ code: 'LOAD_ERROR', message: 'file not found' });
+
+      expect(eventSpy).toHaveBeenCalledWith(
+        'PROVIDER_ERROR',
+        expect.objectContaining({ message: 'file not found' }),
+      );
+    });
+
+    it('ignores non-LOAD_ERROR error events', () => {
+      const eventSpy = vi.spyOn(provider.events, 'emit');
+      const errorCall = (mock.on as ReturnType<typeof vi.fn>).mock.calls.find(
+        (c: any[]) => c[0] === 'error',
+      );
+      const errorHandler = errorCall![1];
+      errorHandler({ code: 'INSECURE_SOURCE', message: 'http' });
+
+      expect(eventSpy).not.toHaveBeenCalledWith(
+        'PROVIDER_ERROR',
+        expect.anything(),
+      );
+    });
+  });
+
+  describe('status transitions', () => {
+    it('transitions NOT_READY → READY on successful initialize', async () => {
+      const eventSpy = vi.spyOn(provider.events, 'emit');
+      await provider.initialize();
+      expect(eventSpy).toHaveBeenCalledWith('PROVIDER_READY');
+    });
+
+    it('transitions NOT_READY → ERROR on failed initialize', async () => {
+      const failMock = createMockInstance({ init: vi.fn().mockRejectedValue(new Error('fail')) });
+      const p = new TinyFlagProvider(failMock);
+      const eventSpy = vi.spyOn(p.events, 'emit');
+
+      await expect(p.initialize()).rejects.toThrow('fail');
+      expect(eventSpy).toHaveBeenCalledWith(
+        'PROVIDER_ERROR',
+        expect.objectContaining({ message: 'fail' }),
+      );
+    });
+  });
+
+  describe('reason calculation', () => {
+    it('returns TARGETING_MATCH when rules exist and context provided', () => {
+      const m = createMockInstance({
+        getFlags: vi.fn().mockReturnValue({
+          'f': { enabled: true, rules: [{ conditions: { plan: 'pro' } }], rollout: undefined },
+        }),
+      });
+      const p = new TinyFlagProvider(m);
+      const result = p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' });
+      expect(result.reason).toBe('TARGETING_MATCH');
+    });
+
+    it('returns SPLIT when rollout is defined and userId present', () => {
+      const m = createMockInstance({
+        getFlags: vi.fn().mockReturnValue({
+          'f': { enabled: true, rollout: 50 },
+        }),
+      });
+      const p = new TinyFlagProvider(m);
+      const result = p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' });
+      expect(result.reason).toBe('SPLIT');
+    });
+
+    it('returns STATIC when no rules or rollout', () => {
+      const m = createMockInstance({
+        getFlags: vi.fn().mockReturnValue({
+          'f': { enabled: true },
+        }),
+      });
+      const p = new TinyFlagProvider(m);
+      const result = p.resolveBooleanEvaluation('f', false, { targetingKey: 'u1' });
+      expect(result.reason).toBe('STATIC');
+    });
+  });
+
+  describe('resolveStringEvaluation with variant flag', () => {
+    it('returns variant string and variant field', () => {
+      const m = createMockInstance({
+        getVariant: vi.fn().mockReturnValue('treatment'),
+        getFlags: vi.fn().mockReturnValue({
+          'f': { enabled: true, variants: [{ name: 'treatment', weight: 100 }] },
+        }),
+      });
+      const p = new TinyFlagProvider(m);
+      const result = p.resolveStringEvaluation('f', 'default', { targetingKey: 'u1' });
+      expect(result.value).toBe('treatment');
+      expect(result.variant).toBe('treatment');
+    });
   });
 });
