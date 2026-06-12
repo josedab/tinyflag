@@ -1,7 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   CanaryController,
   formatCanaryState,
+  createPrometheusAdapter,
+  createDatadogAdapter,
+  createCloudWatchAdapter,
 } from '../canary.js';
 import type { MetricsAdapter, HealthMetrics, CanaryConfig } from '../canary.js';
 
@@ -188,6 +191,165 @@ describe('canary release', () => {
 
       const output = formatCanaryState(ctrl.getState());
       expect(output).toContain('rolled-back');
+    });
+  });
+
+  describe('createPrometheusAdapter', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('returns adapter with name prometheus', () => {
+      const adapter = createPrometheusAdapter('http://prom:9090');
+      expect(adapter.name).toBe('prometheus');
+    });
+
+    it('fetches metrics successfully', async () => {
+      const mockResponse = {
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          data: { result: [{ value: [1234567890, '0.032'] }] },
+        }),
+      };
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as any);
+
+      const adapter = createPrometheusAdapter('http://prom:9090');
+      const metrics = await adapter.fetchMetrics('my-service', 300);
+      expect(metrics.errorRate).toBeCloseTo(0.032);
+      expect(metrics.timestamp).toBeGreaterThan(0);
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('http://prom:9090/api/v1/query'),
+      );
+    });
+
+    it('throws on non-ok response', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 500,
+      } as any);
+
+      const adapter = createPrometheusAdapter('http://prom:9090');
+      await expect(adapter.fetchMetrics('svc', 60)).rejects.toThrow('Prometheus query failed: 500');
+    });
+
+    it('handles network failure', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNREFUSED'));
+
+      const adapter = createPrometheusAdapter('http://prom:9090');
+      await expect(adapter.fetchMetrics('svc', 60)).rejects.toThrow('ECONNREFUSED');
+    });
+
+    it('returns 0 errorRate for unexpected response format', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({ data: { result: [] } }),
+      } as any);
+
+      const adapter = createPrometheusAdapter('http://prom:9090');
+      const metrics = await adapter.fetchMetrics('svc', 60);
+      expect(metrics.errorRate).toBe(0);
+    });
+  });
+
+  describe('createDatadogAdapter', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('returns adapter with name datadog', () => {
+      const adapter = createDatadogAdapter('api-key', 'app-key');
+      expect(adapter.name).toBe('datadog');
+    });
+
+    it('fetches metrics with API key auth headers', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({
+          series: [{ pointlist: [[1700000000, 0.01], [1700000060, 0.02]] }],
+        }),
+      } as any);
+
+      const adapter = createDatadogAdapter('my-api-key', 'my-app-key', 'datadoghq.eu');
+      const metrics = await adapter.fetchMetrics('web-svc', 300);
+      expect(metrics.errorRate).toBe(0.02);
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('api.datadoghq.eu'),
+        expect.objectContaining({
+          headers: { 'DD-API-KEY': 'my-api-key', 'DD-APPLICATION-KEY': 'my-app-key' },
+        }),
+      );
+    });
+
+    it('throws on non-ok response', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 403,
+      } as any);
+
+      const adapter = createDatadogAdapter('key', 'app');
+      await expect(adapter.fetchMetrics('svc', 60)).rejects.toThrow('Datadog query failed: 403');
+    });
+
+    it('handles malformed JSON gracefully', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockResolvedValue({}),
+      } as any);
+
+      const adapter = createDatadogAdapter('key', 'app');
+      const metrics = await adapter.fetchMetrics('svc', 60);
+      expect(metrics.errorRate).toBe(0);
+    });
+  });
+
+  describe('createCloudWatchAdapter', () => {
+    it('throws not-yet-implemented error', async () => {
+      const adapter = createCloudWatchAdapter('us-east-1');
+      expect(adapter.name).toBe('cloudwatch');
+      await expect(adapter.fetchMetrics('svc', 60)).rejects.toThrow('CloudWatch adapter requires AWS SDK');
+    });
+  });
+
+  describe('rollback webhook notification', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('sends POST to webhook URL on rollback', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true } as any);
+      const adapter = createMockAdapter(0.10);
+      const ctrl = new CanaryController(createConfig({
+        metricsAdapter: adapter,
+        confirmationWindow: 1,
+        webhookUrl: 'https://hooks.example.com/notify',
+      }));
+
+      await ctrl.advance();
+      await ctrl.check(); // triggers rollback
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://hooks.example.com/notify',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: expect.stringContaining('canary-rollback'),
+        }),
+      );
+    });
+
+    it('silently catches fetch failure on webhook', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('webhook down'));
+      const adapter = createMockAdapter(0.10);
+      const ctrl = new CanaryController(createConfig({
+        metricsAdapter: adapter,
+        confirmationWindow: 1,
+        webhookUrl: 'https://hooks.example.com/notify',
+      }));
+
+      await ctrl.advance();
+      // Should not throw even though fetch fails
+      await expect(ctrl.check()).resolves.toBe(false);
+      expect(ctrl.getState().status).toBe('rolled-back');
     });
   });
 });
