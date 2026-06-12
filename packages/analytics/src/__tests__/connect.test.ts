@@ -69,7 +69,9 @@ describe('connectAnalytics', () => {
   it('adapter throwing in trackExposure is silently caught', () => {
     const instance = createMockInstance();
     const adapter: TinyFlagAnalyticsAdapter = {
-      trackExposure: vi.fn(() => { throw new Error('adapter crash'); }),
+      trackExposure: vi.fn(() => {
+        throw new Error('adapter crash');
+      }),
     };
     connectAnalytics(instance, adapter);
 
@@ -97,5 +99,44 @@ describe('connectAnalytics', () => {
     expect(captured.variant).toBe('treatment');
     expect(captured.userId).toBe('u-42');
     expect(captured.timestamp).toBe(1700000000000);
+  });
+
+  it('same flag exposed twice → both events received (no built-in dedup)', () => {
+    const instance = createMockInstance();
+    const adapter: TinyFlagAnalyticsAdapter = { trackExposure: vi.fn() };
+    connectAnalytics(instance, adapter);
+
+    emitExposure(instance, mockEvent);
+    emitExposure(instance, mockEvent);
+
+    expect(adapter.trackExposure).toHaveBeenCalledTimes(2);
+  });
+
+  it('enabled field is present and correct in event payload', () => {
+    const instance = createMockInstance();
+    const adapter: TinyFlagAnalyticsAdapter = { trackExposure: vi.fn() };
+    connectAnalytics(instance, adapter);
+
+    const enabledEvent: ExposureEvent = { ...mockEvent, enabled: true };
+    emitExposure(instance, enabledEvent);
+    expect((adapter.trackExposure as ReturnType<typeof vi.fn>).mock.calls[0][0].enabled).toBe(true);
+
+    const disabledEvent: ExposureEvent = { ...mockEvent, enabled: false };
+    emitExposure(instance, disabledEvent);
+    expect((adapter.trackExposure as ReturnType<typeof vi.fn>).mock.calls[1][0].enabled).toBe(
+      false,
+    );
+  });
+
+  it('high-frequency exposures (100 rapid calls) → no crash', () => {
+    const instance = createMockInstance();
+    const adapter: TinyFlagAnalyticsAdapter = { trackExposure: vi.fn() };
+    connectAnalytics(instance, adapter);
+
+    for (let i = 0; i < 100; i++) {
+      emitExposure(instance, { ...mockEvent, flag: `flag-${i}` });
+    }
+
+    expect(adapter.trackExposure).toHaveBeenCalledTimes(100);
   });
 });
