@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diffConfigs, formatChanges } from '../diff.js';
+import { diffConfigs, formatChanges, formatChangesMarkdown } from '../diff.js';
 
 describe('diffConfigs', () => {
   it('detects added flags', () => {
@@ -66,5 +66,58 @@ describe('formatChanges', () => {
     expect(output).toContain('+ new');
     expect(output).toContain('- old');
     expect(output).toContain('~ mod');
+  });
+});
+
+describe('formatChangesMarkdown', () => {
+  it('returns empty string for no changes', () => {
+    expect(formatChangesMarkdown([])).toBe('');
+  });
+
+  it('formats single added flag', () => {
+    const output = formatChangesMarkdown([
+      { name: 'new-flag', type: 'added', details: ['enabled: true'] },
+    ]);
+    expect(output).toContain('`new-flag`');
+    expect(output).toContain('added');
+    expect(output).toContain('**+**');
+  });
+
+  it('formats single removed flag', () => {
+    const output = formatChangesMarkdown([
+      { name: 'old-flag', type: 'removed' },
+    ]);
+    expect(output).toContain('`old-flag`');
+    expect(output).toContain('removed');
+    expect(output).toContain('**-**');
+  });
+
+  it('formats modified flag with multiple field changes', () => {
+    const output = formatChangesMarkdown([
+      { name: 'mod-flag', type: 'modified', details: ['enabled: false → true', 'rollout: 10% → 50%'] },
+    ]);
+    expect(output).toContain('`mod-flag`');
+    expect(output).toContain('**~**');
+    expect(output).toContain('enabled: false → true');
+    expect(output).toContain('rollout: 10% → 50%');
+  });
+
+  it('formats mixed changes correctly', () => {
+    const output = formatChangesMarkdown([
+      { name: 'a', type: 'added', details: ['enabled: true'] },
+      { name: 'b', type: 'removed' },
+      { name: 'c', type: 'modified', details: ['rollout changed'] },
+    ]);
+    expect(output).toContain('**+**');
+    expect(output).toContain('**-**');
+    expect(output).toContain('**~**');
+    expect(output).toContain('Flag changes detected');
+  });
+
+  it('handles special characters in flag names', () => {
+    const output = formatChangesMarkdown([
+      { name: 'my-flag_v2.0', type: 'added', details: ['enabled: true'] },
+    ]);
+    expect(output).toContain('`my-flag_v2.0`');
   });
 });
