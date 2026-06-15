@@ -160,6 +160,46 @@ describe('tinyflagExpress', () => {
     // isEnabled with tracing should still work
     expect(req.flags.isEnabled('test-flag')).toBe(true);
   });
+
+  it('contextFromRequest throwing → error propagated to next(err)', () => {
+    const instance = createMockInstance();
+    const contextFromRequest = vi.fn(() => { throw new Error('context extraction failed'); });
+    const middleware = tinyflagExpress({ instance, contextFromRequest });
+
+    const req: any = {};
+    const res: any = {};
+    const next = vi.fn();
+
+    expect(() => middleware(req, res, next)).toThrow('context extraction failed');
+  });
+
+  it('handles request with missing fields (no headers, no body)', () => {
+    const instance = createMockInstance();
+    const contextFromRequest = vi.fn().mockReturnValue(undefined);
+    const middleware = tinyflagExpress({ instance, contextFromRequest });
+
+    const req: any = {};
+    const res: any = {};
+    const next = vi.fn();
+
+    middleware(req, res, next);
+    expect(req.flags).toBeDefined();
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('null context return from contextFromRequest', () => {
+    const instance = createMockInstance();
+    const contextFromRequest = vi.fn().mockReturnValue(null);
+    const middleware = tinyflagExpress({ instance, contextFromRequest });
+
+    const req: any = {};
+    const res: any = {};
+    const next = vi.fn();
+
+    middleware(req, res, next);
+    expect(req.flags).toBeDefined();
+    expect(next).toHaveBeenCalled();
+  });
 });
 
 describe('tinyflagFastify', () => {
@@ -210,6 +250,47 @@ describe('tinyflagFastify', () => {
 
     expect(contextFromRequest).toHaveBeenCalledWith(request);
   });
+
+  it('contextFromRequest throwing → hookDone still called with error', () => {
+    const instance = createMockInstance();
+    const contextFromRequest = vi.fn(() => { throw new Error('fastify ctx error'); });
+    const hooks: Record<string, Function> = {};
+    const fastify = {
+      decorateRequest: vi.fn(),
+      addHook: vi.fn((name: string, handler: Function) => {
+        hooks[name] = handler;
+      }),
+    };
+    const done = vi.fn();
+
+    tinyflagFastify(fastify, { instance, contextFromRequest }, done);
+    expect(done).toHaveBeenCalled();
+
+    const request: any = {};
+    const hookDone = vi.fn();
+    expect(() => hooks['onRequest'](request, {}, hookDone)).toThrow('fastify ctx error');
+  });
+
+  it('handles request with missing fields', () => {
+    const instance = createMockInstance();
+    const contextFromRequest = vi.fn().mockReturnValue(null);
+    const hooks: Record<string, Function> = {};
+    const fastify = {
+      decorateRequest: vi.fn(),
+      addHook: vi.fn((name: string, handler: Function) => {
+        hooks[name] = handler;
+      }),
+    };
+    const done = vi.fn();
+
+    tinyflagFastify(fastify, { instance, contextFromRequest }, done);
+
+    const request: any = {};
+    const hookDone = vi.fn();
+    hooks['onRequest'](request, {}, hookDone);
+    expect(request.flags).toBeDefined();
+    expect(hookDone).toHaveBeenCalled();
+  });
 });
 
 describe('tinyflagHono', () => {
@@ -241,5 +322,40 @@ describe('tinyflagHono', () => {
     await middleware(c, next);
 
     expect(contextFromRequest).toHaveBeenCalledWith(c);
+  });
+
+  it('contextFromRequest throwing → error propagated', async () => {
+    const instance = createMockInstance();
+    const contextFromRequest = vi.fn(() => { throw new Error('hono ctx error'); });
+    const middleware = tinyflagHono({ instance, contextFromRequest });
+
+    const c: any = { set: vi.fn() };
+    const next = vi.fn().mockResolvedValue(undefined);
+
+    await expect(middleware(c, next)).rejects.toThrow('hono ctx error');
+  });
+
+  it('next() rejection → error propagated', async () => {
+    const instance = createMockInstance();
+    const middleware = tinyflagHono({ instance });
+
+    const c: any = { set: vi.fn() };
+    const next = vi.fn().mockRejectedValue(new Error('downstream error'));
+
+    await expect(middleware(c, next)).rejects.toThrow('downstream error');
+  });
+
+  it('handles null context return', async () => {
+    const instance = createMockInstance();
+    const contextFromRequest = vi.fn().mockReturnValue(null);
+    const middleware = tinyflagHono({ instance, contextFromRequest });
+
+    const setValues: Record<string, any> = {};
+    const c: any = { set: vi.fn((k: string, v: any) => { setValues[k] = v; }) };
+    const next = vi.fn().mockResolvedValue(undefined);
+
+    await middleware(c, next);
+    expect(setValues['flags']).toBeDefined();
+    expect(next).toHaveBeenCalled();
   });
 });
