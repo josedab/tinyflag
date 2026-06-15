@@ -10,6 +10,7 @@ import {
   loadOverlay,
   cleanupExpiredOverlays,
   listActiveOverlays,
+  createOverlayHandler,
 } from '../ephemeral.js';
 import type { FlagConfig } from 'tinyflag';
 
@@ -150,6 +151,80 @@ describe('ephemeral PR flags', () => {
       const result = listActiveOverlays(tmpDir);
       expect(result).toHaveLength(1);
       expect(result[0].scope).toBe('pr-active');
+    });
+  });
+
+  describe('createOverlayHandler', () => {
+    it('createOverlay writes overlay file with correct TTL and overrides', () => {
+      const handler = createOverlayHandler(tmpDir, 'flags.yml');
+      const overlay = handler.createOverlay('pr-100', [
+        { flag: 'dark-mode', enabled: true, scope: '', createdAt: '', ttl: 0 },
+      ], 3600);
+
+      expect(overlay.scope).toBe('pr-100');
+      expect(overlay.overrides).toHaveLength(1);
+      expect(overlay.overrides[0].flag).toBe('dark-mode');
+      expect(overlay.overrides[0].ttl).toBe(3600);
+
+      // Verify file was written to disk
+      const loaded = loadOverlay(join(tmpDir, '.tinyflag-overlay-pr-100.json'));
+      expect(loaded).not.toBeNull();
+      expect(loaded!.scope).toBe('pr-100');
+    });
+
+    it('removeOverlay deletes overlay file', () => {
+      const handler = createOverlayHandler(tmpDir, 'flags.yml');
+      handler.createOverlay('pr-200', []);
+
+      const removed = handler.removeOverlay('pr-200');
+      expect(removed).toBe(true);
+      expect(existsSync(join(tmpDir, '.tinyflag-overlay-pr-200.json'))).toBe(false);
+    });
+
+    it('removeOverlay returns false when overlay does not exist', () => {
+      const handler = createOverlayHandler(tmpDir, 'flags.yml');
+      const removed = handler.removeOverlay('nonexistent');
+      expect(removed).toBe(false);
+    });
+
+    it('listOverlays returns active overlays', () => {
+      const handler = createOverlayHandler(tmpDir, 'flags.yml');
+      handler.createOverlay('pr-a', []);
+      handler.createOverlay('pr-b', []);
+
+      const overlays = handler.listOverlays();
+      expect(overlays).toHaveLength(2);
+    });
+
+    it('listOverlays filters expired overlays', () => {
+      const handler = createOverlayHandler(tmpDir, 'flags.yml');
+      handler.createOverlay('pr-active', []);
+
+      // Manually write expired overlay
+      const expired = generateOverlayFile('pr-expired', []);
+      expired.expiresAt = new Date(Date.now() - 1000).toISOString();
+      writeOverlay(tmpDir, 'pr-expired', expired);
+
+      const overlays = handler.listOverlays();
+      expect(overlays).toHaveLength(1);
+      expect(overlays[0].scope).toBe('pr-active');
+    });
+
+    it('cleanup removes expired overlays and preserves active ones', () => {
+      const handler = createOverlayHandler(tmpDir, 'flags.yml');
+      handler.createOverlay('pr-keep', []);
+
+      const expired = generateOverlayFile('pr-remove', []);
+      expired.expiresAt = new Date(Date.now() - 1000).toISOString();
+      writeOverlay(tmpDir, 'pr-remove', expired);
+
+      const removed = handler.cleanup();
+      expect(removed).toHaveLength(1);
+      expect(removed[0]).toContain('pr-remove');
+
+      const remaining = handler.listOverlays();
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0].scope).toBe('pr-keep');
     });
   });
 });
