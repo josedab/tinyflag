@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseFlagOwners,
+  loadFlagOwners,
   resolveOwnership,
   checkApprovals,
   formatApprovalResult,
+  formatOwnershipReport,
 } from '../governance.js';
+import type { FlagConfig } from 'tinyflag';
 
 const SAMPLE_OWNERS = `
 version: 1
@@ -114,6 +117,61 @@ describe('governance', () => {
       expect(result).toContain('❌');
       expect(result).toContain('checkout-v2');
       expect(result).toContain('@payments-team');
+    });
+  });
+
+  describe('loadFlagOwners', () => {
+    it('throws on non-existent file', () => {
+      expect(() => loadFlagOwners('/nonexistent/flag-owners.yml')).toThrow('Flag owners file not found');
+    });
+  });
+
+  describe('formatOwnershipReport', () => {
+    const ownersConfig = parseFlagOwners(SAMPLE_OWNERS);
+
+    it('shows ⚠️ for flag with no owner', () => {
+      const noOwnerConfig = parseFlagOwners(`
+version: 1
+flags:
+  - pattern: "checkout-*"
+    owners: []
+`);
+      const flagConfig: FlagConfig = {
+        version: 1,
+        flags: { 'checkout-v2': { enabled: true } },
+      };
+      const report = formatOwnershipReport(flagConfig, noOwnerConfig);
+      expect(report).toContain('⚠️');
+      expect(report).toContain('(unowned)');
+    });
+
+    it('shows 👤 for all owned flags', () => {
+      const flagConfig: FlagConfig = {
+        version: 1,
+        flags: { 'dark-mode': { enabled: true } },
+      };
+      const report = formatOwnershipReport(flagConfig, ownersConfig);
+      expect(report).toContain('👤');
+      expect(report).toContain('@frontend-team');
+    });
+
+    it('handles empty config (no flags)', () => {
+      const flagConfig: FlagConfig = { version: 1, flags: {} };
+      const report = formatOwnershipReport(flagConfig, ownersConfig);
+      expect(report).toContain('Flag Ownership Report');
+      // No flag entries
+      expect(report).not.toContain('👤');
+      expect(report).not.toContain('⚠️');
+    });
+
+    it('includes reviewers when present', () => {
+      const flagConfig: FlagConfig = {
+        version: 1,
+        flags: { 'checkout-v2': { enabled: true } },
+      };
+      const report = formatOwnershipReport(flagConfig, ownersConfig);
+      expect(report).toContain('Reviewers:');
+      expect(report).toContain('@security-team');
     });
   });
 });
