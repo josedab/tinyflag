@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { mount } from '@vue/test-utils';
 import { provideTinyFlag, useFlag, useVariant, useTinyFlagInstance } from '../index.js';
@@ -120,6 +120,61 @@ describe('tinyflag-vue', () => {
 
     mount(Parent);
     expect(instance).toBe(ff);
+    ff.destroy();
+  });
+
+  it('useFlag without provideTinyFlag throws descriptive error', () => {
+    const Child = defineComponent({
+      setup() {
+        useFlag('any-flag');
+        return () => h('div');
+      },
+    });
+
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => mount(Child)).toThrow('useFlag/useVariant requires provideTinyFlag');
+    spy.mockRestore();
+  });
+
+  it('useVariant without provideTinyFlag throws descriptive error', () => {
+    const Child = defineComponent({
+      setup() {
+        useVariant('any-flag');
+        return () => h('div');
+      },
+    });
+
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(() => mount(Child)).toThrow('useFlag/useVariant requires provideTinyFlag');
+    spy.mockRestore();
+  });
+
+  it('options forwarding (instance is passed through)', async () => {
+    const ff = createInstance({ 'f': { enabled: true } });
+    await ff.init();
+
+    let result: TinyFlag | undefined;
+    const Child = defineComponent({
+      setup() {
+        result = useTinyFlagInstance();
+        return () => h('div');
+      },
+    });
+
+    const Parent = defineComponent({
+      setup() {
+        provideTinyFlag({
+          source: { flags: {} },
+          instance: ff,
+          strict: true,
+          debug: false,
+        });
+        return () => h(Child);
+      },
+    });
+
+    mount(Parent);
+    expect(result).toBe(ff);
     ff.destroy();
   });
 });
