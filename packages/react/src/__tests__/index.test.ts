@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { cleanup } from '@testing-library/react';
@@ -154,6 +154,55 @@ describe('tinyflag-react', () => {
     );
 
     expect(flagResult).toBe(true);
+    ff.destroy();
+  });
+
+  it('useFlag without TinyFlagProvider throws descriptive error', () => {
+    function BadConsumer() {
+      useFlag('any-flag');
+      return null;
+    }
+
+    // Suppress React error boundary console output
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => render(React.createElement(BadConsumer))).toThrow(
+      'useFlag/useVariant must be used inside <TinyFlagProvider>',
+    );
+    spy.mockRestore();
+  });
+
+  it('useVariant without TinyFlagProvider throws descriptive error', () => {
+    function BadConsumer() {
+      useVariant('any-flag');
+      return null;
+    }
+
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect(() => render(React.createElement(BadConsumer))).toThrow(
+      'useFlag/useVariant must be used inside <TinyFlagProvider>',
+    );
+    spy.mockRestore();
+  });
+
+  it('useTinyFlagInstance returns the instance', async () => {
+    const ff = createInstance({ 'test': { enabled: true } });
+    await ff.init();
+
+    let result: TinyFlag | undefined;
+    function Consumer() {
+      result = useTinyFlagInstance();
+      return null;
+    }
+
+    render(
+      React.createElement(
+        TinyFlagProvider,
+        { source: { flags: {} }, instance: ff },
+        React.createElement(Consumer),
+      ),
+    );
+
+    expect(result).toBe(ff);
     ff.destroy();
   });
 });
