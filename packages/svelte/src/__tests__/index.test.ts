@@ -80,4 +80,50 @@ describe('tinyflag-svelte', () => {
     expect(instance).toBe(ff);
     ff.destroy();
   });
+
+  it('setContext updates evaluation context', async () => {
+    const ff = createInstance({
+      'test-flag': { enabled: true },
+    });
+    await ff.init();
+
+    const { destroy } = createTinyFlag({
+      source: { flags: {} },
+      instance: ff,
+    });
+    cleanup = destroy;
+
+    // setContext should not throw
+    expect(() => setContext({ userId: 'new-user' })).not.toThrow();
+    expect(() => setContext(undefined)).not.toThrow();
+    ff.destroy();
+  });
+
+  it('destroy cleans up instance', async () => {
+    const ff = createInstance({ 'test-flag': { enabled: true } });
+    await ff.init();
+
+    const { instance, destroy } = createTinyFlag({
+      source: { flags: {} },
+      instance: ff,
+    });
+
+    // destroy should not throw
+    destroy();
+    // Further calls should still work on the external instance
+    expect(instance).toBe(ff);
+    ff.destroy();
+  });
+
+  it('flag() and variant() throw when called without createTinyFlag', async () => {
+    // Reset fallback by creating and immediately destroying
+    const ff = createInstance({ 'x': { enabled: true } });
+    await ff.init();
+    const { destroy } = createTinyFlag({ source: { flags: {} }, instance: ff });
+    destroy();
+    ff.destroy();
+
+    // After destroy and fallback cleared, flag() should throw
+    expect(() => flag('any-flag')).toThrow('createTinyFlag');
+  });
 });
