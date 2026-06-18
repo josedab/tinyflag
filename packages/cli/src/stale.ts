@@ -1,12 +1,9 @@
-import { readdirSync, readFileSync, statSync } from 'fs';
-import { join, extname } from 'path';
 import type { FlagDefinition } from 'tinyflag';
+import { scanSourceFiles } from './source-scanner.js';
 
 const FLAG_USAGE_PATTERN =
   /(?:isEnabled|getVariant|useFlag|getConfig)\s*\(\s*['"]([a-z0-9-]+)['"]/g;
 const TINYFLAG_IGNORE_PATTERN = /\/\/\s*tinyflag-ignore/;
-
-const SCANNABLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 
 /** Configuration for staleness rules. */
 export interface StalenessConfig {
@@ -49,49 +46,17 @@ export function scanFlagUsage(
   ]),
 ): Map<string, Array<{ file: string; line: number }>> {
   const usages = new Map<string, Array<{ file: string; line: number }>>();
-
-  function walk(currentDir: string): void {
-    let entries: string[];
-    try {
-      entries = readdirSync(currentDir);
-    } catch {
-      return;
-    }
-
-    for (const entry of entries) {
-      if (excludeDirs.has(entry)) continue;
-      const fullPath = join(currentDir, entry);
-
-      let stat;
-      try {
-        stat = statSync(fullPath);
-      } catch {
-        continue;
-      }
-
-      if (stat.isDirectory()) {
-        walk(fullPath);
-      } else if (stat.isFile() && SCANNABLE_EXTENSIONS.has(extname(entry))) {
-        scanFile(fullPath, usages);
-      }
-    }
+  for (const file of scanSourceFiles(dir, { excludeDirectories: excludeDirs })) {
+    scanFile(file.path, file.content, usages);
   }
-
-  walk(dir);
   return usages;
 }
 
 function scanFile(
   filePath: string,
+  content: string,
   usages: Map<string, Array<{ file: string; line: number }>>,
 ): void {
-  let content: string;
-  try {
-    content = readFileSync(filePath, 'utf-8');
-  } catch {
-    return;
-  }
-
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
