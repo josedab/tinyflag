@@ -154,7 +154,7 @@ describe('tinyflag-svelte', () => {
 
     expect(valuesA).toEqual([true]);
     expect(valuesB).toEqual([true]);
-    expect(evaluationSpy.mock.calls.map(([flagName]) => flagName)).toEqual(['flag-a', 'flag-b']);
+    expect(evaluationSpy.mock.calls.map(([flagName]) => flagName)).toEqual(['flag-a']);
     unsubscribeA();
     unsubscribeB();
     ff.destroy();

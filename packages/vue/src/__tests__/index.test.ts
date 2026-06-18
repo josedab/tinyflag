@@ -185,18 +185,31 @@ describe('tinyflag-vue', () => {
     });
     await ff.init();
 
-    const Child = defineComponent({
+    let rendersA = 0;
+    let rendersB = 0;
+    const ChildA = defineComponent({
       setup() {
         const flagA = useFlag('flag-a');
+        return () => {
+          rendersA++;
+          return h('span', String(flagA.value));
+        };
+      },
+    });
+    const ChildB = defineComponent({
+      setup() {
         const flagB = useFlag('flag-b');
-        return () => h('div', `${flagA.value}:${flagB.value}`);
+        return () => {
+          rendersB++;
+          return h('span', String(flagB.value));
+        };
       },
     });
 
     const Parent = defineComponent({
       setup() {
         provideTinyFlag({ source: { flags: {} }, instance: ff });
-        return () => h(Child);
+        return () => h('div', [h(ChildA), h(ChildB)]);
       },
     });
 
@@ -209,7 +222,9 @@ describe('tinyflag-vue', () => {
     });
     await nextTick();
 
-    expect(wrapper.text()).toBe('false:true');
+    expect(wrapper.text()).toBe('falsetrue');
+    expect(rendersA).toBe(2);
+    expect(rendersB).toBe(1);
     wrapper.unmount();
     ff.destroy();
   });

@@ -167,22 +167,29 @@ describe('tinyflag-react', () => {
     });
     await ff.init();
 
-    function Consumer() {
+    let rendersA = 0;
+    let rendersB = 0;
+    function ConsumerA() {
+      rendersA++;
       const flagA = useFlag('flag-a');
+      return React.createElement('span', { 'data-testid': 'flag-a' }, String(flagA));
+    }
+    function ConsumerB() {
+      rendersB++;
       const flagB = useFlag('flag-b');
-      return React.createElement(
-        'div',
-        null,
-        React.createElement('span', { 'data-testid': 'flag-a' }, String(flagA)),
-        React.createElement('span', { 'data-testid': 'flag-b' }, String(flagB)),
-      );
+      return React.createElement('span', { 'data-testid': 'flag-b' }, String(flagB));
     }
 
     render(
       React.createElement(
         TinyFlagProvider,
         { source: { flags: {} }, instance: ff },
-        React.createElement(Consumer),
+        React.createElement(
+          React.Fragment,
+          null,
+          React.createElement(ConsumerA),
+          React.createElement(ConsumerB),
+        ),
       ),
     );
 
@@ -197,6 +204,8 @@ describe('tinyflag-react', () => {
 
     expect(screen.getByTestId('flag-a').textContent).toBe('false');
     expect(screen.getByTestId('flag-b').textContent).toBe('true');
+    expect(rendersA).toBe(2);
+    expect(rendersB).toBe(1);
     ff.destroy();
   });
 

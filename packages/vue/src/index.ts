@@ -9,11 +9,11 @@ import {
   type InjectionKey,
 } from 'vue';
 import { TinyFlag } from 'tinyflag';
-import type { TinyFlagOptions, UserContext } from 'tinyflag';
+import type { TinyFlagOptions, UserContext, ChangeEvent } from 'tinyflag';
 
 interface TinyFlagInjection {
   instance: TinyFlag;
-  version: Ref<number>;
+  versions: Map<string, Ref<number>>;
   context: Ref<UserContext | undefined>;
 }
 
@@ -60,11 +60,12 @@ export function provideTinyFlag(options: ProvideTinyFlagOptions): TinyFlag {
       debug: options.debug,
     });
 
-  const version = ref(0);
+  const versions = new Map<string, Ref<number>>();
   const context = ref(options.context);
 
-  const handleChange = () => {
-    version.value++;
+  const handleChange = (event: ChangeEvent) => {
+    const version = versions.get(event.flag);
+    if (version) version.value++;
   };
 
   onMounted(() => {
@@ -81,7 +82,7 @@ export function provideTinyFlag(options: ProvideTinyFlagOptions): TinyFlag {
     }
   });
 
-  provide(TINYFLAG_KEY, { instance, version, context });
+  provide(TINYFLAG_KEY, { instance, versions, context });
   return instance;
 }
 
@@ -97,7 +98,9 @@ function useTinyFlagInjection(): TinyFlagInjection {
  * Vue composable that returns a reactive Ref<boolean> for a feature flag.
  */
 export function useFlag(flagName: string): Ref<boolean> {
-  const { instance, version, context } = useTinyFlagInjection();
+  const injection = useTinyFlagInjection();
+  const { instance, context } = injection;
+  const version = getFlagVersion(injection, flagName);
   return computed(() => {
     void version.value; // trigger reactivity on flag changes
     return instance.isEnabled(flagName, context.value);
@@ -108,7 +111,9 @@ export function useFlag(flagName: string): Ref<boolean> {
  * Vue composable that returns a reactive Ref<string | null> for a variant.
  */
 export function useVariant(flagName: string): Ref<string | null> {
-  const { instance, version, context } = useTinyFlagInjection();
+  const injection = useTinyFlagInjection();
+  const { instance, context } = injection;
+  const version = getFlagVersion(injection, flagName);
   return computed(() => {
     void version.value;
     return instance.getVariant(flagName, context.value);
@@ -120,4 +125,13 @@ export function useVariant(flagName: string): Ref<string | null> {
  */
 export function useTinyFlagInstance(): TinyFlag {
   return useTinyFlagInjection().instance;
+}
+
+function getFlagVersion(injection: TinyFlagInjection, flagName: string): Ref<number> {
+  let version = injection.versions.get(flagName);
+  if (!version) {
+    version = ref(0);
+    injection.versions.set(flagName, version);
+  }
+  return version;
 }

@@ -1,14 +1,14 @@
 import { writable, derived, type Readable, type Writable } from 'svelte/store';
 import { getContext as svelteGetContext, setContext as svelteSetContext } from 'svelte';
 import { TinyFlag } from 'tinyflag';
-import type { TinyFlagOptions, UserContext } from 'tinyflag';
+import type { TinyFlagOptions, UserContext, ChangeEvent } from 'tinyflag';
 
 const TINYFLAG_CONTEXT_KEY = Symbol('tinyflag');
 
 interface TinyFlagContext {
   instance: TinyFlag;
   context: Writable<UserContext | undefined>;
-  version: Writable<number>;
+  versions: Map<string, Writable<number>>;
 }
 
 // Module-level fallback for non-component contexts (e.g. tests)
@@ -62,12 +62,12 @@ export function createTinyFlag(options: CreateTinyFlagOptions): {
     });
 
   const ctxStore = writable<UserContext | undefined>(options.context);
-  const versionStore = writable(0);
+  const versions = new Map<string, Writable<number>>();
 
   const tfCtx: TinyFlagContext = {
     instance,
     context: ctxStore,
-    version: versionStore,
+    versions,
   };
 
   // Store in Svelte component context when inside component init
@@ -78,7 +78,9 @@ export function createTinyFlag(options: CreateTinyFlagOptions): {
   }
   fallbackCtx = tfCtx;
 
-  const handleChange = () => versionStore.update((v) => v + 1);
+  const handleChange = (event: ChangeEvent) => {
+    versions.get(event.flag)?.update((value) => value + 1);
+  };
   instance.on('change', handleChange);
 
   if (!options.instance) {
@@ -117,7 +119,9 @@ function getTinyFlagContext(): TinyFlagContext {
  * Use with `$` syntax: `{#if $showFeature}...{/if}`
  */
 export function flag(flagName: string): Readable<boolean> {
-  const { instance, version, context } = getTinyFlagContext();
+  const ctx = getTinyFlagContext();
+  const { instance, context } = ctx;
+  const version = getFlagVersion(ctx, flagName);
   return derived([version, context], ([$version, $context]) => {
     void $version;
     return instance.isEnabled(flagName, $context);
@@ -129,7 +133,9 @@ export function flag(flagName: string): Readable<boolean> {
  * Use with `$` syntax: `{#if $variant === 'new-flow'}...{/if}`
  */
 export function variant(flagName: string): Readable<string | null> {
-  const { instance, version, context } = getTinyFlagContext();
+  const ctx = getTinyFlagContext();
+  const { instance, context } = ctx;
+  const version = getFlagVersion(ctx, flagName);
   return derived([version, context], ([$version, $context]) => {
     void $version;
     return instance.getVariant(flagName, $context);
@@ -149,4 +155,13 @@ export function setContext(context: UserContext | undefined): void {
  */
 export function useTinyFlagInstance(): TinyFlag {
   return getTinyFlagContext().instance;
+}
+
+function getFlagVersion(ctx: TinyFlagContext, flagName: string): Writable<number> {
+  let version = ctx.versions.get(flagName);
+  if (!version) {
+    version = writable(0);
+    ctx.versions.set(flagName, version);
+  }
+  return version;
 }

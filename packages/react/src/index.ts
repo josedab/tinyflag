@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { TinyFlag } from 'tinyflag';
-import type { TinyFlagOptions, UserContext, FlagConfig } from 'tinyflag';
+import type { TinyFlagOptions, UserContext, ChangeEvent } from 'tinyflag';
 
 interface TinyFlagContextValue {
   instance: TinyFlag;
-  version: number;
   context?: UserContext;
 }
 
@@ -51,8 +50,6 @@ export function TinyFlagProvider({
   instance: externalInstance,
   children,
 }: TinyFlagProviderProps): React.ReactElement {
-  const [version, setVersion] = useState(0);
-
   const instance = useMemo(() => {
     if (externalInstance) return externalInstance;
     return new TinyFlag({
@@ -72,18 +69,14 @@ export function TinyFlagProvider({
       instance.init().catch(() => {});
     }
 
-    const handleChange = () => setVersion((v) => v + 1);
-    instance.on('change', handleChange);
-
     return () => {
-      instance.off('change', handleChange);
       if (!externalInstance) {
         instance.destroy();
       }
     };
   }, [instance, externalInstance]);
 
-  const value = useMemo(() => ({ instance, version, context }), [instance, version, context]);
+  const value = useMemo(() => ({ instance, context }), [instance, context]);
 
   return React.createElement(TinyFlagContext.Provider, { value }, children);
 }
@@ -104,7 +97,8 @@ function useTinyFlag(): TinyFlagContextValue {
  * Re-renders when the flag value changes.
  */
 export function useFlag(flagName: string): boolean {
-  const { instance, version, context } = useTinyFlag();
+  const { instance, context } = useTinyFlag();
+  const version = useFlagVersion(instance, flagName);
   return useMemo(
     () => instance.isEnabled(flagName, context),
     [instance, flagName, context, version],
@@ -116,7 +110,8 @@ export function useFlag(flagName: string): boolean {
  * Re-renders when the variant assignment changes.
  */
 export function useVariant(flagName: string): string | null {
-  const { instance, version, context } = useTinyFlag();
+  const { instance, context } = useTinyFlag();
+  const version = useFlagVersion(instance, flagName);
   return useMemo(
     () => instance.getVariant(flagName, context),
     [instance, flagName, context, version],
@@ -128,4 +123,20 @@ export function useVariant(flagName: string): string | null {
  */
 export function useTinyFlagInstance(): TinyFlag {
   return useTinyFlag().instance;
+}
+
+function useFlagVersion(instance: TinyFlag, flagName: string): number {
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    const handleChange = (event: ChangeEvent) => {
+      if (event.flag === flagName) {
+        setVersion((current) => current + 1);
+      }
+    };
+    instance.on('change', handleChange);
+    return () => instance.off('change', handleChange);
+  }, [instance, flagName]);
+
+  return version;
 }
