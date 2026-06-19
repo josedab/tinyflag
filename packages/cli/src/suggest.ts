@@ -1,5 +1,5 @@
-import { readFileSync, readdirSync, statSync } from 'fs';
-import { join, extname, relative } from 'path';
+import { relative } from 'path';
+import { scanSourceFiles } from './source-scanner.js';
 
 /** A detected flag pattern in source code. */
 export interface FlagSuggestion {
@@ -95,35 +95,13 @@ export function scanForFlagPatterns(
   const ignore = options.ignore ?? ['node_modules', 'dist', '.git', 'coverage', '.next', 'build'];
   const suggestions: FlagSuggestion[] = [];
   const seen = new Set<string>();
-
-  function walk(currentDir: string): void {
-    let entries: string[];
-    try {
-      entries = readdirSync(currentDir);
-    } catch {
-      return;
-    }
-
-    for (const entry of entries) {
-      if (ignore.includes(entry) || entry.startsWith('.')) continue;
-
-      const fullPath = join(currentDir, entry);
-      let stat;
-      try {
-        stat = statSync(fullPath);
-      } catch {
-        continue;
-      }
-
-      if (stat.isDirectory()) {
-        walk(fullPath);
-      } else if (extensions.includes(extname(entry))) {
-        scanFile(fullPath, dir, suggestions, seen);
-      }
-    }
+  for (const file of scanSourceFiles(dir, {
+    extensions,
+    excludeDirectories: ignore,
+    ignoreHiddenEntries: true,
+  })) {
+    scanFile(file.path, file.content, dir, suggestions, seen);
   }
-
-  walk(dir);
 
   // Deduplicate by flag name, keep the first occurrence
   const unique: FlagSuggestion[] = [];
@@ -140,17 +118,11 @@ export function scanForFlagPatterns(
 
 function scanFile(
   filePath: string,
+  content: string,
   baseDir: string,
   suggestions: FlagSuggestion[],
   seen: Set<string>,
 ): void {
-  let content: string;
-  try {
-    content = readFileSync(filePath, 'utf-8');
-  } catch {
-    return;
-  }
-
   const relPath = relative(baseDir, filePath);
   const lines = content.split('\n');
 
