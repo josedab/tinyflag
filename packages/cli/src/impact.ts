@@ -1,6 +1,6 @@
-import { readdirSync, readFileSync, statSync } from 'fs';
-import { join, extname, relative } from 'path';
+import { relative } from 'path';
 import type { FlagConfig, FlagDefinition } from 'tinyflag';
+import { scanSourceFiles } from './source-scanner.js';
 
 /** Patterns that indicate flag usage in code. */
 const FLAG_USAGE_PATTERN =
@@ -92,46 +92,21 @@ export function scanFlagReferences(
   ]),
 ): FlagReference[] {
   const references: FlagReference[] = [];
-
-  function walk(currentDir: string): void {
-    let entries: string[];
-    try {
-      entries = readdirSync(currentDir);
-    } catch {
-      return;
-    }
-
-    for (const entry of entries) {
-      if (excludeDirs.has(entry)) continue;
-      const fullPath = join(currentDir, entry);
-
-      let stat;
-      try {
-        stat = statSync(fullPath);
-      } catch {
-        continue;
-      }
-
-      if (stat.isDirectory()) {
-        walk(fullPath);
-      } else if (stat.isFile() && SCANNABLE_EXTENSIONS.has(extname(entry))) {
-        scanFileForFlag(fullPath, flagName, references);
-      }
-    }
+  for (const file of scanSourceFiles(dir, {
+    extensions: SCANNABLE_EXTENSIONS,
+    excludeDirectories: excludeDirs,
+  })) {
+    scanFileForFlag(file.path, file.content, flagName, references);
   }
-
-  walk(dir);
   return references;
 }
 
-function scanFileForFlag(filePath: string, flagName: string, references: FlagReference[]): void {
-  let content: string;
-  try {
-    content = readFileSync(filePath, 'utf-8');
-  } catch {
-    return;
-  }
-
+function scanFileForFlag(
+  filePath: string,
+  content: string,
+  flagName: string,
+  references: FlagReference[],
+): void {
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
