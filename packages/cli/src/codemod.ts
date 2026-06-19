@@ -1,6 +1,11 @@
-import { readFileSync, readdirSync, statSync, writeFileSync } from 'fs';
-import { join, extname, relative } from 'path';
+import { readFileSync, writeFileSync } from 'fs';
+import { relative } from 'path';
 import type { FlagConfig, FlagDefinition } from 'tinyflag';
+import {
+  DEFAULT_SCAN_EXCLUDES,
+  JAVASCRIPT_SOURCE_EXTENSIONS,
+  scanSourceFiles,
+} from './source-scanner.js';
 
 /** A code location referencing a flag. */
 export interface FlagCodeReference {
@@ -29,8 +34,8 @@ export interface CodemodChange {
   after: string;
 }
 
-const SCANNABLE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
-const EXCLUDE_DIRS = new Set(['node_modules', 'dist', '.git', 'coverage', '.next', 'build']);
+const SCANNABLE_EXTENSIONS = JAVASCRIPT_SOURCE_EXTENSIONS;
+const EXCLUDE_DIRS = DEFAULT_SCAN_EXCLUDES;
 
 // Patterns for finding flag usage
 const FLAG_PATTERNS = [
@@ -57,49 +62,19 @@ const FLAG_PATTERNS = [
  */
 export function findFlagReferences(
   dir: string,
-  excludeDirs: Set<string> = EXCLUDE_DIRS,
+  excludeDirs: ReadonlySet<string> = EXCLUDE_DIRS,
 ): FlagCodeReference[] {
   const refs: FlagCodeReference[] = [];
-
-  function walk(currentDir: string): void {
-    let entries: string[];
-    try {
-      entries = readdirSync(currentDir);
-    } catch {
-      return;
-    }
-
-    for (const entry of entries) {
-      if (excludeDirs.has(entry)) continue;
-      const fullPath = join(currentDir, entry);
-
-      let stat;
-      try {
-        stat = statSync(fullPath);
-      } catch {
-        continue;
-      }
-
-      if (stat.isDirectory()) {
-        walk(fullPath);
-      } else if (stat.isFile() && SCANNABLE_EXTENSIONS.has(extname(entry))) {
-        scanFileForRefs(fullPath, refs);
-      }
-    }
+  for (const file of scanSourceFiles(dir, {
+    extensions: SCANNABLE_EXTENSIONS,
+    excludeDirectories: excludeDirs,
+  })) {
+    scanFileForRefs(file.path, file.content, refs);
   }
-
-  walk(dir);
   return refs;
 }
 
-function scanFileForRefs(filePath: string, refs: FlagCodeReference[]): void {
-  let content: string;
-  try {
-    content = readFileSync(filePath, 'utf-8');
-  } catch {
-    return;
-  }
-
+function scanFileForRefs(filePath: string, content: string, refs: FlagCodeReference[]): void {
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -139,7 +114,20 @@ export function transformFile(
   } catch {
     return null;
   }
+  return transformSource(filePath, content, config, options);
+}
 
+function transformSource(
+  filePath: string,
+  content: string,
+  config: FlagConfig,
+  options: {
+    archivedFlags?: Set<string>;
+    fullyRolledOutFlags?: Set<string>;
+    winnerVariants?: Map<string, string>;
+    dryRun?: boolean;
+  },
+): CodemodResult | null {
   const lines = content.split('\n');
   const changes: CodemodChange[] = [];
   const transformedLines = [...lines];
@@ -261,49 +249,26 @@ export function runCodemod(
   } = {},
 ): CodemodResult[] {
   const results: CodemodResult[] = [];
+  const archivedFlags = options.archivedOnly
+    ? new Set(
+        Object.entries(config.flags)
+          .filter(([, def]) => def.lifecycle?.state === 'archived')
+          .map(([name]) => name),
+      )
+    : undefined;
 
-  function walk(currentDir: string): void {
-    let entries: string[];
-    try {
-      entries = readdirSync(currentDir);
-    } catch {
-      return;
-    }
-
-    for (const entry of entries) {
-      if (EXCLUDE_DIRS.has(entry)) continue;
-      const fullPath = join(currentDir, entry);
-
-      let stat;
-      try {
-        stat = statSync(fullPath);
-      } catch {
-        continue;
-      }
-
-      if (stat.isDirectory()) {
-        walk(fullPath);
-      } else if (stat.isFile() && SCANNABLE_EXTENSIONS.has(extname(entry))) {
-        const archivedFlags = options.archivedOnly
-          ? new Set(
-              Object.entries(config.flags)
-                .filter(([, def]) => def.lifecycle?.state === 'archived')
-                .map(([name]) => name),
-            )
-          : undefined;
-
-        const result = transformFile(fullPath, config, {
-          dryRun: options.dryRun,
-          archivedFlags: archivedFlags,
-          fullyRolledOutFlags: options.archivedOnly ? new Set() : undefined,
-          winnerVariants: options.winnerVariants,
-        });
-        if (result) results.push(result);
-      }
-    }
+  for (const file of scanSourceFiles(dir, {
+    extensions: SCANNABLE_EXTENSIONS,
+    excludeDirectories: EXCLUDE_DIRS,
+  })) {
+    const result = transformSource(file.path, file.content, config, {
+      dryRun: options.dryRun,
+      archivedFlags,
+      fullyRolledOutFlags: options.archivedOnly ? new Set() : undefined,
+      winnerVariants: options.winnerVariants,
+    });
+    if (result) results.push(result);
   }
-
-  walk(dir);
   return results;
 }
 
