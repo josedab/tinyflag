@@ -6,7 +6,7 @@ import {
   createPrometheusSource,
   formatImpactAnalysis,
   type FlagChangePoint,
-} from '../correlation.js';
+} from '../correlation-core.js';
 
 describe('welchTTest', () => {
   it('detects significant difference between groups', () => {

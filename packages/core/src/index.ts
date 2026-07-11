@@ -83,7 +83,7 @@ export {
   createHttpHealthCheck,
   formatRolloutState,
   DEFAULT_STAGES,
-} from './progressive.js';
+} from './progressive-core.js';
 export type {
   HealthCheckResult,
   HealthCheckProvider,
@@ -93,7 +93,7 @@ export type {
   PipelineStatus,
   RolloutEvent,
   RolloutState,
-} from './progressive.js';
+} from './progressive-core.js';
 export {
   ComplianceAuditTrail,
   parseGovernanceConfig,
@@ -132,14 +132,14 @@ export {
   analyzeMetricImpact,
   createPrometheusSource,
   formatImpactAnalysis,
-} from './correlation.js';
+} from './correlation-core.js';
 export type {
   MetricDataPoint,
   MetricsSource,
   FlagChangePoint,
   StatisticalTestResult,
   ImpactAnalysis,
-} from './correlation.js';
+} from './correlation-core.js';
 export {
   initOptimizerState,
   recordConversion as recordBanditConversion,

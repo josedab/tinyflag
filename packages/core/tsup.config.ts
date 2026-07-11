@@ -1,17 +1,17 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: [
-    'src/index.ts',
-    'src/runtime.ts',
-    'src/testing.ts',
-    'src/signing.ts',
-    'src/sync.ts',
-    'src/progressive.ts',
-    'src/correlation.ts',
-    'src/governance.ts',
-    'src/webhooks.ts',
-  ],
+  entry: {
+    index: 'src/index.ts',
+    runtime: 'src/runtime.ts',
+    testing: 'src/testing.ts',
+    signing: 'src/signing.ts',
+    sync: 'src/sync.ts',
+    progressive: 'src/progressive-core.ts',
+    correlation: 'src/correlation-core.ts',
+    governance: 'src/governance.ts',
+    webhooks: 'src/webhooks.ts',
+  },
   format: ['esm', 'cjs'],
   dts: true,
   clean: true,
