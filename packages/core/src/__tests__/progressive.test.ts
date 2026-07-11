@@ -9,7 +9,7 @@ import {
   type HealthCheckProvider,
   type HealthCheckResult,
   type RolloutStage,
-} from '../progressive-core.js';
+} from '../progressive.js';
 
 function makeHealthyResult(overrides: Partial<HealthCheckResult> = {}): HealthCheckResult {
   return {
