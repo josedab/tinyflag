@@ -47,11 +47,11 @@
     "tinyflag": "workspace:*"
   },
   "dependencies": {
-    "@openfeature/server-sdk": "^1.15.0"
+    "@openfeature/server-sdk": "^1.22.0"
   },
   "devDependencies": {
     "tinyflag": "workspace:*",
-    "@openfeature/server-sdk": "^1.15.0",
+    "@openfeature/server-sdk": "^1.22.0",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
