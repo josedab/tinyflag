@@ -56,12 +56,12 @@
     "vue": ">=3.3.0"
   },
   "devDependencies": {
-    "@vue/test-utils": "^2.4.6",
+    "@vue/test-utils": "^2.4.11",
     "jsdom": "^29.0.2",
     "tinyflag": "workspace:*",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0",
-    "vue": "^3.5.0"
+    "vue": "^3.5.40"
   }
 }
