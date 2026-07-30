@@ -56,7 +56,7 @@
     "tinyflag": "workspace:*"
   },
   "devDependencies": {
-    "svelte": "^4.2.0",
+    "svelte": "^5.56.8",
     "tinyflag": "workspace:*",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
